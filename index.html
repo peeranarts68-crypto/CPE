@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPE Hint 68-69</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-glow: conic-gradient(from 180deg at 50% 50%, #ff333333 0deg, #99000033 55deg, #ff666633 120deg, #cc000033 160deg, transparent 360deg);
+            --bg-color: #0d0d0d;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --accent-color: #ff3333;
+            --accent-purple: #990000;
+            --card-bg: rgba(26, 26, 26, 0.7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'IBM Plex Sans Thai', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            text-align: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Banner styling using CSS background image */
+        .banner {
+            width: 100%;
+            height: 350px;
+            background-image: linear-gradient(to bottom, rgba(13, 13, 13, 0.3), rgba(13, 13, 13, 0.95)), url('img/banner_red.png');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-end;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-bottom: 2px solid rgba(255, 51, 51, 0.3);
+            transition: all 0.5s ease;
+        }
+
+        .banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, transparent 30%, rgba(13, 13, 13, 0.8) 100%);
+            pointer-events: none;
+        }
+
+        .banner-content {
+            position: relative;
+            z-index: 10;
+            padding: 20px 8%;
+            max-width: 800px;
+            text-align: right;
+        }
+
+        .banner h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-color) 50%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 51, 51, 0.4);
+            animation: pulse-glow 3s infinite alternate;
+        }
+
+        .banner p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        @keyframes pulse-glow {
+            0% {
+                filter: drop-shadow(0 0 15px rgba(255, 51, 51, 0.2));
+            }
+            100% {
+                filter: drop-shadow(0 0 25px rgba(153, 0, 0, 0.4));
+            }
+        }
+
+        /* Grid Layout */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 30px;
+            max-width: 1200px;
+            width: 90%;
+            margin: 40px auto;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Left Content Column */
+        .main-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            text-align: left;
+        }
+
+        .main-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+            border-left: 4px solid var(--accent-purple);
+            padding-left: 15px;
+        }
+
+        .main-section p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 20px;
+            font-size: 1.05rem;
+        }
+
+        .hint-card {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .hint-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 51, 51, 0.3);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .hint-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(255, 51, 51, 0.15);
+            color: var(--accent-color);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .action-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-purple) 100%);
+            color: #ffffff;
+            font-weight: 700;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(255, 51, 51, 0.3);
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            margin-top: 10px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 51, 51, 0.5);
+            filter: brightness(1.1);
+        }
+
+        /* Right Login Column */
+        .login-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            text-align: left;
+        }
+
+        .login-title {
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+            border-left: 4px solid var(--accent-purple);
+            padding-left: 15px;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.2);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-purple) 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 51, 51, 0.3);
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 51, 51, 0.5);
+            filter: brightness(1.1);
+        }
+
+        .login-btn:active {
+            transform: translateY(1px);
+        }
+
+        .login-footer {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .login-footer a {
+            color: var(--accent-color);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .login-footer a:hover {
+            color: var(--accent-purple);
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: auto;
+            padding: 30px;
+            width: 100%;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- Hamburger Navigation System --- */
+        .hamburger-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            width: 50px;
+            height: 50px;
+            background: rgba(26, 26, 26, 0.85);
+            border: 1px solid rgba(255, 51, 51, 0.3);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(255, 51, 51, 0.2);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(10px);
+        }
+
+        .hamburger-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
+        }
+
+        .hamburger-btn span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background-color: var(--text-primary);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger-btn.active span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+            background-color: var(--accent-color);
+        }
+
+        .hamburger-btn.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger-btn.active span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+            background-color: var(--accent-color);
+        }
+
+        /* Sidebar Drawer */
+        .sidebar-menu {
+            position: fixed;
+            top: 0;
+            left: -320px;
+            width: 300px;
+            height: 100vh;
+            background: rgba(13, 13, 13, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 51, 51, 0.2);
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8);
+            z-index: 1050;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            padding: 90px 24px 30px 24px;
+            text-align: left;
+        }
+
+        .sidebar-menu.active {
+            left: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 1040;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .sidebar-header {
+            margin-bottom: 40px;
+        }
+
+        .sidebar-logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sidebar-link {
+            display: block;
+            padding: 14px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 1.05rem;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .sidebar-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 51, 51, 0.08);
+            border-color: rgba(255, 51, 51, 0.2);
+            transform: translateX(5px);
+        }
+
+        .sidebar-link.active-link {
+            background: linear-gradient(135deg, rgba(255, 51, 51, 0.2) 0%, rgba(153, 0, 0, 0.2) 100%);
+            border-color: rgba(255, 51, 51, 0.4);
+            color: var(--accent-color);
+            transform: translateX(5px);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+            opacity: 0.7;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger Navigation Button -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Sidebar Drawer Menu -->
+    <div class="sidebar-menu" id="sidebarMenu">
+        <div class="sidebar-header">
+            <a href="index.html" class="sidebar-logo">CPE HINT</a>
+        </div>
+        <ul class="sidebar-links">
+            <li><a href="index.html" class="sidebar-link active-link">หน้าแรก (Home)</a></li>
+            <li><a href="random.html" class="sidebar-link">วงล้อสุ่มสายรหัส (Lucky Wheel)</a></li>
+            <li><a href="senior.html" class="sidebar-link">สำหรับพี่รหัส (For Seniors)</a></li>
+            <li><a href="developers.html" class="sidebar-link">ผู้พัฒนาเว็บ (Web Developers)</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            &copy; 2026 Department of Computer Engineering
+        </div>
+    </div>
+    
+    <!-- Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <header class="banner">
+        <div class="banner-content">
+            <h1>CPE HINT <br>68-69</h1>
+            <p>Computer Engineering PSRU</p>
+        </div>
+    </header>
+
+    <div class="content-grid">
+        <main class="main-section">
+            <h2>ยินดีต้อนรับสู่น้องๆเพื่อสุ่มสายรหัส</h2>
+            <p>ทำการสุ่มสายรหัสในวันที่ 13 กรกฏาคม 2569 เวลา 17.00 ณ ตึก Computer Engineering</p>
+            
+            <div class="hint-card">
+                <span class="hint-tag">ประกาศสำคัญ</span>
+                <h3>เตรียมพบกับกิจกรรมรับน้อง CPE Hint เร็ว ๆ นี้</h3>
+                <p style="margin-bottom: 0; margin-top: 10px;">คอยติดตามคำใบ้สายรหัสทุกๆ2วัน ที่จะเกิดขึ้นในการเชื่อมสัมพันธ์ระหว่างรุ่นพี่รุ่นน้อง CPE 69</p>
+            </div>
+
+            <div class="hint-card" style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
+                <span class="hint-tag" style="background: rgba(157, 78, 221, 0.15); color: #d896ff;">ฟีเจอร์ใหม่</span>
+                <h3>วงล้อสุ่มสายรหัส (CPE Lucky Wheel)</h3>
+                <p style="margin: 0;">ร่วมสนุกสุ่มจับคู่สายรหัสด้วยวงล้อนำโชคจำลองแบบ Canvas ที่มีเอฟเฟกต์การสุ่มและเสียงประกอบสมจริง!</p>
+                <a href="random.html" class="action-btn">เปิดวงล้อสุ่มสายรหัส</a>
+            </div>
+        </main>
+
+        <aside class="login-section">
+            <h2 class="login-title">LOGIN CPE 68-69</h2>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="username">USERNAME</label>
+                    <input type="text" id="username" class="form-input" placeholder="Enter username / Student ID" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">PASSWORD</label>
+                    <input type="password" id="password" class="form-input" placeholder="Student ID" required>
+                </div>
+                <button type="submit" class="login-btn"><a href="hint.html"></a>LOGIN</button>
+            </form>
+            <div class="login-footer">
+                <p>ลืมรหัสผ่าน? <a href="https://www.instagram.com/s.peeranart">ติดต่อIG: s.peeranart</a></p>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            localStorage.setItem('cpe_username', username);
+            // Allow new login session to spin
+            localStorage.removeItem('cpe_has_spun');
+            alert(`ยินดีต้อนรับคุณ ${username} เข้าสู่ระบบ CPE Hint Portal!`);
+            window.location.href = 'random.html';
+        }
+
+        // Hamburger sidebar interactions
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebarMenu = document.getElementById('sidebarMenu');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function toggleSidebar() {
+            hamburgerBtn.classList.toggle('active');
+            sidebarMenu.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+
+        hamburgerBtn.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+    </script>
+
+    <footer>
+        &copy; 2026 Department of Computer Engineering. All Rights Reserved.
+    </footer>
+</body>
+</html>

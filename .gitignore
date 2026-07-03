@@ -1,0 +1,9 @@
+# Files/folders to ignore for this project
+node_modules/
+.DS_Store
+Thumbs.db
+.env
+*.log
+
+# Vercel build artifacts (if any)
+.vercel

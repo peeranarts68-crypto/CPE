@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPE Developer Team - ผู้พัฒนาเว็บ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0d0d;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --accent-color: #ff3333;
+            --accent-purple: #990000;
+            --card-bg: rgba(26, 26, 26, 0.6);
+            --border-glow: rgba(255, 51, 51, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'IBM Plex Sans Thai', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 51, 51, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(153, 0, 0, 0.05) 0%, transparent 40%);
+        }
+
+        /* --- Hamburger Navigation System --- */
+        .hamburger-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            width: 50px;
+            height: 50px;
+            background: rgba(26, 26, 26, 0.85);
+            border: 1px solid rgba(255, 51, 51, 0.3);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(255, 51, 51, 0.2);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(10px);
+        }
+
+        .hamburger-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
+        }
+
+        .hamburger-btn span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background-color: var(--text-primary);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger-btn.active span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+            background-color: var(--accent-color);
+        }
+
+        .hamburger-btn.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger-btn.active span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+            background-color: var(--accent-color);
+        }
+
+        /* Sidebar Drawer */
+        .sidebar-menu {
+            position: fixed;
+            top: 0;
+            left: -320px;
+            width: 300px;
+            height: 100vh;
+            background: rgba(13, 13, 13, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 51, 51, 0.2);
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8);
+            z-index: 1050;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            padding: 90px 24px 30px 24px;
+            text-align: left;
+        }
+
+        .sidebar-menu.active {
+            left: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 1040;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .sidebar-header {
+            margin-bottom: 40px;
+        }
+
+        .sidebar-logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sidebar-link {
+            display: block;
+            padding: 14px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 1.05rem;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .sidebar-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 51, 51, 0.08);
+            border-color: rgba(255, 51, 51, 0.2);
+            transform: translateX(5px);
+        }
+
+        .sidebar-link.active-link {
+            background: linear-gradient(135deg, rgba(255, 51, 51, 0.2) 0%, rgba(153, 0, 0, 0.2) 100%);
+            border-color: rgba(255, 51, 51, 0.4);
+            color: var(--accent-color);
+            transform: translateX(5px);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+            opacity: 0.7;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 20px;
+        }
+
+        /* --- Header Section --- */
+        .header {
+            margin: 60px 0 20px 0;
+            padding: 0 20px;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-color) 50%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+            filter: drop-shadow(0 0 15px rgba(255, 51, 51, 0.15));
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 300;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* --- Team Grid --- */
+        .team-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            max-width: 1400px;
+            width: 95%;
+            margin: 40px auto 60px auto;
+        }
+
+        @media (max-width: 1300px) {
+            .team-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 850px) {
+            .team-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 550px) {
+            .team-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* --- Developer Card --- */
+        .dev-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 30px 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .dev-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 51, 51, 0.08) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .dev-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(255, 51, 51, 0.3);
+            box-shadow: 0 20px 40px rgba(255, 51, 51, 0.15), 0 0 1px rgba(255, 51, 51, 0.5);
+        }
+
+        .dev-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Profile Image Container */
+        .img-container {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            padding: 4px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 51, 51, 0.4) 100%);
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+            transition: transform 0.4s ease;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+
+        .dev-card:hover .img-container {
+            transform: scale(1.08) rotate(3deg);
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-purple) 100%);
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.4);
+        }
+
+        .img-container img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #0d0d0d;
+        }
+
+        /* Profile details */
+        .dev-role {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent-color);
+            background: rgba(255, 51, 51, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            display: inline-block;
+            z-index: 2;
+        }
+
+        .dev-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            z-index: 2;
+        }
+
+        .dev-info-box {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            text-align: left;
+            z-index: 2;
+            margin-top: auto;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+        }
+
+        .info-val {
+            color: var(--text-primary);
+            font-weight: 600;
+            text-align: right;
+        }
+
+        /* Social Badges */
+        .social-container {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+            z-index: 2;
+        }
+
+        .social-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-btn:hover {
+            color: #ffffff;
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.3);
+        }
+
+        /* --- Footer --- */
+        footer {
+            margin-top: auto;
+            padding: 30px;
+            width: 100%;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hamburger Navigation Button -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Sidebar Drawer Menu -->
+    <div class="sidebar-menu" id="sidebarMenu">
+        <div class="sidebar-header">
+            <a href="index.html" class="sidebar-logo">CPE HINT</a>
+        </div>
+        <ul class="sidebar-links">
+            <li><a href="index.html" class="sidebar-link">หน้าแรก (Home)</a></li>
+            <li><a href="random.html" class="sidebar-link">วงล้อสุ่มสายรหัส (Lucky Wheel)</a></li>
+            <li><a href="senior.html" class="sidebar-link">สำหรับพี่รหัส (For Seniors)</a></li>
+            <li><a href="developers.html" class="sidebar-link active-link">ผู้พัฒนาเว็บ (Web Developers)</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            &copy; 2026 Department of Computer Engineering
+        </div>
+    </div>
+    
+    <!-- Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Header Section -->
+    <header class="header">
+        <h1>ทีมผู้พัฒนาเว็บ (WEB DEVELOPER TEAM)</h1>
+        <p>นักศึกษาสาขาวิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม</p>
+    </header>
+
+    <!-- Main Team Cards -->
+    <div class="team-container">
+        <!-- Developer 1 -->
+        <div class="dev-card">
+            <div class="img-container">
+                <img src="img/dev1.png" alt="นายพีรนาท สิงห์โตรี">
+            </div>
+            <span class="dev-role">Lead Developer</span>
+            <h3 class="dev-name">นายพีรนาท สิงห์โตรี</h3>
+            
+            <div class="dev-info-box">
+                <div class="info-row">
+                    <span class="info-label">คณะ:</span>
+                    <span class="info-val">วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">สาขาวิชา:</span>
+                    <span class="info-val">วิศวกรรมคอมพิวเตอร์</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ชั้นปี:</span>
+                    <span class="info-val">ปีที่ 2 (CPE 68)</span>
+                </div>
+            </div>
+
+            <div class="social-container">
+                <a href="https://www.instagram.com/s.peeranart" target="_blank" class="social-btn" title="Instagram">IG</a>
+                <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">GH</a>
+            </div>
+        </div>
+
+        <!-- Developer 2 -->
+        <div class="dev-card">
+            <div class="img-container">
+                <img src="img/dev3.png" alt="นายภูริณัฐ หินอ่อน">
+            </div>
+            <span class="dev-role">Database Developer</span>
+            <h3 class="dev-name">นายภูริณัฐ หินอ่อน</h3>
+            
+            <div class="dev-info-box">
+                <div class="info-row">
+                    <span class="info-label">คณะ:</span>
+                    <span class="info-val">วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">สาขาวิชา:</span>
+                    <span class="info-val">วิศวกรรมคอมพิวเตอร์</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ชั้นปี:</span>
+                    <span class="info-val">ปีที่ 2 (CPE 68)</span>
+                </div>
+            </div>
+
+            <div class="social-container">
+                <a href="https://instagram.com" target="_blank" class="social-btn" title="Instagram">IG</a>
+                <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">GH</a>
+            </div>
+        </div>
+
+        <!-- Developer 3 -->
+        <div class="dev-card">
+            <div class="img-container">
+                <img src="img/dev5.png" alt="นายพิชญางกูร ขำปลอด">
+            </div>
+            <span class="dev-role">Support Database</span>
+            <h3 class="dev-name">นายพิชญางกูร ขำปลอด</h3>
+            
+            <div class="dev-info-box">
+                <div class="info-row">
+                    <span class="info-label">คณะ:</span>
+                    <span class="info-val">วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">สาขาวิชา:</span>
+                    <span class="info-val">วิศวกรรมคอมพิวเตอร์</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ชั้นปี:</span>
+                    <span class="info-val">ปีที่ 2 (CPE 68)</span>
+                </div>
+            </div>
+
+            <div class="social-container">
+                <a href="https://instagram.com" target="_blank" class="social-btn" title="Instagram">IG</a>
+                <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">GH</a>
+            </div>
+        </div>
+
+        <!-- Developer 4 -->
+        <div class="dev-card">
+            <div class="img-container">
+                <img src="img/dev2.png" alt="นางสาวณัชชา เพ็งน้อย">
+            </div>
+            <span class="dev-role">Supporter</span>
+            <h3 class="dev-name">นางสาวณัชชา เพ็งน้อย</h3>
+            
+            <div class="dev-info-box">
+                <div class="info-row">
+                    <span class="info-label">คณะ:</span>
+                    <span class="info-val">วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">สาขาวิชา:</span>
+                    <span class="info-val">วิศวกรรมคอมพิวเตอร์</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ชั้นปี:</span>
+                    <span class="info-val">ปีที่ 2 (CPE 68)</span>
+                </div>
+            </div>
+
+            <div class="social-container">
+                <a href="https://instagram.com" target="_blank" class="social-btn" title="Instagram">IG</a>
+                <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">GH</a>
+            </div>
+        </div>
+
+        <!-- Developer 5 -->
+        <div class="dev-card">
+            <div class="img-container">
+                <img src="img/dev4.png" alt="นายจักรกฤษณ์ พลอาชา">
+            </div>
+            <span class="dev-role">Graphic Designer</span>
+            <h3 class="dev-name">นายจักรกฤษณ์ พลอาชา</h3>
+            
+            <div class="dev-info-box">
+                <div class="info-row">
+                    <span class="info-label">คณะ:</span>
+                    <span class="info-val">วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">สาขาวิชา:</span>
+                    <span class="info-val">วิศวกรรมคอมพิวเตอร์</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ชั้นปี:</span>
+                    <span class="info-val">ปีที่ 2 (CPE 68)</span>
+                </div>
+            </div>
+
+            <div class="social-container">
+                <a href="https://instagram.com" target="_blank" class="social-btn" title="Instagram">IG</a>
+                <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">GH</a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        &copy; 2026 Department of Computer Engineering. All Rights Reserved.
+    </footer>
+
+    <script>
+        // Hamburger sidebar interactions
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebarMenu = document.getElementById('sidebarMenu');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function toggleSidebar() {
+            hamburgerBtn.classList.toggle('active');
+            sidebarMenu.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+
+        hamburgerBtn.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+    </script>
+</body>
+</html>

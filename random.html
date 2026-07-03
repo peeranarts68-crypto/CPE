@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPE Lucky Wheel - สุ่มสายรหัส</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0d0d;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --accent-color: #ff3333;
+            --accent-purple: #990000;
+            --card-bg: rgba(26, 26, 26, 0.7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'IBM Plex Sans Thai', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 51, 51, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(153, 0, 0, 0.05) 0%, transparent 40%);
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            width: 100%;
+            padding: 20px 5% 20px 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(11, 15, 25, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 990;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: var(--accent-color);
+            color: #0b0f19;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Hero Header */
+        .header {
+            margin: 40px 0 20px 0;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-color) 50%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* Layout Grid */
+        .container {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            width: 90%;
+            margin-bottom: 60px;
+            align-items: start;
+        }
+
+        @media (max-width: 950px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Wheel Area styling */
+        .wheel-area {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 420px;
+            height: 420px;
+            margin-bottom: 30px;
+        }
+
+        /* Wheel Canvas */
+        #wheelCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 40px rgba(0, 210, 255, 0.15), inset 0 0 20px rgba(255, 255, 255, 0.05);
+        }
+
+        /* Wheel Pointer */
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 40px;
+            background: linear-gradient(to bottom, #ff3333, #990000);
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            z-index: 10;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+        }
+
+        /* Center Spin Button */
+        .spin-btn-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+            border: 5px solid #1a2333;
+            color: #0b0f19;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+            z-index: 15;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        .spin-btn-center:hover {
+            transform: translate(-50%, -50%) scale(1.08);
+            box-shadow: 0 8px 25px rgba(0, 210, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.4);
+            background: #ffffff;
+        }
+
+        .spin-btn-center:active {
+            transform: translate(-50%, -50%) scale(0.95);
+        }
+
+        /* Controls Area */
+        .controls-area {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            text-align: left;
+        }
+
+        .controls-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+            border-left: 4px solid var(--accent-purple);
+            padding-left: 15px;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            color: var(--text-primary);
+            padding: 15px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: none;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .btn-secondary {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* History Area */
+        .history-container {
+            margin-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 20px;
+        }
+
+        .history-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-btn {
+            font-size: 0.85rem;
+            color: #ff3366;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .clear-btn:hover {
+            text-decoration: underline;
+        }
+
+        .history-list {
+            list-style: none;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
+            border-left: 3px solid var(--accent-purple);
+        }
+
+        /* Winner Modal Overlay */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(11, 15, 25, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #161c2e 0%, #0d1220 100%);
+            border: 2px solid var(--accent-color);
+            border-radius: 28px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 210, 255, 0.3);
+            transform: scale(0.8);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-badge {
+            display: inline-block;
+            padding: 6px 18px;
+            background: rgba(157, 78, 221, 0.2);
+            color: #d896ff;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+
+        .winner-name {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 25px;
+            text-shadow: 0 0 20px rgba(0, 210, 255, 0.5);
+        }
+
+        .close-modal-btn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-purple) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(157, 78, 221, 0.4);
+            transition: transform 0.2s ease;
+        }
+
+        .close-modal-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Confetti canvas */
+        #confettiCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: auto;
+            padding: 30px;
+            width: 100%;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- Hamburger Navigation System --- */
+        .hamburger-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            width: 50px;
+            height: 50px;
+            background: rgba(26, 26, 26, 0.85);
+            border: 1px solid rgba(255, 51, 51, 0.3);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(255, 51, 51, 0.2);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(10px);
+        }
+
+        .hamburger-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
+        }
+
+        .hamburger-btn span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background-color: var(--text-primary);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger-btn.active span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+            background-color: var(--accent-color);
+        }
+
+        .hamburger-btn.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger-btn.active span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+            background-color: var(--accent-color);
+        }
+
+        /* Sidebar Drawer */
+        .sidebar-menu {
+            position: fixed;
+            top: 0;
+            left: -320px;
+            width: 300px;
+            height: 100vh;
+            background: rgba(13, 13, 13, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 51, 51, 0.2);
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8);
+            z-index: 1050;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            padding: 90px 24px 30px 24px;
+            text-align: left;
+        }
+
+        .sidebar-menu.active {
+            left: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 1040;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .sidebar-header {
+            margin-bottom: 40px;
+        }
+
+        .sidebar-logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sidebar-link {
+            display: block;
+            padding: 14px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 1.05rem;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .sidebar-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 51, 51, 0.08);
+            border-color: rgba(255, 51, 51, 0.2);
+            transform: translateX(5px);
+        }
+
+        .sidebar-link.active-link {
+            background: linear-gradient(135deg, rgba(255, 51, 51, 0.2) 0%, rgba(153, 0, 0, 0.2) 100%);
+            border-color: rgba(255, 51, 51, 0.4);
+            color: var(--accent-color);
+            transform: translateX(5px);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+            opacity: 0.7;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger Navigation Button -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Sidebar Drawer Menu -->
+    <div class="sidebar-menu" id="sidebarMenu">
+        <div class="sidebar-header">
+            <a href="index.html" class="sidebar-logo">CPE HINT</a>
+        </div>
+        <ul class="sidebar-links">
+            <li><a href="index.html" class="sidebar-link">หน้าแรก (Home)</a></li>
+            <li><a href="random.html" class="sidebar-link active-link">วงล้อสุ่มสายรหัส (Lucky Wheel)</a></li>
+            <li><a href="senior.html" class="sidebar-link">สำหรับพี่รหัส (For Seniors)</a></li>
+            <li><a href="developers.html" class="sidebar-link">ผู้พัฒนาเว็บ (Web Developers)</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            &copy; 2026 Department of Computer Engineering
+        </div>
+    </div>
+    
+    <!-- Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Nav Bar -->
+    <nav class="navbar">
+        <a href="index.html" class="logo">CPE Hint Portal</a>
+        <a href="index.html" class="nav-btn">กลับหน้าหลัก</a>
+    </nav>
+
+    <!-- Header -->
+    <header class="header">
+        <h1>วงล้อสุ่มสายรหัส CPE</h1>
+        <p>ระบุรหัสหรือชื่อกลุ่ม แล้วหมุนวงล้อเพื่อสุ่มจับคู่สายรหัส!</p>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Left Column: Wheel -->
+        <main class="wheel-area">
+            <div class="wheel-container">
+                <div class="pointer"></div>
+                <canvas id="wheelCanvas" width="800" height="800"></canvas>
+                <button class="spin-btn-center" onclick="spinWheel()">SPIN</button>
+            </div>
+        </main>
+
+        <!-- Right Column: Status & History -->
+        <aside class="controls-area">
+            <h2 class="controls-title">สถานะคำใบ้คงเหลือ</h2>
+            
+            <div class="form-group">
+                <label>คำใบ้ในระบบที่ยังไม่ถูกสุ่ม (เหลือ <span id="hintCount">0</span> รายการ)</label>
+                <div id="hintPoolList" style="max-height: 250px; overflow-y: auto; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">
+                    <!-- Active list will be populated here -->
+                </div>
+            </div>
+
+            <!-- History list -->
+            <div class="history-container" style="margin-top: 25px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px;">
+                <div class="history-title">
+                    <span>ประวัติการสุ่มสายรหัส</span>
+                </div>
+                <ul class="history-list" id="historyList">
+                    <!-- History entries appear here -->
+                </ul>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Modal for Winner -->
+    <div class="modal" id="winnerModal">
+        <div class="modal-content">
+            <span class="modal-badge">ผลลัพธ์การสุ่ม</span>
+            <div class="winner-name" id="winnerDisplay">-</div>
+            <button class="close-modal-btn" onclick="closeWinnerModal()">ตกลง</button>
+        </div>
+    </div>
+
+    <!-- Confetti canvas overlay -->
+    <canvas id="confettiCanvas"></canvas>
+
+    <footer>
+        &copy; 2026 Department of Computer Engineering. All Rights Reserved.
+    </footer>
+
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <!-- Wheel and Interactions Script -->
+    <script>
+        // --- TODO: REPLACE WITH YOUR FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const defaultHints = [
+            { id: 1, hint_text: "CPE-01: สายเกมเมอร์ ชอบเล่น Valorant", is_drawn: false },
+            { id: 2, hint_text: "CPE-02: เด็กหลังห้อง สูง 175 ซม.", is_drawn: false },
+            { id: 3, hint_text: "CPE-03: ชอบกินชาเขียวหวานน้อย", is_drawn: false },
+            { id: 4, hint_text: "CPE-04: แว่นหนา เรียนเก่งระดับท็อป", is_drawn: false },
+            { id: 5, hint_text: "CPE-05: สายดนตรี เล่นกีตาร์คลาสสิก", is_drawn: false },
+            { id: 6, hint_text: "CPE-06: ชอบตื่นสาย เข้าเรียนสายเป็นประจำ", is_drawn: false },
+            { id: 7, hint_text: "CPE-07: พูดเก่งมาก เฟรนด์ลี่สุดๆ", is_drawn: false },
+            { id: 8, hint_text: "CPE-08: สายคาเฟ่ ถ่ายรูปสวยมาก", is_drawn: false },
+            { id: 9, hint_text: "CPE-09: ดูเงียบๆ ขรึมๆ แต่ใจดีมาก", is_drawn: false },
+            { id: 10, hint_text: "CPE-10: แฟนพันธุ์แท้อนิเมะและมังงะ", is_drawn: false }
+        ];
+
+        function seedDatabase() {
+            database.ref('hints').set(defaultHints);
+        }
+
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const hintPoolList = document.getElementById('hintPoolList');
+        const hintCount = document.getElementById('hintCount');
+        const historyList = document.getElementById('historyList');
+        const winnerModal = document.getElementById('winnerModal');
+        const winnerDisplay = document.getElementById('winnerDisplay');
+
+        // Color palettes for wheel sectors
+        const colors = [
+            '#ff3333', '#1a1a1a', '#ffffff', '#800000', 
+            '#e60000', '#2d2d2d', '#f2f2f2', '#4d0000'
+        ];
+
+        let dbHints = []; // Raw objects from DB {id, hint_text}
+        let items = []; // Simple texts for the wheel ['CPE-01: ...', ...]
+        let currentAngle = 0;
+        let isSpinning = false;
+        let spinVelocity = 0;
+        const friction = 0.985;
+        let lastSegmentIndex = -1;
+
+        // Audio Context for synthesis click sound
+        let audioCtx = null;
+        function playClickSound() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.08);
+            } catch (e) {
+                // Ignore web audio block errors
+            }
+        }
+
+        let pendingDbHints = null;
+
+        function checkSpinEligibility() {
+            if (localStorage.getItem('cpe_has_spun') === 'true') {
+                const spinBtn = document.querySelector('.spin-btn-center');
+                spinBtn.textContent = 'สุ่มแล้ว';
+                spinBtn.style.background = '#1f2937';
+                spinBtn.style.color = '#4b5563';
+                spinBtn.style.borderColor = '#111827';
+                spinBtn.style.cursor = 'not-allowed';
+                spinBtn.style.pointerEvents = 'none';
+                spinBtn.style.boxShadow = 'none';
+                return false;
+            }
+            return true;
+        }
+
+        // Initialize Wheel
+        function init() {
+            // Secret query param "?reset" to clear spin lock for testing/admin
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('reset')) {
+                localStorage.removeItem('cpe_has_spun');
+                window.location.replace('random.html');
+                return;
+            }
+
+            // Secret query param "?reset_db" to clear database state in Firebase
+            if (urlParams.has('reset_db')) {
+                seedDatabase();
+                alert("รีเซ็ตคำใบ้ในฐานข้อมูลสำเร็จ!");
+                window.location.replace('random.html');
+                return;
+            }
+
+            checkSpinEligibility();
+            
+            // Listen to database values in real-time
+            database.ref('hints').on('value', (snapshot) => {
+                const data = snapshot.val();
+                let newHints = [];
+                
+                if (data) {
+                    const rawList = Array.isArray(data) ? data : Object.values(data);
+                    newHints = rawList.filter(h => h && h.is_drawn === false);
+                } else {
+                    seedDatabase();
+                    return;
+                }
+                
+                const currentIds = dbHints.map(h => h.id).join(',');
+                const newIds = newHints.map(h => h.id).join(',');
+                
+                if (currentIds !== newIds) {
+                    if (isSpinning) {
+                        pendingDbHints = newHints;
+                    } else {
+                        applyHintUpdates(newHints);
+                    }
+                }
+            });
+        }
+
+        function applyHintUpdates(newHints) {
+            dbHints = newHints;
+            
+            // Show count
+            hintCount.textContent = dbHints.length;
+            
+            // Populate active list view
+            hintPoolList.innerHTML = dbHints.length === 0 
+                ? '<div style="text-align: center; color: #ef4444; font-weight: 600;">หมดแล้ว!</div>' 
+                : dbHints.map(h => `<div style="padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.02); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">• ${h.hint_text}</div>`).join('');
+            
+            // Set items for wheel
+            items = dbHints.map(h => h.hint_text);
+            
+            // If empty, set a placeholder so the wheel can still draw
+            if (items.length === 0) {
+                items = ['(ไม่มีคำใบ้เหลืออยู่)'];
+            }
+            
+            drawWheel();
+        }
+
+        function drawWheel() {
+            const size = canvas.width;
+            const center = size / 2;
+            const radius = center - 20;
+            ctx.clearRect(0, 0, size, size);
+
+            const arcSize = (2 * Math.PI) / items.length;
+
+            items.forEach((item, index) => {
+                const angle = currentAngle + index * arcSize;
+                
+                // Draw sector arc
+                ctx.beginPath();
+                ctx.moveTo(center, center);
+                ctx.arc(center, center, radius, angle, angle + arcSize);
+                ctx.fillStyle = colors[index % colors.length];
+                ctx.fill();
+                ctx.strokeStyle = '#0b0f19';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Draw sector text
+                ctx.save();
+                ctx.translate(center, center);
+                ctx.rotate(angle + arcSize / 2);
+                ctx.textAlign = 'right';
+                // Use dark text for light sectors, white text for dark sectors
+                const currentSectorColor = colors[index % colors.length];
+                ctx.fillStyle = (currentSectorColor === '#ffffff' || currentSectorColor === '#f2f2f2') ? '#0d0d0d' : '#ffffff';
+                ctx.font = `bold ${items.length > 15 ? '14px' : '20px'} 'Outfit', 'IBM Plex Sans Thai'`;
+                ctx.shadowColor = (currentSectorColor === '#ffffff' || currentSectorColor === '#f2f2f2') ? 'transparent' : 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 4;
+                ctx.fillText(item, radius - 30, 8);
+                ctx.restore();
+            });
+
+            // Draw center cap border and cover
+            ctx.beginPath();
+            ctx.arc(center, center, 45, 0, 2 * Math.PI);
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fill();
+            ctx.strokeStyle = '#ff3333';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(center, center, 10, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ff3333';
+            ctx.fill();
+        }
+
+        function spinWheel() {
+            if (isSpinning) return;
+            if (!checkSpinEligibility()) return;
+            if (dbHints.length === 0) {
+                alert("ไม่มีคำใบ้เหลือในระบบฐานข้อมูลแล้ว");
+                return;
+            }
+            isSpinning = true;
+            
+            // Random high velocity
+            spinVelocity = Math.random() * 0.35 + 0.35; 
+            animateSpin();
+        }
+
+        function animateSpin() {
+            if (spinVelocity > 0.001) {
+                currentAngle += spinVelocity;
+                spinVelocity *= friction;
+                
+                // Track crossover for audio feedback
+                const arcSize = (2 * Math.PI) / items.length;
+                const pointerAngle = 1.5 * Math.PI;
+                const relativeAngle = (pointerAngle - currentAngle) % (2 * Math.PI);
+                const normalizedAngle = (relativeAngle < 0) ? relativeAngle + 2 * Math.PI : relativeAngle;
+                const segmentIndex = Math.floor(normalizedAngle / arcSize);
+                
+                if (segmentIndex !== lastSegmentIndex) {
+                    playClickSound();
+                    lastSegmentIndex = segmentIndex;
+                }
+
+                drawWheel();
+                requestAnimationFrame(animateSpin);
+            } else {
+                isSpinning = false;
+                spinVelocity = 0;
+                announceWinner();
+            }
+        }
+
+        async function announceWinner() {
+            if (dbHints.length === 0) {
+                winnerDisplay.textContent = "ไม่มีคำใบ้เหลือให้สุ่ม";
+                winnerModal.classList.add('active');
+                return;
+            }
+
+            const arcSize = (2 * Math.PI) / items.length;
+            // The pointer is positioned at the top: 1.5 * Math.PI (270 degrees)
+            const pointerAngle = 1.5 * Math.PI;
+            const relativeAngle = (pointerAngle - currentAngle) % (2 * Math.PI);
+            const normalizedAngle = (relativeAngle < 0) ? relativeAngle + 2 * Math.PI : relativeAngle;
+            
+            const winnerIndex = Math.floor(normalizedAngle / arcSize);
+            const winnerObj = dbHints[winnerIndex];
+            const winner = winnerObj.hint_text;
+
+            // Enforce single-spin restriction
+            localStorage.setItem('cpe_has_spun', 'true');
+            checkSpinEligibility();
+
+            // Render winner modal
+            winnerDisplay.textContent = winner;
+            winnerModal.classList.add('active');
+            
+            // Add to history
+            const historyItem = document.createElement('li');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = `
+                <span>${winner}</span>
+                <span style="color: var(--text-secondary); font-size: 0.8rem;">${new Date().toLocaleTimeString('th-TH')}</span>
+            `;
+            historyList.insertBefore(historyItem, historyList.firstChild);
+
+            // Trigger confetti
+            initConfetti();
+
+            // Save draw state to database so it disappears on next reload
+            try {
+                const juniorName = localStorage.getItem('cpe_username') || 'น้องรหัส';
+                database.ref('hints').once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const key = Object.keys(data).find(k => data[k] && data[k].id === winnerObj.id);
+                        if (key) {
+                            database.ref(`hints/${key}`).update({ 
+                                is_drawn: true,
+                                drawn_by: juniorName
+                            });
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Error updating draw state in Firebase:", err);
+            }
+        }
+
+        function closeWinnerModal() {
+            winnerModal.classList.remove('active');
+            stopConfetti();
+            
+            // If there's a queued update from another client's spin, apply it now
+            if (pendingDbHints) {
+                applyHintUpdates(pendingDbHints);
+                pendingDbHints = null;
+            }
+        }
+
+        function clearHistory() {
+            historyList.innerHTML = '';
+        }
+
+        // --- Simple Canvas Confetti System ---
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        let confettiActive = false;
+        let confettiArray = [];
+        const confettiColors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+
+        function resizeConfettiCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+
+        class Confetti {
+            constructor() {
+                this.x = Math.random() * confettiCanvas.width;
+                this.y = Math.random() * confettiCanvas.height - confettiCanvas.height;
+                this.r = Math.random() * 6 + 4;
+                this.d = Math.random() * confettiCanvas.height;
+                this.color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                this.tilt = Math.random() * 10 - 5;
+                this.tiltAngleChan = Math.random() * 0.05 + 0.01;
+                this.tiltAngle = 0;
+            }
+
+            draw() {
+                confettiCtx.beginPath();
+                confettiCtx.lineWidth = this.r;
+                confettiCtx.strokeStyle = this.color;
+                confettiCtx.moveTo(this.x + this.tilt + this.r / 2, this.y);
+                confettiCtx.lineTo(this.x + this.tilt, this.y + this.tilt + this.r / 2);
+                confettiCtx.stroke();
+            }
+
+            update() {
+                this.tiltAngle += this.tiltAngleChan;
+                this.y += (Math.cos(this.tiltAngle) + 3 + this.r / 2) / 2;
+                this.tilt = Math.sin(this.tiltAngle - this.r / 2) * 5;
+                
+                if (this.y > confettiCanvas.height) {
+                    this.x = Math.random() * confettiCanvas.width;
+                    this.y = -20;
+                    this.tilt = Math.random() * 10 - 5;
+                }
+            }
+        }
+
+        function initConfetti() {
+            resizeConfettiCanvas();
+            confettiActive = true;
+            confettiArray = [];
+            for (let i = 0; i < 150; i++) {
+                confettiArray.push(new Confetti());
+            }
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            if (!confettiActive) return;
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            
+            confettiArray.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateConfetti);
+        }
+
+        function stopConfetti() {
+            confettiActive = false;
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        }
+
+        window.addEventListener('resize', () => {
+            if (confettiActive) {
+                resizeConfettiCanvas();
+            }
+        });
+
+        // Start
+        init();
+
+        // Hamburger sidebar interactions
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebarMenu = document.getElementById('sidebarMenu');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function toggleSidebar() {
+            hamburgerBtn.classList.toggle('active');
+            sidebarMenu.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+
+        hamburgerBtn.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+    </script>
+</body>
+</html>
