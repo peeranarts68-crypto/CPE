@@ -5,5 +5,5 @@ Thumbs.db
 .env
 *.log
 
-# Vercel build artifacts (if any)
-.vercel
+# Railway
+.railway
