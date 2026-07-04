@@ -15,10 +15,6 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html
 # Set default port (Railway provides PORT env variable at runtime)
 ENV PORT 8080
 
-# Update Apache to listen on the PORT environment variable
-RUN sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf && \
-    echo "ServerName localhost:${PORT}" >> /etc/apache2/apache2.conf
-
 # Copy project files to container
 COPY . /var/www/html/
 
@@ -28,5 +24,9 @@ RUN chown -R www-data:www-data /var/www/html
 # Expose the port expected by Railway (container will listen on ${PORT})
 EXPOSE 8080
 
-# Start Apache in the foreground
-CMD ["apache2-foreground"]
+# Add entrypoint script and fix Windows CRLF line endings
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]
