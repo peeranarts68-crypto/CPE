@@ -18,7 +18,8 @@ try {
     $path   = $parsed['path'] ?? '';
     $dbName = ltrim($path, '/');
     if (!$dbName) {
-        die('❌ Database name not found in MONGODB_URI');
+        // Fallback to 'cpe6869' if database name is not specified in the URI
+        $dbName = 'cpe6869';
     }
     // Collection name used throughout the project
     $collection = $dbName . '.hints';
