@@ -9,24 +9,14 @@ RUN a2dismod mpm_event && a2enmod mpm_prefork
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# Set the document root
-ENV APACHE_DOCUMENT_ROOT /var/www/html
-
-# Set default port (Railway provides PORT env variable at runtime)
-ENV PORT 8080
-
 # Copy project files to container
 COPY . /var/www/html/
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html
 
-# Expose the port expected by Railway (container will listen on ${PORT})
+# Expose port for Railway
 EXPOSE 8080
 
-# Add entrypoint script and fix Windows CRLF line endings
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && \
-    chmod +x /usr/local/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["docker-entrypoint.sh"]
+# At runtime: configure Apache to listen on $PORT (Railway sets this), then start
+CMD sh -c "PORT=${PORT:-8080} && sed -i \"s/Listen 80/Listen $PORT/\" /etc/apache2/ports.conf && sed -i \"s/:80/:$PORT/\" /etc/apache2/sites-available/000-default.conf && echo 'ServerName localhost' >> /etc/apache2/apache2.conf && echo \"Starting Apache on port $PORT\" && apache2-foreground"
