@@ -9,8 +9,8 @@ if ($seniorName !== '') {
     // Fetch all hints for this senior
     $filter = ['senior_name' => $seniorName];
 } else {
-    // Fetch active hints for the wheel
-    $filter = ['is_drawn' => false];
+    // Fetch active hints for the wheel (ONLY hint_number = 1 of each senior)
+    $filter = ['is_drawn' => false, 'hint_number' => 1];
 }
 
 $options = [
@@ -19,7 +19,8 @@ $options = [
         'hint_text' => 1,
         'is_drawn' => 1,
         'senior_name' => 1,
-        'drawn_by' => 1
+        'drawn_by' => 1,
+        'hint_number' => 1
     ]
 ];
 $query = new MongoDB\Driver\Query($filter, $options);

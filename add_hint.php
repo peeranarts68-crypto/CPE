@@ -16,6 +16,7 @@ $bulk = new MongoDB\Driver\BulkWrite;
 $insertedCount = 0;
 
 if (!empty($hints) && is_array($hints)) {
+    $i = 1;
     foreach ($hints as $hintText) {
         $hintText = trim($hintText);
         if ($hintText !== '') {
@@ -24,9 +25,11 @@ if (!empty($hints) && is_array($hints)) {
                 'hint_text' => $hintText,
                 'is_drawn' => false,
                 'drawn_by' => '',
+                'hint_number' => $i,
                 'created_at' => new MongoDB\BSON\UTCDateTime()
             ]);
             $insertedCount++;
+            $i++;
         }
     }
 } elseif ($singleHint !== '') {
@@ -35,6 +38,7 @@ if (!empty($hints) && is_array($hints)) {
         'hint_text' => $singleHint,
         'is_drawn' => false,
         'drawn_by' => '',
+        'hint_number' => 1,
         'created_at' => new MongoDB\BSON\UTCDateTime()
     ]);
     $insertedCount++;

@@ -468,9 +468,21 @@
             <li><a href="senior.html" class="sidebar-link">สำหรับพี่รหัส (For Seniors)</a></li>
             <li><a href="developers.html" class="sidebar-link">ผู้พัฒนาเว็บ (Web Developers)</a></li>
         </ul>
-        <div class="sidebar-footer">
-            &copy; 2026 Department of Computer Engineering
-        </div>
+          <form id="loginForm" class="login-form">
+              <div class="form-group">
+                  <label for="loginUsername">รหัสนักศึกษา</label>
+                  <input type="text" id="loginUsername" class="form-input" placeholder="1234567890" required pattern="\d{10}" title="กรุณาใส่รหัสนักศึกษา 10 หลัก">
+              </div>
+              <div class="form-group">
+                  <label for="loginPassword">รหัสผ่าน</label>
+                  <input type="password" id="loginPassword" class="form-input" placeholder="Password" required>
+              </div>
+              <button type="submit" class="login-btn">LOGIN</button>
+          </form>
+          <div id="loginMessage" class="login-footer"></div>
+          <div class="sidebar-footer">
+              &copy; 2026 Department of Computer Engineering
+          </div>
     </div>
     
     <!-- Overlay -->
@@ -502,50 +514,101 @@
             </div>
         </main>
 
-        <aside class="login-section">
-            <h2 class="login-title">LOGIN CPE 68-69</h2>
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label for="username">USERNAME</label>
-                    <input type="text" id="username" class="form-input" placeholder="Enter username / Student ID" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">PASSWORD</label>
-                    <input type="password" id="password" class="form-input" placeholder="Student ID" required>
-                </div>
-                <button type="submit" class="login-btn"><a href="hint.html"></a>LOGIN</button>
-            </form>
-            <div class="login-footer">
-                <p>ลืมรหัสผ่าน? <a href="https://www.instagram.com/s.peeranart">ติดต่อIG: s.peeranart</a></p>
-            </div>
-        </aside>
-    </div>
+                      <section class="register-section">
+                          <h2 class="register-title">สมัครสมาชิก (Register)</h2>
+                          <form id="registerForm" class="register-form">
+                              <div class="form-group">
+                                  <label for="regUsername">รหัสนักศึกษา (10 หลัก)</label>
+                                  <input type="text" id="regUsername" class="form-input" placeholder="1234567890" required pattern="\d{10}" title="กรุณาใส่ตัวเลข 10 หลัก">
+                              </div>
+                              <div class="form-group">
+                                  <label for="regPassword">รหัสผ่าน</label>
+            <script>
+            // ----- Login handling -----
+            document.getElementById('loginForm')?.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                const loginMessage = document.getElementById('loginMessage');
+                try {
+                    const response = await fetch('login.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        localStorage.setItem('cpe_username', username);
+                        localStorage.removeItem('cpe_has_spun');
+                        alert(`ยินดีต้อนรับคุณ ${username} เข้าสู่ระบบ CPE Hint Portal!`);
+                        window.location.href = 'random.html';
+                    } else {
+                        loginMessage.textContent = data.message || 'เข้าสู่ระบบไม่สำเร็จ';
+                        loginMessage.style.color = 'var(--accent-color)';
+                    }
+                } catch (err) {
+                    loginMessage.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+                    loginMessage.style.color = 'var(--accent-color)';
+                }
+            });
 
-    <script>
-        function handleLogin(event) {
-            event.preventDefault();
-            const username = document.getElementById('username').value.trim();
-            localStorage.setItem('cpe_username', username);
-            // Allow new login session to spin
-            localStorage.removeItem('cpe_has_spun');
-            alert(`ยินดีต้อนรับคุณ ${username} เข้าสู่ระบบ CPE Hint Portal!`);
-            window.location.href = 'random.html';
-        }
+            // ----- Registration handling -----
+            document.getElementById('registerForm')?.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const username = document.getElementById('regUsername').value.trim();
+                const password = document.getElementById('regPassword').value;
+                const firstName = document.getElementById('regFirstName').value.trim();
+                const nickname = document.getElementById('regNickname').value.trim();
+                const registerMessage = document.getElementById('registerMessage');
+                // client‑side validation for 10‑digit student ID
+                if (!/^\d{10}$/.test(username)) {
+                    registerMessage.textContent = 'รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก';
+                    registerMessage.style.color = 'var(--accent-color)';
+                    return;
+                }
+                try {
+                    const response = await fetch('register.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password, first_name: firstName, nickname })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        registerMessage.textContent = 'สมัครสมาชิกสำเร็จ! คุณสามารถล็อกอินได้แล้ว';
+                        registerMessage.style.color = 'var(--accent-purple)';
+                    } else {
+                        registerMessage.textContent = data.message || 'การสมัครสมาชิกล้มเหลว';
+                        registerMessage.style.color = 'var(--accent-color)';
+                    }
+                } catch (err) {
+                    registerMessage.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+                    registerMessage.style.color = 'var(--accent-color)';
+                }
+            });
 
-        // Hamburger sidebar interactions
-        const hamburgerBtn = document.getElementById('hamburgerBtn');
-        const sidebarMenu = document.getElementById('sidebarMenu');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-        function toggleSidebar() {
-            hamburgerBtn.classList.toggle('active');
-            sidebarMenu.classList.toggle('active');
-            sidebarOverlay.classList.toggle('active');
-        }
-
-        hamburgerBtn.addEventListener('click', toggleSidebar);
-        sidebarOverlay.addEventListener('click', toggleSidebar);
-    </script>
+            // ----- Hamburger sidebar interactions -----
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const sidebarMenu = document.getElementById('sidebarMenu');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            function toggleSidebar() {
+                hamburgerBtn.classList.toggle('active');
+                sidebarMenu.classList.toggle('active');
+                sidebarOverlay.classList.toggle('active');
+            }
+            hamburgerBtn.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+        </script>
+                                  <input type="password" id="regPassword" class="form-input" placeholder="Password" required>
+                              </div>
+                              <div class="form-group">
+                                  <label for="regFirstName">ชื่อจริง</label>
+                                  <input type="text" id="regFirstName" class="form-input" placeholder="เช่น สมชาย" required>
+                              </div>
+                              <div class="form-group">
+                                  <label for="regNickname">ชื่อเล่น</label>
+                                  <input type="text" id="regNickname" class="form-input" placeholder="เช่น ชาย" required>
+                              </div>
+                              <button type="submit" class="login-btn">REGISTER</button>
 
     <footer>
         &copy; 2026 Department of Computer Engineering. All Rights Reserved.
