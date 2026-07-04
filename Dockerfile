@@ -15,8 +15,11 @@ COPY . /var/www/html/
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html
 
+# Set default port (Railway provides PORT env variable at runtime)
+ENV PORT 8080
+
 # Expose port for Railway
 EXPOSE 8080
 
 # At runtime: configure Apache to listen on $PORT (Railway sets this), then start
-CMD sh -c "PORT=${PORT:-8080} && sed -i \"s/Listen 80/Listen $PORT/\" /etc/apache2/ports.conf && sed -i \"s/:80/:$PORT/\" /etc/apache2/sites-available/000-default.conf && echo 'ServerName localhost' >> /etc/apache2/apache2.conf && echo \"Starting Apache on port $PORT\" && apache2-foreground"
+CMD ["sh", "-c", "sed -i \"s/Listen 80/Listen $PORT/g\" /etc/apache2/ports.conf && sed -i \"s/:80/:$PORT/g\" /etc/apache2/sites-available/000-default.conf && apache2-foreground"]
