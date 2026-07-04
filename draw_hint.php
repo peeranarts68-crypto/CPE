@@ -3,8 +3,8 @@ header('Content-Type: application/json; charset=utf-8');
 require_once 'db.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
-$id = $data['id'] ?? '';
-$id = trim($id);
+$id = trim($data['id'] ?? '');
+$drawnBy = trim($data['drawn_by'] ?? 'น้องรหัส');
 
 if ($id === '') {
     echo json_encode(['success' => false, 'message' => 'Missing id']);
@@ -14,7 +14,10 @@ if ($id === '') {
 try {
     $objectId = new MongoDB\BSON\ObjectId($id);
     $bulk = new MongoDB\Driver\BulkWrite;
-    $bulk->update(['_id' => $objectId], ['$set' => ['is_drawn' => true]]);
+    $bulk->update(
+        ['_id' => $objectId],
+        ['$set' => ['is_drawn' => true, 'drawn_by' => $drawnBy]]
+    );
     $result = $manager->executeBulkWrite($collection, $bulk);
     echo json_encode(['success' => true, 'matchedCount' => $result->getMatchedCount()]);
 } catch (MongoDB\Driver\Exception $e) {

@@ -2,9 +2,26 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db.php';
 
-// Fetch hints that have not been drawn yet
-$filter = ['is_drawn' => false];
-$options = ['projection' => ['_id' => 1, 'hint_text' => 1, 'is_drawn' => 1]];
+$seniorName = $_GET['senior_name'] ?? '';
+$seniorName = trim($seniorName);
+
+if ($seniorName !== '') {
+    // Fetch all hints for this senior
+    $filter = ['senior_name' => $seniorName];
+} else {
+    // Fetch active hints for the wheel
+    $filter = ['is_drawn' => false];
+}
+
+$options = [
+    'projection' => [
+        '_id' => 1,
+        'hint_text' => 1,
+        'is_drawn' => 1,
+        'senior_name' => 1,
+        'drawn_by' => 1
+    ]
+];
 $query = new MongoDB\Driver\Query($filter, $options);
 
 try {

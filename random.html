@@ -656,44 +656,8 @@
         &copy; 2026 Department of Computer Engineering. All Rights Reserved.
     </footer>
 
-    <!-- Firebase SDK Compat -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-
     <!-- Wheel and Interactions Script -->
     <script>
-        // --- TODO: REPLACE WITH YOUR FIREBASE CONFIGURATION ---
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        const defaultHints = [
-            { id: 1, hint_text: "CPE-01: สายเกมเมอร์ ชอบเล่น Valorant", is_drawn: false },
-            { id: 2, hint_text: "CPE-02: เด็กหลังห้อง สูง 175 ซม.", is_drawn: false },
-            { id: 3, hint_text: "CPE-03: ชอบกินชาเขียวหวานน้อย", is_drawn: false },
-            { id: 4, hint_text: "CPE-04: แว่นหนา เรียนเก่งระดับท็อป", is_drawn: false },
-            { id: 5, hint_text: "CPE-05: สายดนตรี เล่นกีตาร์คลาสสิก", is_drawn: false },
-            { id: 6, hint_text: "CPE-06: ชอบตื่นสาย เข้าเรียนสายเป็นประจำ", is_drawn: false },
-            { id: 7, hint_text: "CPE-07: พูดเก่งมาก เฟรนด์ลี่สุดๆ", is_drawn: false },
-            { id: 8, hint_text: "CPE-08: สายคาเฟ่ ถ่ายรูปสวยมาก", is_drawn: false },
-            { id: 9, hint_text: "CPE-09: ดูเงียบๆ ขรึมๆ แต่ใจดีมาก", is_drawn: false },
-            { id: 10, hint_text: "CPE-10: แฟนพันธุ์แท้อนิเมะและมังงะ", is_drawn: false }
-        ];
-
-        function seedDatabase() {
-            database.ref('hints').set(defaultHints);
-        }
-
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
         const hintPoolList = document.getElementById('hintPoolList');
@@ -708,13 +672,14 @@
             '#e60000', '#2d2d2d', '#f2f2f2', '#4d0000'
         ];
 
-        let dbHints = []; // Raw objects from DB {id, hint_text}
-        let items = []; // Simple texts for the wheel ['CPE-01: ...', ...]
+        let dbHints = []; // Raw objects from DB {_id, hint_text}
+        let items = []; // Simple texts for the wheel
         let currentAngle = 0;
         let isSpinning = false;
         let spinVelocity = 0;
         const friction = 0.985;
         let lastSegmentIndex = -1;
+        let pollInterval = null;
 
         // Audio Context for synthesis click sound
         let audioCtx = null;
@@ -742,8 +707,6 @@
             }
         }
 
-        let pendingDbHints = null;
-
         function checkSpinEligibility() {
             if (localStorage.getItem('cpe_has_spun') === 'true') {
                 const spinBtn = document.querySelector('.spin-btn-center');
@@ -760,7 +723,7 @@
         }
 
         // Initialize Wheel
-        function init() {
+        async function init() {
             // Secret query param "?reset" to clear spin lock for testing/admin
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('reset')) {
@@ -769,40 +732,45 @@
                 return;
             }
 
-            // Secret query param "?reset_db" to clear database state in Firebase
+            // Secret query param "?reset_db" to clear database state in MongoDB
             if (urlParams.has('reset_db')) {
-                seedDatabase();
-                alert("รีเซ็ตคำใบ้ในฐานข้อมูลสำเร็จ!");
+                try {
+                    const response = await fetch('reset_hints.php');
+                    const result = await response.json();
+                    if (result.success) {
+                        alert("รีเซ็ตคำใบ้ในฐานข้อมูลสำเร็จ!");
+                    } else {
+                        alert("รีเซ็ตไม่สำเร็จ: " + result.message);
+                    }
+                } catch (err) {
+                    console.error("Reset error:", err);
+                    alert("เชื่อมต่อเซิร์ฟเวอร์เพื่อรีเซ็ตไม่สำเร็จ!");
+                }
                 window.location.replace('random.html');
                 return;
             }
 
             checkSpinEligibility();
             
-            // Listen to database values in real-time
-            database.ref('hints').on('value', (snapshot) => {
-                const data = snapshot.val();
-                let newHints = [];
-                
-                if (data) {
-                    const rawList = Array.isArray(data) ? data : Object.values(data);
-                    newHints = rawList.filter(h => h && h.is_drawn === false);
-                } else {
-                    seedDatabase();
-                    return;
+            // Load hints immediately, and start polling every 5 seconds (only when not spinning)
+            await loadHints();
+            pollInterval = setInterval(() => {
+                if (!isSpinning) {
+                    loadHints();
                 }
-                
-                const currentIds = dbHints.map(h => h.id).join(',');
-                const newIds = newHints.map(h => h.id).join(',');
-                
-                if (currentIds !== newIds) {
-                    if (isSpinning) {
-                        pendingDbHints = newHints;
-                    } else {
-                        applyHintUpdates(newHints);
-                    }
+            }, 5000);
+        }
+
+        async function loadHints() {
+            try {
+                const response = await fetch('get_hints.php');
+                const hints = await response.json();
+                if (Array.isArray(hints)) {
+                    applyHintUpdates(hints);
                 }
-            });
+            } catch (err) {
+                console.error("Error loading hints:", err);
+            }
         }
 
         function applyHintUpdates(newHints) {
@@ -958,32 +926,29 @@
             // Save draw state to database so it disappears on next reload
             try {
                 const juniorName = localStorage.getItem('cpe_username') || 'น้องรหัส';
-                database.ref('hints').once('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        const key = Object.keys(data).find(k => data[k] && data[k].id === winnerObj.id);
-                        if (key) {
-                            database.ref(`hints/${key}`).update({ 
-                                is_drawn: true,
-                                drawn_by: juniorName
-                            });
-                        }
-                    }
+                const response = await fetch('draw_hint.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                    body: JSON.stringify({
+                        id: winnerObj._id,
+                        drawn_by: juniorName
+                    })
                 });
+                const result = await response.json();
+                if (result.success) {
+                    // Update locally
+                    loadHints();
+                } else {
+                    console.error("Error drawing hint:", result.message || result.error);
+                }
             } catch (err) {
-                console.error("Error updating draw state in Firebase:", err);
+                console.error("Error updating draw state in MongoDB:", err);
             }
         }
 
         function closeWinnerModal() {
             winnerModal.classList.remove('active');
             stopConfetti();
-            
-            // If there's a queued update from another client's spin, apply it now
-            if (pendingDbHints) {
-                applyHintUpdates(pendingDbHints);
-                pendingDbHints = null;
-            }
         }
 
         function clearHistory() {

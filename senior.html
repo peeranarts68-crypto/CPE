@@ -476,26 +476,7 @@
         &copy; 2026 Department of Computer Engineering. All Rights Reserved.
     </footer>
 
-    <!-- Firebase SDK Compat -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-
     <script>
-        // --- Firebase Configuration ---
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
         // UI Panels references
         const setupPanel = document.getElementById('setupPanel');
         const dashboardPanel = document.getElementById('dashboardPanel');
@@ -518,10 +499,10 @@
 
         // Core logic variables
         let mySeniorName = localStorage.getItem('cpe_senior_name');
-        let myHintIds = JSON.parse(localStorage.getItem('cpe_senior_hint_ids') || '[]');
+        let trackingInterval = null;
 
         function checkSetup() {
-            if (mySeniorName && myHintIds.length > 0) {
+            if (mySeniorName) {
                 setupPanel.style.display = 'none';
                 dashboardPanel.style.display = 'block';
                 dashboardTitle.textContent = `สถานะคำใบ้ของ: ${mySeniorName}`;
@@ -529,6 +510,10 @@
             } else {
                 setupPanel.style.display = 'block';
                 dashboardPanel.style.display = 'none';
+                if (trackingInterval) {
+                    clearInterval(trackingInterval);
+                    trackingInterval = null;
+                }
             }
         }
 
@@ -545,57 +530,52 @@
                 return;
             }
 
-            const hintsToAdd = [h1, h2, h3];
-            const hintIdsSaved = [];
-
             try {
-                // We push each hint to firebase and save the generated keys/IDs
-                for (let i = 0; i < hintsToAdd.length; i++) {
-                    const uniqueId = Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-                    const newHintRef = database.ref('hints').push();
-                    const hintObject = {
-                        id: uniqueId,
-                        hint_text: `คำใบ้พี่รหัส (${name}): ${hintsToAdd[i]}`,
-                        is_drawn: false,
+                const response = await fetch('add_hint.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                    body: JSON.stringify({
                         senior_name: name,
-                        drawn_by: "" // junior username who spins
-                    };
-                    await newHintRef.set(hintObject);
-                    hintIdsSaved.push(uniqueId);
+                        hints: [h1, h2, h3]
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    // Save info locally
+                    localStorage.setItem('cpe_senior_name', name);
+                    mySeniorName = name;
+                    alert("ลงทะเบียนคำใบ้ 3 อันสำเร็จ! กำลังนำทางไปหน้ารายงานผล...");
+                    checkSetup();
+                } else {
+                    alert("เกิดข้อผิดพลาด: " + (result.message || result.error));
                 }
-
-                // Save info locally
-                localStorage.setItem('cpe_senior_name', name);
-                localStorage.setItem('cpe_senior_hint_ids', JSON.stringify(hintIdsSaved));
-
-                mySeniorName = name;
-                myHintIds = hintIdsSaved;
-
-                alert("ลงทะเบียนคำใบ้ 3 อันสำเร็จ! กำลังนำทางไปหน้ารายงานผล...");
-                checkSetup();
-
             } catch (err) {
-                console.error("Firebase save error: ", err);
-                alert("เกิดข้อผิดพลาดในการบันทึกคำใบ้ กรุณาลองใหม่อีกครั้ง!");
+                console.error("Save error: ", err);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์!");
             }
         }
 
-        // Realtime tracking of our registered hints
-        let hintsRefListener = null;
-
+        // Realtime tracking of our registered hints via polling
         function startRealtimeTracking() {
-            if (hintsRefListener) {
-                database.ref('hints').off('value', hintsRefListener);
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
             }
 
-            hintsRefListener = database.ref('hints').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (!data) return;
+            // Fetch immediately, then every 3 seconds
+            fetchHintsStatus();
+            trackingInterval = setInterval(fetchHintsStatus, 3000);
+        }
 
-                const rawList = Array.isArray(data) ? data : Object.values(data);
-                
-                // Filter hints that belong to this senior by checking their unique id
-                const myHintsInDb = rawList.filter(h => h && myHintIds.includes(h.id));
+        async function fetchHintsStatus() {
+            if (!mySeniorName) return;
+            try {
+                const response = await fetch(`get_hints.php?senior_name=${encodeURIComponent(mySeniorName)}`);
+                const myHintsInDb = await response.json();
+
+                if (myHintsInDb.error) {
+                    console.error("Database error:", myHintsInDb.error);
+                    return;
+                }
 
                 if (myHintsInDb.length === 0) {
                     hintStatusList.innerHTML = `
@@ -613,29 +593,22 @@
 
                     return `
                         <div class="hint-status-card">
-                            <div class="hint-text-display">คำใบ้ที่ ${index + 1}: <br><span style="color: var(--accent-color); font-weight:600;">${h.hint_text.split(': ').slice(1).join(': ')}</span></div>
+                            <div class="hint-text-display">คำใบ้ที่ ${index + 1}: <br><span style="color: var(--accent-color); font-weight:600;">${h.hint_text}</span></div>
                             <div style="display: flex; justify-content: flex-start;">
                                 ${statusBadge}
                             </div>
                         </div>
                     `;
                 }).join('');
-            });
+            } catch (err) {
+                console.error("Error fetching hints status:", err);
+            }
         }
 
         function resetSeniorSetup() {
             if (confirm("คุณแน่ใจใช่หรือไม่ว่าต้องการลบเซสชันการลงทะเบียน? (คำใบ้เดิมจะยังคงอยู่ในระบบของน้องๆ แต่คุณจะไม่ได้รับการอัปเดตสถานะของคำใบ้เหล่านั้นอีก)")) {
                 localStorage.removeItem('cpe_senior_name');
-                localStorage.removeItem('cpe_senior_hint_ids');
-                
                 mySeniorName = null;
-                myHintIds = [];
-                
-                if (hintsRefListener) {
-                    database.ref('hints').off('value', hintsRefListener);
-                    hintsRefListener = null;
-                }
-                
                 checkSetup();
             }
         }
