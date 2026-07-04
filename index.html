@@ -190,6 +190,112 @@
             filter: brightness(1.1);
         }
 
+        /* ===== Countdown Timer ===== */
+        .countdown-wrapper {
+            margin: 22px 0 8px 0;
+        }
+
+        .countdown-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent-color);
+            margin-bottom: 14px;
+            opacity: 0.85;
+        }
+
+        .countdown-timer {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .countdown-box {
+            flex: 1;
+            background: rgba(255, 51, 51, 0.06);
+            border: 1px solid rgba(255, 51, 51, 0.25);
+            border-radius: 14px;
+            padding: 14px 6px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            backdrop-filter: blur(8px);
+        }
+
+        .countdown-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,51,51,0.6), transparent);
+            animation: shimmer 2.5s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%   { transform: translateX(-100%); opacity: 0; }
+            50%  { opacity: 1; }
+            100% { transform: translateX(100%); opacity: 0; }
+        }
+
+        .countdown-box:hover {
+            border-color: rgba(255, 51, 51, 0.55);
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.2), 0 8px 30px rgba(0,0,0,0.4);
+        }
+
+        .countdown-num {
+            font-family: 'Outfit', monospace;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1;
+            letter-spacing: -1px;
+            text-shadow: 0 0 18px rgba(255,51,51,0.5), 0 0 40px rgba(255,51,51,0.2);
+            transition: transform 0.15s ease, opacity 0.15s ease;
+        }
+
+        .countdown-num.tick {
+            transform: translateY(-4px);
+            opacity: 0.5;
+        }
+
+        .countdown-unit {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(255,51,51,0.7);
+        }
+
+        .countdown-sep {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: rgba(255,51,51,0.4);
+            align-self: center;
+            padding-bottom: 18px;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.1; }
+        }
+
+        .countdown-finished {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            text-align: center;
+            padding: 16px;
+            letter-spacing: 2px;
+            animation: pulse-glow 1.5s infinite alternate;
+        }
+
         /* Right Login Column */
         .login-section {
             background: var(--card-bg);
@@ -490,8 +596,6 @@
 
     <header class="banner">
         <div class="banner-content">
-            <h1>CPE HINT <br>68-69</h1>
-            <p>Computer Engineering PSRU</p>
         </div>
     </header>
 
@@ -499,6 +603,30 @@
         <main class="main-section">
             <h2>ยินดีต้อนรับสู่น้องๆเพื่อสุ่มสายรหัส</h2>
             <p>ทำการสุ่มสายรหัสในวันที่ 15 กรกฏาคม 2569 เวลา 17.00 ณ ตึก Computer Engineering</p>
+        <div class="countdown-wrapper">
+            <div class="countdown-label">⏳ นับถอยหลังวันสุ่มสายรหัส</div>
+            <div class="countdown-timer" id="countdown">
+                <div class="countdown-box" id="box-days">
+                    <span class="countdown-num" id="cd-days">00</span>
+                    <span class="countdown-unit">วัน</span>
+                </div>
+                <span class="countdown-sep">:</span>
+                <div class="countdown-box" id="box-hours">
+                    <span class="countdown-num" id="cd-hours">00</span>
+                    <span class="countdown-unit">ชั่วโมง</span>
+                </div>
+                <span class="countdown-sep">:</span>
+                <div class="countdown-box" id="box-minutes">
+                    <span class="countdown-num" id="cd-minutes">00</span>
+                    <span class="countdown-unit">นาที</span>
+                </div>
+                <span class="countdown-sep">:</span>
+                <div class="countdown-box" id="box-seconds">
+                    <span class="countdown-num" id="cd-seconds">00</span>
+                    <span class="countdown-unit">วินาที</span>
+                </div>
+            </div>
+        </div>
             
             <div class="hint-card">
                 <span class="hint-tag">ประกาศสำคัญ</span>
@@ -597,6 +725,48 @@
             }
             hamburgerBtn.addEventListener('click', toggleSidebar);
             sidebarOverlay.addEventListener('click', toggleSidebar);
+
+            // Countdown timer
+            (function(){
+                function pad(n) { return String(n).padStart(2,'0'); }
+
+                function tickNum(el, newVal) {
+                    const cur = el.textContent;
+                    if (cur === newVal) return;
+                    el.classList.add('tick');
+                    setTimeout(() => {
+                        el.textContent = newVal;
+                        el.classList.remove('tick');
+                    }, 150);
+                }
+
+                const dEl = document.getElementById('cd-days');
+                const hEl = document.getElementById('cd-hours');
+                const mEl = document.getElementById('cd-minutes');
+                const sEl = document.getElementById('cd-seconds');
+                const countdownEl = document.getElementById('countdown');
+
+                function update() {
+                    const target = new Date('2026-07-15T13:00:00+07:00');
+                    const now = new Date();
+                    const diff = target - now;
+                    if (diff <= 0) {
+                        countdownEl.innerHTML = '<div class="countdown-finished">🎉 กิจกรรมเริ่มแล้ว!</div>';
+                        clearInterval(timer);
+                        return;
+                    }
+                    const days    = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours   = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+                    const seconds = Math.floor((diff / 1000) % 60);
+                    tickNum(dEl, pad(days));
+                    tickNum(hEl, pad(hours));
+                    tickNum(mEl, pad(minutes));
+                    tickNum(sEl, pad(seconds));
+                }
+                update();
+                const timer = setInterval(update, 1000);
+            })();
         </script>
                                   <input type="password" id="regPassword" class="form-input" placeholder="Password" required>
                               </div>

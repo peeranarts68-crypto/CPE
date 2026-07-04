@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -204,7 +205,13 @@
             -webkit-text-fill-color: transparent;
             margin-bottom: 12px;
             letter-spacing: -0.5px;
-            filter: drop-shadow(0 0 15px rgba(255, 51, 51, 0.15));
+            filter: drop-shadow(0 0 20px rgba(255, 51, 51, 0.4)) drop-shadow(0 0 40px rgba(255, 51, 51, 0.2));
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            from { filter: drop-shadow(0 0 15px rgba(255, 51, 51, 0.3)) drop-shadow(0 0 30px rgba(255, 51, 51, 0.1)); }
+            to   { filter: drop-shadow(0 0 30px rgba(255, 51, 51, 0.6)) drop-shadow(0 0 60px rgba(255, 51, 51, 0.3)); }
         }
 
         .header p {
@@ -333,6 +340,13 @@
             color: var(--text-primary);
             margin-bottom: 12px;
             z-index: 2;
+            letter-spacing: 0.3px;
+            text-shadow: 0 0 12px rgba(255,255,255,0.1);
+            transition: text-shadow 0.3s ease;
+        }
+
+        .dev-card:hover .dev-name {
+            text-shadow: 0 0 18px rgba(255, 51, 51, 0.4);
         }
 
         .dev-info-box {
@@ -376,11 +390,11 @@
         }
 
         .social-btn {
-            width: 32px;
-            height: 32px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -391,11 +405,18 @@
         }
 
         .social-btn:hover {
-            color: #ffffff;
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            transform: translateY(-2px);
-            box-shadow: 0 0 10px rgba(255, 51, 51, 0.3);
+            background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            border-color: transparent;
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 6px 20px rgba(220, 39, 67, 0.5);
+        }
+
+        .social-icon {
+            width: 26px;
+            height: 26px;
+            object-fit: contain;
+            border-radius: 6px;
+            display: block;
         }
 
         /* --- Footer --- */
@@ -448,7 +469,7 @@
         <!-- Developer 1 -->
         <div class="dev-card">
             <div class="img-container">
-                <img src="img/dev1.png" alt="นายพีรนาท สิงห์โตรี">
+                <img src="img/dev1.jpg" alt="นายพีรนาท สิงห์โตรี">
             </div>
             <span class="dev-role">Lead Developer</span>
             <h3 class="dev-name">นายพีรนาท สิงห์โต</h3>
@@ -469,8 +490,7 @@
             </div>
 
             <div class="social-container">
-                <a href="https://www.instagram.com/s.peeranart" target="_blank" class="social-btn" title="Instagram">IG</a>
-                <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">GH</a>
+<a href="https://www.instagram.com/phurinat37?igsh=MTUxbHNoOW81ZjA2bQ==" target="_blank" class="social-btn" title="Instagram"><img src="img/instagram-icon.svg" alt="Instagram" class="social-icon"></a>
             </div>
         </div>
 
@@ -498,15 +518,14 @@
             </div>
 
             <div class="social-container">
-                <a href="https://www.instagram.com/phurinat37?igsh=MTUxbHNoOW81ZjA2bQ==" target="_blank" class="social-btn" title="Instagram">IG</a>
-                <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">GH</a>
+                <a href="https://www.instagram.com/phurinat37?igsh=MTUxbHNoOW81ZjA2bQ==" target="_blank" class="social-btn" title="Instagram"><img src="img/instagram-icon.svg" alt="Instagram" class="social-icon"></a>
             </div>
         </div>
 
         <!-- Developer 3 -->
         <div class="dev-card">
             <div class="img-container">
-                <img src="img/dev5.png" alt="นายพิชญางกูร ขำปลอด">
+                <img src="img/dev2.jpg" alt="นายพิชญางกูร ขำปลอด">
             </div>
             <span class="dev-role">Support Database</span>
             <h3 class="dev-name">นายพิชญางกูร ขำปลอด</h3>
@@ -527,8 +546,7 @@
             </div>
 
             <div class="social-container">
-                <a href="https://instagram.com" target="_blank" class="social-btn" title="Instagram">IG</a>
-                <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">GH</a>
+                <a href="https://www.instagram.com/_saef.ivu?igsh=MXkwYzdwYnZmMWkyaw=" target="_blank" class="social-btn" title="Instagram"><img src="img/instagram-icon.svg" alt="Instagram" class="social-icon"></a>
             </div>
         </div>
 
@@ -556,8 +574,7 @@
             </div>
 
             <div class="social-container">
-                <a href="https://www.instagram.com/natcha__vnt?igsh=MW9rN2RiazNpODBxMQ%3D%3D&utm_source=qr" target="_blank" class="social-btn" title="Instagram">IG</a>
-                <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">GH</a>
+                <a href="https://www.instagram.com/natcha__vnt?igsh=MW9rN2RiazNpODBxMQ%3D%3D&utm_source=qr" target="_blank" class="social-btn" title="Instagram"><img src="img/instagram-icon.svg" alt="Instagram" class="social-icon"></a>
             </div>
         </div>
 
@@ -585,8 +602,7 @@
             </div>
 
             <div class="social-container">
-                <a href="https://instagram.com" target="_blank" class="social-btn" title="Instagram">IG</a>
-                <a href="https://github.com" target="_blank" class="social-btn" title="GitHub">GH</a>
+                <a href="https://www.instagram.com/jakxx_03" target="_blank" class="social-btn" title="Instagram"><img src="img/instagram-icon.svg" alt="Instagram" class="social-icon"></a>
             </div>
         </div>
     </div>
