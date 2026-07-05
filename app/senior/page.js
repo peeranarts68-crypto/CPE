@@ -215,11 +215,13 @@ export default function SeniorPage() {
             })}
           </div>
 
+          {/* Reset button hidden
           <div style={{ marginTop: 30, textAlign: 'center' }}>
             <button onClick={resetSetup} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.9rem', transition: 'color 0.2s' }}>
               ลงทะเบียนคำใบ้ใหม่ / เปลี่ยนชื่อผู้ใช้งาน
             </button>
           </div>
+          */}
         </div>
       )}
 

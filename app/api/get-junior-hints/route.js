@@ -34,17 +34,28 @@ export async function GET(request) {
     const allHints = querySnapshot2.docs.map((doc) => doc.data());
     allHints.sort((a, b) => (a.hint_number || 0) - (b.hint_number || 0));
 
-    const formattedHints = allHints.map((h) => {
-      const isDrawn = Boolean(h.is_drawn);
-      const hintNum = parseInt(h.hint_number) || 1;
-      const text = isDrawn ? h.hint_text : '🔒 ยังไม่ถูกเปิดเผยโดยพี่รหัส';
+    // Deduplicate by hint_number — prefer the released (is_drawn=true) entry
+    const hintMap = new Map();
+    for (const h of allHints) {
+      const num = parseInt(h.hint_number) || 1;
+      const existing = hintMap.get(num);
+      if (!existing || h.is_drawn) {
+        hintMap.set(num, h);
+      }
+    }
 
-      return {
-        hint_number: hintNum,
-        is_released: isDrawn,
-        hint_text: text,
-      };
-    });
+    const formattedHints = Array.from(hintMap.values())
+      .sort((a, b) => (a.hint_number || 0) - (b.hint_number || 0))
+      .map((h) => {
+        const isDrawn = Boolean(h.is_drawn);
+        const hintNum = parseInt(h.hint_number) || 1;
+        const text = isDrawn ? h.hint_text : 'ยังไม่ถูกเปิดเผยโดยพี่รหัส';
+        return {
+          hint_number: hintNum,
+          is_released: isDrawn,
+          hint_text: text,
+        };
+      });
 
     return NextResponse.json({
       success: true,
