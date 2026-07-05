@@ -1,6 +1,15 @@
 import Sidebar from '../components/Sidebar';
 
 const DEVELOPERS = [
+    {
+    img: '/img/leaddev.jpg',
+    role: 'Databse&Support Developer',
+    name: 'นายณิชกานต์ สุภผล',
+    faculty: 'วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม',
+    major: 'วิศวกรรมคอมพิวเตอร์',
+    year: 'ปีที่ 4 (CPE 66)',
+    ig: 'https://www.instagram.com/neko_0739?igsh=NGwweG1ic2RxMDE2',
+  },
   {
     img: '/img/devnew1.jpg',
     role: 'Lead Developer',
