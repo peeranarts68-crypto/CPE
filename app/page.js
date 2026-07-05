@@ -188,7 +188,7 @@ export default function HomePage() {
       </div>
 
       <footer>
-        &copy; 2026 Department of Computer Engineering. All Rights Reserved.
+        Powerd By Computer Engineering 66&68
       </footer>
 
       <style>{`

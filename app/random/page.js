@@ -403,7 +403,7 @@ export default function RandomPage() {
       <canvas ref={confettiRef} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 999 }} />
 
       <footer>
-        &copy; 2026 Department of Computer Engineering. All Rights Reserved.
+        Powerd By Computer Engineering 66&68
       </footer>
 
       <style>{`

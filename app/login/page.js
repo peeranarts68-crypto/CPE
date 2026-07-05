@@ -175,7 +175,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        <div className="auth-footer">© 2026 Department of Computer Engineering. All Rights Reserved.</div>
+        <div className="auth-footer">Powerd By Computer Engineering 66&68</div>
       </div>
 
       <style>{`

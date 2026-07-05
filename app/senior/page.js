@@ -225,7 +225,7 @@ export default function SeniorPage() {
         </div>
       )}
 
-      <footer>&copy; 2026 Department of Computer Engineering. All Rights Reserved.</footer>
+      <footer>Powerd By Computer Engineering 66&68</footer>
 
       <style>{`
         .header { margin: 60px 0 20px; padding: 0 20px; }

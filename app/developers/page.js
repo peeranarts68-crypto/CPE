@@ -2,7 +2,7 @@ import Sidebar from '../components/Sidebar';
 
 const DEVELOPERS = [
   {
-    img: '/img/dev1.jpg',
+    img: '/img/devnew1.jpg',
     role: 'Lead Developer',
     name: 'นายพีรนาท สิงห์โต',
     faculty: 'วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม',
@@ -12,7 +12,7 @@ const DEVELOPERS = [
   },
   {
     img: '/img/dev6.jpg',
-    role: 'Database Developer',
+    role: 'Support',
     name: 'นายภูริณัฐ หินอ่อน',
     faculty: 'วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม',
     major: 'วิศวกรรมคอมพิวเตอร์',
@@ -20,8 +20,8 @@ const DEVELOPERS = [
     ig: 'https://www.instagram.com/phurinat37?igsh=MTUxbHNoOW81ZjA2bQ==',
   },
   {
-    img: '/img/dev2.jpg',
-    role: 'Support Database',
+    img: '/img/devnew2.jpg',
+    role: 'Support',
     name: 'นายพิชญางกูร ขำปลอด',
     faculty: 'วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม',
     major: 'วิศวกรรมคอมพิวเตอร์',
@@ -29,7 +29,7 @@ const DEVELOPERS = [
     ig: 'https://www.instagram.com/_saef.ivu?igsh=MXkwYzdwYnZmMWkyaw=',
   },
   {
-    img: '/img/dev4.jpg',
+    img: '/img/devnew3.jpg',
     role: 'Supporter',
     name: 'นางสาวณัชชา เพ็งน้อย',
     faculty: 'วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม',
@@ -82,7 +82,7 @@ export default function DevelopersPage() {
         ))}
       </div>
 
-      <footer>&copy; 2026 Department of Computer Engineering. All Rights Reserved.</footer>
+      <footer>Powerd By Computer Engineering 66&68</footer>
 
       <style>{`
         .header { margin: 60px 0 20px; padding: 0 20px; }

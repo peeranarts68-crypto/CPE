@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { href: '/',           label: 'หน้าแรก (Home)' },
   { href: '/random',     label: 'วงล้อสุ่มสายรหัส (Lucky Wheel)' },
   { href: '/senior',     label: 'สำหรับพี่รหัส (For Seniors)' },
+  { href: '/ig',         label: 'คอนแทคพี่รหัส (IG Contacts)' },
   { href: '/developers', label: 'ผู้พัฒนาเว็บ (Web Developers)' },
 ];
 
@@ -112,7 +113,7 @@ export default function Sidebar() {
         )}
 
         <div className="sidebar-footer">
-          &copy; 2026 Department of Computer Engineering
+          Powerd By Computer Engineering 66&68
         </div>
       </div>
     </>
