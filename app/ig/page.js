@@ -12,7 +12,7 @@ const IG_LIST = [
   { id: 5, handle: "snxtp_6" },
   { id: 6, handle: "maimearailok" },
   { id: 7, handle: "mx_qrxhg" },
-  { id: 8, handle: "pprt._.x" },
+  { id: 8, handle: "pprt._.xf" },
   { id: 9, handle: "saran_yu06" },
   { id: 10, handle: "ni_chaki" },
   { id: 11, handle: "natcha__vnt" },
