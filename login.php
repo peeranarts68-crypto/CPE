@@ -1,4 +1,6 @@
 <?php
+ini_set('display_errors', 0);
+error_reporting(0);
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db.php';
 
@@ -42,6 +44,13 @@ try {
 
 } catch (MongoDB\Driver\Exception $e) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    $msg = $e->getMessage();
+    if (strpos($msg, 'Authentication') !== false || strpos($msg, 'bad auth') !== false) {
+        $msg = 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาติดต่อผู้ดูแลระบบ';
+    }
+    echo json_encode(['success' => false, 'message' => $msg]);
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'เกิดข้อผิดพลาดที่ไม่คาดคิด']);
 }
 ?>

@@ -35,6 +35,8 @@
             flex-direction: column;
             align-items: center;
             overflow-x: hidden;
+            position: relative;
+            isolation: isolate;
             background-image: 
                 radial-gradient(circle at 10% 20%, rgba(255, 51, 51, 0.05) 0%, transparent 40%),
                 radial-gradient(circle at 90% 80%, rgba(153, 0, 0, 0.05) 0%, transparent 40%);
@@ -45,7 +47,7 @@
             position: fixed;
             top: 20px;
             left: 20px;
-            z-index: 1100;
+            z-index: 1300;
             width: 50px;
             height: 50px;
             background: rgba(26, 26, 26, 0.85);
@@ -60,6 +62,7 @@
             box-shadow: 0 4px 15px rgba(255, 51, 51, 0.2);
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             backdrop-filter: blur(10px);
+            pointer-events: auto;
         }
 
         .hamburger-btn:hover {
@@ -103,7 +106,7 @@
             -webkit-backdrop-filter: blur(20px);
             border-right: 1px solid rgba(255, 51, 51, 0.2);
             box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8);
-            z-index: 1050;
+            z-index: 1250;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex;
             flex-direction: column;
@@ -123,7 +126,7 @@
             height: 100vh;
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(5px);
-            z-index: 1040;
+            z-index: 1200;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.4s ease;
@@ -488,14 +491,20 @@
         const sidebarMenu = document.getElementById('sidebarMenu');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-        function toggleSidebar() {
-            hamburgerBtn.classList.toggle('active');
-            sidebarMenu.classList.toggle('active');
-            sidebarOverlay.classList.toggle('active');
-        }
+        if (hamburgerBtn && sidebarMenu && sidebarOverlay) {
+            function toggleSidebar(event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                hamburgerBtn.classList.toggle('active');
+                sidebarMenu.classList.toggle('active');
+                sidebarOverlay.classList.toggle('active');
+            }
 
-        hamburgerBtn.addEventListener('click', toggleSidebar);
-        sidebarOverlay.addEventListener('click', toggleSidebar);
+            hamburgerBtn.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
 
         // Core logic variables
         let mySeniorName = localStorage.getItem('cpe_senior_name');
@@ -585,23 +594,75 @@
                     return;
                 }
 
-                // Render
+                // Find if a junior has drawn this senior line (from hint_number = 1)
+                const firstHint = myHintsInDb.find(h => parseInt(h.hint_number) === 1);
+                const juniorId = (firstHint && firstHint.is_drawn) ? firstHint.drawn_by : '';
+
+                // Render status dashboard
                 hintStatusList.innerHTML = myHintsInDb.map((h, index) => {
-                    const statusBadge = h.is_drawn 
-                        ? `<span class="badge badge-drawn">🟢 สุ่มได้แล้วโดย: <strong>${h.drawn_by || 'น้องรหัส'}</strong></span>`
-                        : `<span class="badge badge-waiting">🟡 ยังไม่ถูกสุ่ม (กำลังรอ...)</span>`;
+                    const hintNum = parseInt(h.hint_number);
+                    let statusHtml = '';
+
+                    if (hintNum === 1) {
+                        statusHtml = h.is_drawn 
+                            ? `<span class="badge badge-drawn">🟢 สุ่มได้แล้วโดยน้องรหัส: <strong>${h.drawn_by || 'น้องรหัส'}</strong></span>`
+                            : `<span class="badge badge-waiting">🟡 ยังไม่ถูกสุ่ม (น้องยังไม่ได้สุ่มวงล้อ)</span>`;
+                    } else {
+                        // Hint 2 & 3
+                        if (h.is_drawn) {
+                            statusHtml = `<span class="badge badge-drawn" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);">🟢 ปล่อยคำใบ้ให้สายน้องเรียบร้อยแล้ว</span>`;
+                        } else {
+                            if (juniorId !== '') {
+                                statusHtml = `
+                                    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 5px; width: 100%;">
+                                        <span class="badge badge-waiting">🔒 ยังไม่ได้ปล่อยคำใบ้</span>
+                                        <button onclick="releaseHint(${hintNum}, '${juniorId}')" class="submit-btn" style="margin-top: 10px; font-size: 0.85rem; padding: 8px 14px; width: auto; background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); cursor: pointer; border: none; border-radius: 8px; color: white;">🚀 กดปล่อยคำใบ้ให้สายน้อง</button>
+                                    </div>
+                                `;
+                            } else {
+                                statusHtml = `<span class="badge badge-waiting" style="opacity: 0.6;">🔒 คำใบ้ถูกล็อค (รอให้มีน้องมาสุ่มสายคุณก่อน)</span>`;
+                            }
+                        }
+                    }
 
                     return `
                         <div class="hint-status-card">
                             <div class="hint-text-display">คำใบ้ที่ ${index + 1}: <br><span style="color: var(--accent-color); font-weight:600;">${h.hint_text}</span></div>
                             <div style="display: flex; justify-content: flex-start;">
-                                ${statusBadge}
+                                ${statusHtml}
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 }).join('');
             } catch (err) {
                 console.error("Error fetching hints status:", err);
+            }
+        }
+
+        async function releaseHint(hintNumber, juniorId) {
+            if (!mySeniorName || !juniorId) return;
+            if (!confirm(`คุณแน่ใจใช่หรือไม่ว่าต้องการเปิดเผยคำใบ้ที่ ${hintNumber} ให้กับน้องรหัสของคุณ?`)) {
+                return;
+            }
+            try {
+                const response = await fetch('release_hint.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                    body: JSON.stringify({
+                        senior_name: mySeniorName,
+                        hint_number: hintNumber,
+                        junior_id: juniorId
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    fetchHintsStatus();
+                } else {
+                    alert("ล้มเหลว: " + (result.message || result.error));
+                }
+            } catch (err) {
+                console.error("Release error:", err);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์!");
             }
         }
 

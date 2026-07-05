@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ | CPE Hint 68-69</title>
+    <meta name="description" content="เข้าสู่ระบบหรือสมัครสมาชิก CPE Hint Portal สำหรับน้องๆ CPE 69">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0d0d;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --accent-color: #ff3333;
+            --accent-purple: #990000;
+            --card-bg: rgba(26, 26, 26, 0.75);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'IBM Plex Sans Thai', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ── Animated background ── */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.18;
+            pointer-events: none;
+            animation: drift 12s ease-in-out infinite alternate;
+        }
+        .bg-orb-1 {
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, #ff3333, transparent);
+            top: -150px; left: -150px;
+            animation-duration: 10s;
+        }
+        .bg-orb-2 {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, #990000, transparent);
+            bottom: -100px; right: -100px;
+            animation-duration: 14s;
+            animation-direction: alternate-reverse;
+        }
+        .bg-orb-3 {
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, #ff6666, transparent);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            animation-duration: 8s;
+        }
+
+        @keyframes drift {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, 30px) scale(1.08); }
+        }
+
+        /* Grid noise overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,51,51,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,51,51,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Back button ── */
+        .back-btn {
+            position: fixed;
+            top: 24px;
+            left: 24px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: rgba(26, 26, 26, 0.85);
+            border: 1px solid rgba(255, 51, 51, 0.25);
+            border-radius: 50px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+        .back-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.25);
+            transform: translateX(-3px);
+        }
+        .back-btn svg {
+            width: 16px; height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* ── Card ── */
+        .auth-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 440px;
+            padding: 20px;
+        }
+
+        /* Logo area */
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .auth-logo-text {
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-color) 50%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse-glow 3s infinite alternate;
+        }
+        .auth-logo-sub {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        @keyframes pulse-glow {
+            0%   { filter: drop-shadow(0 0 12px rgba(255,51,51,0.2)); }
+            100% { filter: drop-shadow(0 0 24px rgba(153,0,0,0.45)); }
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 28px;
+            padding: 36px 32px;
+            box-shadow:
+                0 30px 60px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 51, 51, 0.05),
+                inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+
+        /* ── Tab switcher ── */
+        .tab-switcher {
+            display: flex;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 14px;
+            padding: 4px;
+            margin-bottom: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-purple) 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(255, 51, 51, 0.35);
+        }
+        .tab-btn:not(.active):hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* ── Form panels ── */
+        .form-panel {
+            display: none;
+            animation: fadeSlideIn 0.35s ease;
+        }
+        .form-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Form elements ── */
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 600;
+        }
+        .form-input {
+            width: 100%;
+            padding: 13px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .form-input::placeholder {
+            color: rgba(255,255,255,0.2);
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.18);
+        }
+        .form-input.error {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.25);
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25%       { transform: translateX(-6px); }
+            75%       { transform: translateX(6px); }
+        }
+
+        /* ── Submit button ── */
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-purple) 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 1.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(255, 51, 51, 0.35);
+            position: relative;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .submit-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 51, 51, 0.5);
+        }
+        .submit-btn:hover::after { opacity: 1; }
+        .submit-btn:active { transform: translateY(1px); }
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading spinner inside button */
+        .btn-spinner {
+            display: inline-block;
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── Message area ── */
+        .msg-area {
+            margin-top: 14px;
+            min-height: 22px;
+            font-size: 0.875rem;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .msg-area.success { color: #4ade80; }
+        .msg-area.error   { color: var(--accent-color); }
+
+        /* ── Divider ── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            color: rgba(255,255,255,0.2);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+        }
+
+        /* ── Switch link ── */
+        .switch-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.83rem;
+            color: var(--text-secondary);
+        }
+        .switch-link button {
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            font-family: inherit;
+            font-size: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            transition: color 0.2s;
+        }
+        .switch-link button:hover { color: #ff6666; }
+
+        /* ── Footer ── */
+        .auth-footer {
+            text-align: center;
+            margin-top: 28px;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.2);
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 480px) {
+            .auth-card { padding: 28px 20px; border-radius: 22px; }
+            .auth-logo-text { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background orbs -->
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <!-- Back to home -->
+    <a href="index.html" class="back-btn" id="backBtn">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        หน้าแรก
+    </a>
+
+    <div class="auth-wrapper">
+        <!-- Logo -->
+        <div class="auth-logo">
+            <div class="auth-logo-text">CPE HINT</div>
+            <div class="auth-logo-sub">68 × 69 · Portal</div>
+        </div>
+
+        <!-- Card -->
+        <div class="auth-card">
+            <!-- Tab switcher -->
+            <div class="tab-switcher" role="tablist">
+                <button class="tab-btn active" id="tab-login" role="tab" aria-selected="true" onclick="switchTab('login')">เข้าสู่ระบบ</button>
+                <button class="tab-btn" id="tab-register" role="tab" aria-selected="false" onclick="switchTab('register')">สมัครสมาชิก</button>
+            </div>
+
+            <!-- ── LOGIN PANEL ── -->
+            <div class="form-panel active" id="panel-login" role="tabpanel">
+                <form id="loginForm" novalidate>
+                    <div class="form-group">
+                        <label for="loginUsername">รหัสนักศึกษา (10 หลัก)</label>
+                        <input type="text" id="loginUsername" class="form-input"
+                               placeholder="6812345678" maxlength="10"
+                               inputmode="numeric" autocomplete="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">รหัสผ่าน</label>
+                        <input type="password" id="loginPassword" class="form-input"
+                               placeholder="••••••••" autocomplete="current-password" required>
+                    </div>
+                    <button type="submit" class="submit-btn" id="loginBtn">LOGIN</button>
+                    <div class="msg-area" id="loginMsg" role="alert" aria-live="polite"></div>
+                </form>
+
+                <div class="switch-link">
+                    ยังไม่มีบัญชี?
+                    <button onclick="switchTab('register')">สมัครสมาชิกที่นี่</button>
+                </div>
+            </div>
+
+            <!-- ── REGISTER PANEL ── -->
+            <div class="form-panel" id="panel-register" role="tabpanel">
+                <form id="registerForm" novalidate>
+                    <div class="form-group">
+                        <label for="regUsername">รหัสนักศึกษา (10 หลัก)</label>
+                        <input type="text" id="regUsername" class="form-input"
+                               placeholder="6812345678" maxlength="10"
+                               inputmode="numeric" autocomplete="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">รหัสผ่าน</label>
+                        <input type="password" id="regPassword" class="form-input"
+                               placeholder="••••••••" autocomplete="new-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regFirstName">ชื่อจริง</label>
+                        <input type="text" id="regFirstName" class="form-input"
+                               placeholder="เช่น สมชาย" autocomplete="given-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regNickname">ชื่อเล่น</label>
+                        <input type="text" id="regNickname" class="form-input"
+                               placeholder="เช่น ชาย" required>
+                    </div>
+                    <button type="submit" class="submit-btn" id="registerBtn">REGISTER</button>
+                    <div class="msg-area" id="registerMsg" role="alert" aria-live="polite"></div>
+                </form>
+
+                <div class="switch-link">
+                    มีบัญชีแล้ว?
+                    <button onclick="switchTab('login')">เข้าสู่ระบบที่นี่</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-footer">© 2026 Department of Computer Engineering. All Rights Reserved.</div>
+    </div>
+
+    <script>
+        // ── Tab switch ──
+        function switchTab(tab) {
+            ['login', 'register'].forEach(t => {
+                document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+                document.getElementById('tab-' + t).setAttribute('aria-selected', t === tab);
+                document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+            });
+            // Clear messages
+            document.getElementById('loginMsg').textContent = '';
+            document.getElementById('registerMsg').textContent = '';
+        }
+
+        // ── Helper: set button loading state ──
+        function setLoading(btn, loading, originalText) {
+            if (loading) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="btn-spinner"></span>กำลังดำเนินการ...';
+            } else {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        // ── Helper: show message ──
+        function showMsg(el, text, type) {
+            el.textContent = text;
+            el.className = 'msg-area ' + type;
+        }
+
+        // ── Helper: shake input ──
+        function shakeInput(el) {
+            el.classList.add('error');
+            setTimeout(() => el.classList.remove('error'), 500);
+        }
+
+        // ── LOGIN ──
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const msgEl = document.getElementById('loginMsg');
+            const btn = document.getElementById('loginBtn');
+
+            if (!/^\d{10}$/.test(username)) {
+                showMsg(msgEl, 'รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก', 'error');
+                shakeInput(document.getElementById('loginUsername'));
+                return;
+            }
+            if (!password) {
+                showMsg(msgEl, 'กรุณากรอกรหัสผ่าน', 'error');
+                shakeInput(document.getElementById('loginPassword'));
+                return;
+            }
+
+            setLoading(btn, true, 'LOGIN');
+            showMsg(msgEl, '', '');
+
+            try {
+                const res = await fetch('login.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('cpe_username', data.user?.username || username);
+                    localStorage.setItem('cpe_user', JSON.stringify(data.user || {}));
+                    localStorage.removeItem('cpe_has_spun');
+                    showMsg(msgEl, `✓ ยินดีต้อนรับ ${data.user?.nickname || username}! กำลังพาไปหน้าหลัก...`, 'success');
+                    setTimeout(() => { window.location.href = 'random.html'; }, 1000);
+                } else {
+                    showMsg(msgEl, data.message || 'เข้าสู่ระบบไม่สำเร็จ', 'error');
+                    shakeInput(document.getElementById('loginPassword'));
+                    setLoading(btn, false, 'LOGIN');
+                }
+            } catch (err) {
+                showMsg(msgEl, 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+                setLoading(btn, false, 'LOGIN');
+            }
+        });
+
+        // ── REGISTER ──
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username  = document.getElementById('regUsername').value.trim();
+            const password  = document.getElementById('regPassword').value;
+            const firstName = document.getElementById('regFirstName').value.trim();
+            const nickname  = document.getElementById('regNickname').value.trim();
+            const msgEl = document.getElementById('registerMsg');
+            const btn = document.getElementById('registerBtn');
+
+            if (!/^\d{10}$/.test(username)) {
+                showMsg(msgEl, 'รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก', 'error');
+                shakeInput(document.getElementById('regUsername'));
+                return;
+            }
+            if (password.length < 4) {
+                showMsg(msgEl, 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร', 'error');
+                shakeInput(document.getElementById('regPassword'));
+                return;
+            }
+            if (!firstName || !nickname) {
+                showMsg(msgEl, 'กรุณากรอกชื่อจริงและชื่อเล่น', 'error');
+                return;
+            }
+
+            setLoading(btn, true, 'REGISTER');
+            showMsg(msgEl, '', '');
+
+            try {
+                const res = await fetch('register.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, first_name: firstName, nickname })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showMsg(msgEl, '✓ สมัครสมาชิกสำเร็จ! กำลังพาไปหน้าเข้าสู่ระบบ...', 'success');
+                    setTimeout(() => {
+                        document.getElementById('regUsername').value = '';
+                        document.getElementById('regPassword').value = '';
+                        document.getElementById('regFirstName').value = '';
+                        document.getElementById('regNickname').value = '';
+                        switchTab('login');
+                        document.getElementById('loginUsername').value = username;
+                    }, 1500);
+                } else {
+                    showMsg(msgEl, data.message || 'การสมัครสมาชิกล้มเหลว', 'error');
+                }
+                setLoading(btn, false, 'REGISTER');
+            } catch (err) {
+                showMsg(msgEl, 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+                setLoading(btn, false, 'REGISTER');
+            }
+        });
+
+        // ── Only allow digits in student-ID fields ──
+        ['loginUsername', 'regUsername'].forEach(id => {
+            document.getElementById(id).addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '').slice(0, 10);
+            });
+        });
+    </script>
+</body>
+</html>

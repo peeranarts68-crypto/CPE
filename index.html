@@ -40,7 +40,7 @@
         .banner {
             width: 100%;
             height: 350px;
-            background-image: linear-gradient(to bottom, rgba(13, 13, 13, 0.3), rgba(13, 13, 13, 0.95)), url('img/banner_rednew.png');
+            background-image: linear-gradient(to bottom, rgba(13, 13, 13, 0.3), rgba(13, 13, 13, 0.95)), url('img/banner_cpe.jpg');
             background-size: cover;
             background-position: center;
             display: flex;
@@ -574,21 +574,12 @@
             <li><a href="senior.html" class="sidebar-link">สำหรับพี่รหัส (For Seniors)</a></li>
             <li><a href="developers.html" class="sidebar-link">ผู้พัฒนาเว็บ (Web Developers)</a></li>
         </ul>
-          <form id="loginForm" class="login-form">
-              <div class="form-group">
-                  <label for="loginUsername">รหัสนักศึกษา</label>
-                  <input type="text" id="loginUsername" class="form-input" placeholder="1234567890" required pattern="\d{10}" title="กรุณาใส่รหัสนักศึกษา 10 หลัก">
-              </div>
-              <div class="form-group">
-                  <label for="loginPassword">รหัสผ่าน</label>
-                  <input type="password" id="loginPassword" class="form-input" placeholder="Password" required>
-              </div>
-              <button type="submit" class="login-btn">LOGIN</button>
-          </form>
-          <div id="loginMessage" class="login-footer"></div>
-          <div class="sidebar-footer">
-              &copy; 2026 Department of Computer Engineering
-          </div>
+        <div id="sidebarAuthContainer" style="margin-top: 25px; padding: 0 10px;">
+            <!-- Dynamically populated via JS -->
+        </div>
+        <div class="sidebar-footer">
+            &copy; 2026 Department of Computer Engineering
+        </div>
     </div>
     
     <!-- Overlay -->
@@ -601,8 +592,8 @@
 
     <div class="content-grid">
         <main class="main-section">
-            <h2>ยินดีต้อนรับสู่น้องๆเพื่อสุ่มสายรหัส</h2>
-            <p>ทำการสุ่มสายรหัสในวันที่ 15 กรกฏาคม 2569 เวลา 17.00 ณ ตึก Computer Engineering</p>
+            <h2>ยินดีต้อนรับน้องๆเพื่อสุ่มสายรหัส</h2>
+            <p>ทำการสุ่มสายรหัสในวันที่ 15 กรกฏาคม 2569 เวลา 13.00 ณ ตึก Computer Engineering</p>
         <div class="countdown-wrapper">
             <div class="countdown-label">⏳ นับถอยหลังวันสุ่มสายรหัส</div>
             <div class="countdown-timer" id="countdown">
@@ -628,12 +619,6 @@
             </div>
         </div>
             
-            <div class="hint-card">
-                <span class="hint-tag">ประกาศสำคัญ</span>
-                <h3>เตรียมพบกับกิจกรรมรับน้อง CPE Hint เร็ว ๆ นี้</h3>
-                <p style="margin-bottom: 0; margin-top: 10px;">คอยติดตามคำใบ้สายรหัสทุกๆ2วัน ที่จะเกิดขึ้นในการเชื่อมสัมพันธ์ระหว่างรุ่นพี่รุ่นน้อง CPE 69</p>
-            </div>
-
             <div class="hint-card" style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
                 <span class="hint-tag" style="background: rgba(157, 78, 221, 0.15); color: #d896ff;">ฟีเจอร์ใหม่</span>
                 <h3>วงล้อสุ่มสายรหัส (CPE Lucky Wheel)</h3>
@@ -642,146 +627,155 @@
             </div>
         </main>
 
-                      <section class="register-section">
-                          <h2 class="register-title">สมัครสมาชิก (Register)</h2>
-                          <form id="registerForm" class="register-form">
-                              <div class="form-group">
-                                  <label for="regUsername">รหัสนักศึกษา (10 หลัก)</label>
-                                  <input type="text" id="regUsername" class="form-input" placeholder="1234567890" required pattern="\d{10}" title="กรุณาใส่ตัวเลข 10 หลัก">
-                              </div>
-                              <div class="form-group">
-                                  <label for="regPassword">รหัสผ่าน</label>
-            <script>
-            // ----- Login handling -----
-            document.getElementById('loginForm')?.addEventListener('submit', async function(event) {
-                event.preventDefault();
-                const username = document.getElementById('loginUsername').value.trim();
-                const password = document.getElementById('loginPassword').value;
-                const loginMessage = document.getElementById('loginMessage');
-                try {
-                    const response = await fetch('login.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username, password })
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                        localStorage.setItem('cpe_username', username);
-                        localStorage.removeItem('cpe_has_spun');
-                        alert(`ยินดีต้อนรับคุณ ${username} เข้าสู่ระบบ CPE Hint Portal!`);
-                        window.location.href = 'random.html';
-                    } else {
-                        loginMessage.textContent = data.message || 'เข้าสู่ระบบไม่สำเร็จ';
-                        loginMessage.style.color = 'var(--accent-color)';
-                    }
-                } catch (err) {
-                    loginMessage.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
-                    loginMessage.style.color = 'var(--accent-color)';
-                }
-            });
-
-            // ----- Registration handling -----
-            document.getElementById('registerForm')?.addEventListener('submit', async function(event) {
-                event.preventDefault();
-                const username = document.getElementById('regUsername').value.trim();
-                const password = document.getElementById('regPassword').value;
-                const firstName = document.getElementById('regFirstName').value.trim();
-                const nickname = document.getElementById('regNickname').value.trim();
-                const registerMessage = document.getElementById('registerMessage');
-                // client‑side validation for 10‑digit student ID
-                if (!/^\d{10}$/.test(username)) {
-                    registerMessage.textContent = 'รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก';
-                    registerMessage.style.color = 'var(--accent-color)';
-                    return;
-                }
-                try {
-                    const response = await fetch('register.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username, password, first_name: firstName, nickname })
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                        registerMessage.textContent = 'สมัครสมาชิกสำเร็จ! คุณสามารถล็อกอินได้แล้ว';
-                        registerMessage.style.color = 'var(--accent-purple)';
-                    } else {
-                        registerMessage.textContent = data.message || 'การสมัครสมาชิกล้มเหลว';
-                        registerMessage.style.color = 'var(--accent-color)';
-                    }
-                } catch (err) {
-                    registerMessage.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
-                    registerMessage.style.color = 'var(--accent-color)';
-                }
-            });
-
-            // ----- Hamburger sidebar interactions -----
-            const hamburgerBtn = document.getElementById('hamburgerBtn');
-            const sidebarMenu = document.getElementById('sidebarMenu');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
-            function toggleSidebar() {
-                hamburgerBtn.classList.toggle('active');
-                sidebarMenu.classList.toggle('active');
-                sidebarOverlay.classList.toggle('active');
-            }
-            hamburgerBtn.addEventListener('click', toggleSidebar);
-            sidebarOverlay.addEventListener('click', toggleSidebar);
-
-            // Countdown timer
-            (function(){
-                function pad(n) { return String(n).padStart(2,'0'); }
-
-                function tickNum(el, newVal) {
-                    const cur = el.textContent;
-                    if (cur === newVal) return;
-                    el.classList.add('tick');
-                    setTimeout(() => {
-                        el.textContent = newVal;
-                        el.classList.remove('tick');
-                    }, 150);
-                }
-
-                const dEl = document.getElementById('cd-days');
-                const hEl = document.getElementById('cd-hours');
-                const mEl = document.getElementById('cd-minutes');
-                const sEl = document.getElementById('cd-seconds');
-                const countdownEl = document.getElementById('countdown');
-
-                function update() {
-                    const target = new Date('2026-07-15T13:00:00+07:00');
-                    const now = new Date();
-                    const diff = target - now;
-                    if (diff <= 0) {
-                        countdownEl.innerHTML = '<div class="countdown-finished">🎉 กิจกรรมเริ่มแล้ว!</div>';
-                        clearInterval(timer);
-                        return;
-                    }
-                    const days    = Math.floor(diff / (1000 * 60 * 60 * 24));
-                    const hours   = Math.floor((diff / (1000 * 60 * 60)) % 24);
-                    const minutes = Math.floor((diff / (1000 * 60)) % 60);
-                    const seconds = Math.floor((diff / 1000) % 60);
-                    tickNum(dEl, pad(days));
-                    tickNum(hEl, pad(hours));
-                    tickNum(mEl, pad(minutes));
-                    tickNum(sEl, pad(seconds));
-                }
-                update();
-                const timer = setInterval(update, 1000);
-            })();
-        </script>
-                                  <input type="password" id="regPassword" class="form-input" placeholder="Password" required>
-                              </div>
-                              <div class="form-group">
-                                  <label for="regFirstName">ชื่อจริง</label>
-                                  <input type="text" id="regFirstName" class="form-input" placeholder="เช่น สมชาย" required>
-                              </div>
-                              <div class="form-group">
-                                  <label for="regNickname">ชื่อเล่น</label>
-                                  <input type="text" id="regNickname" class="form-input" placeholder="เช่น ชาย" required>
-                              </div>
-                              <button type="submit" class="login-btn">REGISTER</button>
+        <aside class="login-section" id="statusCard">
+            <!-- Dynamically populated via JS -->
+        </aside>
+    </div>
 
     <footer>
         &copy; 2026 Department of Computer Engineering. All Rights Reserved.
     </footer>
+
+    <script>
+        // ----- Hamburger sidebar interactions -----
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebarMenu = document.getElementById('sidebarMenu');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        function toggleSidebar() {
+            hamburgerBtn.classList.toggle('active');
+            sidebarMenu.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+        hamburgerBtn.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+
+        // Countdown timer
+        (function(){
+            function pad(n) { return String(n).padStart(2,'0'); }
+
+            function tickNum(el, newVal) {
+                if (!el) return;
+                const cur = el.textContent;
+                if (cur === newVal) return;
+                el.classList.add('tick');
+                setTimeout(() => {
+                    el.textContent = newVal;
+                    el.classList.remove('tick');
+                }, 150);
+            }
+
+            const dEl = document.getElementById('cd-days');
+            const hEl = document.getElementById('cd-hours');
+            const mEl = document.getElementById('cd-minutes');
+            const sEl = document.getElementById('cd-seconds');
+            const countdownEl = document.getElementById('countdown');
+
+            function update() {
+                const target = new Date('2026-07-15T13:00:00+07:00');
+                const now = new Date();
+                const diff = target - now;
+                if (diff <= 0) {
+                    if (countdownEl) countdownEl.innerHTML = '<div class="countdown-finished">🎉 กิจกรรมเริ่มแล้ว!</div>';
+                    clearInterval(timer);
+                    return;
+                }
+                const days    = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours   = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const minutes = Math.floor((diff / (1000 * 60)) % 60);
+                const seconds = Math.floor((diff / 1000) % 60);
+                tickNum(dEl, pad(days));
+                tickNum(hEl, pad(hours));
+                tickNum(mEl, pad(minutes));
+                tickNum(sEl, pad(seconds));
+            }
+            update();
+            const timer = setInterval(update, 1000);
+        })();
+
+        // ----- Session and UI updates -----
+        function updateAuthUI() {
+            const username = localStorage.getItem('cpe_username');
+            let userObj = null;
+            try {
+                userObj = JSON.parse(localStorage.getItem('cpe_user') || 'null');
+            } catch(e) {}
+
+            const sidebarAuth = document.getElementById('sidebarAuthContainer');
+            const statusCard = document.getElementById('statusCard');
+
+            if (username) {
+                const nick = (userObj && userObj.nickname) || username;
+                const name = (userObj && userObj.first_name) || '';
+                const role = (userObj && userObj.role) || 'cpe69';
+                const roleLabel = role === 'cpe68' ? 'พี่ CPE 68' : 'น้อง CPE 69';
+
+                // Sidebar rendering
+                if (sidebarAuth) {
+                    sidebarAuth.innerHTML = `
+                        <div style="padding: 15px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px;">
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px;">เข้าสู่ระบบโดย</p>
+                            <p style="font-weight: 600; color: #fff; margin-bottom: 2px;">คุณ ${nick}</p>
+                            <p style="font-size: 0.75rem; color: var(--text-secondary);">${username}</p>
+                        </div>
+                        <button onclick="handleLogout()" class="login-btn" style="background: rgba(255, 51, 51, 0.15); color: var(--accent-color); border: 1px solid rgba(255, 51, 51, 0.3); font-size: 0.9rem; padding: 10px; cursor: pointer; width: 100%;">ออกจากระบบ</button>
+                    `;
+                }
+
+                // Status card rendering in main grid
+                if (statusCard) {
+                    statusCard.innerHTML = `
+                        <h2 class="login-title">ข้อมูลผู้ใช้งาน</h2>
+                        <div style="margin-bottom: 20px; font-size: 0.95rem; display: flex; flex-direction: column; gap: 12px;">
+                            <div>
+                                <span style="color: var(--text-secondary); font-size: 0.8rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">รหัสนักศึกษา</span>
+                                <span style="font-weight: 600; color: #fff;">${username}</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-secondary); font-size: 0.8rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">ชื่อจริง</span>
+                                <span style="font-weight: 600; color: #fff;">${name || '-'}</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-secondary); font-size: 0.8rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">ชื่อเล่น</span>
+                                <span style="font-weight: 600; color: #fff;">${nick}</span>
+                            </div>
+                            <div style="margin-top: 5px;">
+                                <span class="hint-tag" style="background: rgba(255, 51, 51, 0.15); color: var(--accent-color); font-weight: 600; margin-bottom: 0;">${roleLabel}</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <a href="random.html" class="action-btn" style="text-align: center; margin-top: 0; display: block; text-decoration: none;">ไปที่วงล้อสุ่มสายรหัส</a>
+                            <button onclick="handleLogout()" class="action-btn" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; box-shadow: none; width: 100%; cursor: pointer;">ออกจากระบบ</button>
+                        </div>
+                    `;
+                }
+            } else {
+                // Sidebar rendering
+                if (sidebarAuth) {
+                    sidebarAuth.innerHTML = `
+                        <a href="login.html" class="login-btn" style="text-align: center; text-decoration: none; display: block; line-height: 1.2; padding: 12px 0;">เข้าสู่ระบบ / สมัครสมาชิก</a>
+                    `;
+                }
+
+                // Status card rendering in main grid
+                if (statusCard) {
+                    statusCard.innerHTML = `
+                        <h2 class="login-title">สุ่มสายรหัส CPE</h2>
+                        <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.6;">กรุณาเข้าสู่ระบบหรือสมัครสมาชิกเพื่อเข้าร่วมกิจกรรมสุ่มสายรหัสและเปิดดูคำใบ้จากพี่รหัสของคุณ</p>
+                        <a href="login.html" class="action-btn" style="display: block; text-align: center; margin-top: 0; text-decoration: none;">เข้าสู่ระบบ / สมัครสมาชิก</a>
+                    `;
+                }
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('cpe_username');
+            localStorage.removeItem('cpe_user');
+            localStorage.removeItem('cpe_has_spun');
+            updateAuthUI();
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', updateAuthUI);
+    </script>
 </body>
 </html>

@@ -33,6 +33,8 @@
             flex-direction: column;
             align-items: center;
             overflow-x: hidden;
+            position: relative;
+            isolation: isolate;
             background-image: 
                 radial-gradient(circle at 10% 20%, rgba(255, 51, 51, 0.05) 0%, transparent 40%),
                 radial-gradient(circle at 90% 80%, rgba(153, 0, 0, 0.05) 0%, transparent 40%);
@@ -141,11 +143,12 @@
 
         /* Wheel Canvas */
         #wheelCanvas {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            box-shadow: 0 0 40px rgba(0, 210, 255, 0.15), inset 0 0 20px rgba(255, 255, 255, 0.05);
-        }
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-shadow: 0 0 40px rgba(0, 210, 255, 0.15), inset 0 0 20px rgba(255, 255, 255, 0.05);
+    pointer-events: none;
+}
 
         /* Wheel Pointer */
         .pointer {
@@ -415,12 +418,110 @@
             border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
 
+        /* Dynamic Junior Hints Panel Styling */
+        .hints-display-panel {
+            background: rgba(26, 26, 26, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 28px;
+            padding: 40px;
+            box-shadow: 
+                0 30px 60px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            text-align: left;
+        }
+
+        .senior-line-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            letter-spacing: -0.5px;
+        }
+
+        .hint-box {
+            padding: 20px;
+            border-radius: 18px;
+            margin-bottom: 18px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .hint-box.locked {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            color: var(--text-secondary);
+        }
+
+        .hint-box.unlocked {
+            background: rgba(255, 51, 51, 0.04);
+            border: 1px solid rgba(255, 51, 51, 0.2);
+            color: var(--text-primary);
+            box-shadow: 0 4px 20px rgba(255, 51, 51, 0.05);
+        }
+
+        .hint-box-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+        }
+
+        .hint-box.locked .hint-box-icon {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+        }
+
+        .hint-box.unlocked .hint-box-icon {
+            background: rgba(255, 51, 51, 0.15);
+            color: var(--accent-color);
+        }
+
+        .hint-box-content {
+            flex-grow: 1;
+        }
+
+        .hint-box-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .hint-box.locked .hint-box-label {
+            color: var(--text-secondary);
+        }
+
+        .hint-box.unlocked .hint-box-label {
+            color: var(--accent-color);
+        }
+
+        .hint-box-text {
+            font-size: 1.05rem;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
         /* --- Hamburger Navigation System --- */
         .hamburger-btn {
             position: fixed;
             top: 20px;
             left: 20px;
-            z-index: 1100;
+            z-index: 1300;
             width: 50px;
             height: 50px;
             background: rgba(26, 26, 26, 0.85);
@@ -435,6 +536,7 @@
             box-shadow: 0 4px 15px rgba(255, 51, 51, 0.2);
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             backdrop-filter: blur(10px);
+            pointer-events: auto;
         }
 
         .hamburger-btn:hover {
@@ -478,7 +580,7 @@
             -webkit-backdrop-filter: blur(20px);
             border-right: 1px solid rgba(255, 51, 51, 0.2);
             box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8);
-            z-index: 1050;
+            z-index: 1250;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex;
             flex-direction: column;
@@ -498,7 +600,7 @@
             height: 100vh;
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(5px);
-            z-index: 1040;
+            z-index: 1200;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.4s ease;
@@ -607,7 +709,7 @@
     </header>
 
     <!-- Main Container -->
-    <div class="container">
+    <div class="container" id="wheelSection">
         <!-- Left Column: Wheel -->
         <main class="wheel-area">
             <div class="wheel-container">
@@ -638,6 +740,11 @@
                 </ul>
             </div>
         </aside>
+    </div>
+
+    <!-- Junior Hints Display Section -->
+    <div class="hints-display-panel" id="juniorHintsSection" style="display: none; max-width: 600px; width: 90%; margin: 20px auto 60px auto;">
+        <!-- Dynamically populated via JS -->
     </div>
 
     <!-- Modal for Winner -->
@@ -704,19 +811,93 @@
                 osc.stop(audioCtx.currentTime + 0.08);
             } catch (e) {
                 // Ignore web audio block errors
+        }
+
+        let juniorHintsInterval = null;
+
+        async function checkJuniorHints() {
+            const juniorId = localStorage.getItem('cpe_username');
+            if (!juniorId) return;
+
+            try {
+                const response = await fetch(`get_junior_hints.php?junior_id=${encodeURIComponent(juniorId)}`);
+                const data = await response.json();
+                if (data.success) {
+                    if (data.has_drawn) {
+                        // Junior has already drawn a hint!
+                        // Hide wheel, show hints panel
+                        const wheelSec = document.getElementById('wheelSection');
+                        if (wheelSec) wheelSec.style.display = 'none';
+                        
+                        const hintsPanel = document.getElementById('juniorHintsSection');
+                        if (hintsPanel) {
+                            hintsPanel.style.display = 'block';
+
+                            // Generate hints HTML
+                            let hintsHtml = `
+                                <h2 class="senior-line-title">✨ สายรหัสของคุณ: ${data.senior_name} ✨</h2>
+                            `;
+
+                            data.hints.forEach(h => {
+                                const isReleased = h.is_released;
+                                const hintText = h.hint_text;
+                                const hintNum = h.hint_number;
+
+                                if (isReleased) {
+                                    hintsHtml += `
+                                        <div class="hint-box unlocked">
+                                            <div class="hint-box-icon">🔓</div>
+                                            <div class="hint-box-content">
+                                                <span class="hint-box-label">คำใบ้ที่ ${hintNum} (เปิดเผยแล้ว)</span>
+                                                <div class="hint-box-text">${hintText}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                } else {
+                                    hintsHtml += `
+                                        <div class="hint-box locked">
+                                            <div class="hint-box-icon">🔒</div>
+                                            <div class="hint-box-content">
+                                                <span class="hint-box-label">คำใบ้ที่ ${hintNum} (ถูกล็อค)</span>
+                                                <div class="hint-box-text">${hintText}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            });
+
+                            hintsPanel.innerHTML = hintsHtml;
+                        }
+
+                        // Stop polling the standard active hints pool if we are already drawn
+                        if (pollInterval) {
+                            clearInterval(pollInterval);
+                            pollInterval = null;
+                        }
+
+                        // Start polling the junior hints API every 3 seconds to get updates from the senior in real-time!
+                        if (!juniorHintsInterval) {
+                            juniorHintsInterval = setInterval(checkJuniorHints, 3000);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error checking junior hints:", err);
             }
         }
 
         function checkSpinEligibility() {
             if (localStorage.getItem('cpe_has_spun') === 'true') {
                 const spinBtn = document.querySelector('.spin-btn-center');
-                spinBtn.textContent = 'สุ่มแล้ว';
-                spinBtn.style.background = '#1f2937';
-                spinBtn.style.color = '#4b5563';
-                spinBtn.style.borderColor = '#111827';
-                spinBtn.style.cursor = 'not-allowed';
-                spinBtn.style.pointerEvents = 'none';
-                spinBtn.style.boxShadow = 'none';
+                if (spinBtn) {
+                    spinBtn.textContent = 'สุ่มแล้ว';
+                    spinBtn.style.background = '#1f2937';
+                    spinBtn.style.color = '#4b5563';
+                    spinBtn.style.borderColor = '#111827';
+                    spinBtn.style.cursor = 'not-allowed';
+                    spinBtn.style.pointerEvents = 'none';
+                    spinBtn.style.boxShadow = 'none';
+                }
                 return false;
             }
             return true;
@@ -752,13 +933,19 @@
 
             checkSpinEligibility();
             
+            // Check if this junior has already drawn a senior line
+            await checkJuniorHints();
+            
             // Load hints immediately, and start polling every 5 seconds (only when not spinning)
-            await loadHints();
-            pollInterval = setInterval(() => {
-                if (!isSpinning) {
-                    loadHints();
-                }
-            }, 5000);
+            const hasSpunLocal = localStorage.getItem('cpe_has_spun') === 'true';
+            if (!hasSpunLocal) {
+                await loadHints();
+                pollInterval = setInterval(() => {
+                    if (!isSpinning) {
+                        loadHints();
+                    }
+                }, 5000);
+            }
         }
 
         async function loadHints() {
@@ -937,7 +1124,7 @@
                 const result = await response.json();
                 if (result.success) {
                     // Update locally
-                    loadHints();
+                    checkJuniorHints();
                 } else {
                     console.error("Error drawing hint:", result.message || result.error);
                 }
@@ -949,6 +1136,7 @@
         function closeWinnerModal() {
             winnerModal.classList.remove('active');
             stopConfetti();
+            checkJuniorHints();
         }
 
         function clearHistory() {
@@ -1027,6 +1215,27 @@
             confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
         }
 
+        document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM fully loaded, initializing hamburger');
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebarMenu = document.getElementById('sidebarMenu');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    if (hamburgerBtn && sidebarMenu && sidebarOverlay) {
+        function toggleSidebar(event) {
+            console.log('Hamburger clicked');
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            hamburgerBtn.classList.toggle('active');
+            sidebarMenu.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+        hamburgerBtn.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+    }
+});
         window.addEventListener('resize', () => {
             if (confettiActive) {
                 resizeConfettiCanvas();
@@ -1036,19 +1245,7 @@
         // Start
         init();
 
-        // Hamburger sidebar interactions
-        const hamburgerBtn = document.getElementById('hamburgerBtn');
-        const sidebarMenu = document.getElementById('sidebarMenu');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-        function toggleSidebar() {
-            hamburgerBtn.classList.toggle('active');
-            sidebarMenu.classList.toggle('active');
-            sidebarOverlay.classList.toggle('active');
-        }
-
-        hamburgerBtn.addEventListener('click', toggleSidebar);
-        sidebarOverlay.addEventListener('click', toggleSidebar);
     </script>
 </body>
 </html>
