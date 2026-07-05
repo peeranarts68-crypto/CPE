@@ -269,6 +269,10 @@ export default function RandomPage() {
   // ── init ────────────────────────────────────────────────
   useEffect(() => {
     const username = localStorage.getItem('cpe_username');
+    if (!username) {
+      window.location.replace('/login');
+      return;
+    }
     if (username && username.startsWith('68')) {
       window.location.replace('/senior');
       return;
