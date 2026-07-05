@@ -1,0 +1,59 @@
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const juniorId = (searchParams.get('junior_id') || '').trim();
+
+    if (!juniorId) {
+      return NextResponse.json(
+        { success: false, message: 'Missing junior_id' },
+        { status: 400 }
+      );
+    }
+
+    const hintsRef = collection(db, 'hints');
+
+    // Check if this junior has drawn a hint (hint_number = 1)
+    const q1 = query(hintsRef, where('drawn_by', '==', juniorId), where('hint_number', '==', 1), limit(1));
+    const querySnapshot1 = await getDocs(q1);
+
+    if (querySnapshot1.empty) {
+      return NextResponse.json({ success: true, has_drawn: false, hints: [] });
+    }
+
+    const drawnHint = querySnapshot1.docs[0].data();
+    const seniorName = drawnHint.senior_name;
+
+    // Fetch all hints for this senior
+    const q2 = query(hintsRef, where('senior_name', '==', seniorName));
+    const querySnapshot2 = await getDocs(q2);
+
+    const allHints = querySnapshot2.docs.map((doc) => doc.data());
+    allHints.sort((a, b) => (a.hint_number || 0) - (b.hint_number || 0));
+
+    const formattedHints = allHints.map((h) => {
+      const isDrawn = Boolean(h.is_drawn);
+      const hintNum = parseInt(h.hint_number) || 1;
+      const text = isDrawn ? h.hint_text : '🔒 ยังไม่ถูกเปิดเผยโดยพี่รหัส';
+
+      return {
+        hint_number: hintNum,
+        is_released: isDrawn,
+        hint_text: text,
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      has_drawn: true,
+      senior_name: seniorName,
+      hints: formattedHints,
+    });
+  } catch (err) {
+    console.error('get-junior-hints error:', err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
