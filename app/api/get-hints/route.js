@@ -11,22 +11,49 @@ export async function GET(request) {
     let q;
 
     if (seniorName !== '') {
+      // Senior dashboard: return all hints for that senior
       q = query(hintsRef, where('senior_name', '==', seniorName));
-    } else {
-      q = query(hintsRef, where('is_drawn', '==', false), where('hint_number', '==', 1));
+      const querySnapshot = await getDocs(q);
+      const results = querySnapshot.docs.map((doc) => ({
+        _id: doc.id,
+        ...doc.data(),
+      }));
+      results.sort((a, b) => (a.hint_number || 0) - (b.hint_number || 0));
+      return NextResponse.json(results);
     }
 
+    // Wheel view: get all hint_number=1 docs that haven't been drawn yet
+    q = query(hintsRef, where('is_drawn', '==', false), where('hint_number', '==', 1));
     const querySnapshot = await getDocs(q);
     const results = querySnapshot.docs.map((doc) => ({
       _id: doc.id,
       ...doc.data(),
     }));
 
-    if (seniorName !== '') {
-      results.sort((a, b) => (a.hint_number || 0) - (b.hint_number || 0));
-    }
+    // Sort by registration order (created_at ascending)
+    results.sort((a, b) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return ta - tb;
+    });
 
-    return NextResponse.json(results);
+    // Deduplicate by senior_name — keep only earliest doc per senior
+    const seniorMap = new Map();
+    for (const item of results) {
+      const name = item.senior_name;
+      if (!seniorMap.has(name)) {
+        seniorMap.set(name, item);
+      }
+    }
+    const unique = Array.from(seniorMap.values());
+
+    // Assign alias CPE01, CPE02... based on sorted order
+    const withAlias = unique.map((item, idx) => ({
+      ...item,
+      alias: `CPE${String(idx + 1).padStart(2, '0')}`,
+    }));
+
+    return NextResponse.json(withAlias);
   } catch (err) {
     console.error('get-hints error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

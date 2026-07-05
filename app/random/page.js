@@ -196,9 +196,9 @@ export default function RandomPage() {
       if (!winner) return prev;
       localStorage.setItem('cpe_has_spun', 'true');
       setHasSpun(true);
-      setModalWinner(winner.hint_text);
+      setModalWinner(winner.alias || winner.hint_text);
       setModalOpen(true);
-      setHistory(h => [{ text: winner.hint_text, time: new Date().toLocaleTimeString('th-TH') }, ...h]);
+      setHistory(h => [{ text: winner.alias || winner.hint_text, time: new Date().toLocaleTimeString('th-TH') }, ...h]);
       startConfetti();
 
       // save draw state
@@ -229,7 +229,7 @@ export default function RandomPage() {
       if (prev.length === 0) { alert('ไม่มีคำใบ้เหลือในระบบฐานข้อมูลแล้ว'); return prev; }
       spinningRef.current = true;
       velRef.current = Math.random() * 0.35 + 0.35;
-      animate(prev.map(h => h.hint_text));
+      animate(prev.map(h => h.alias || h.hint_text));
       return prev;
     });
   }, [hasSpun, animate]);
@@ -300,7 +300,7 @@ export default function RandomPage() {
 
   // re-draw wheel when dbHints changes
   useEffect(() => {
-    const items = dbHints.length ? dbHints.map(h => h.hint_text) : ['(ไม่มีคำใบ้เหลืออยู่)'];
+    const items = dbHints.length ? dbHints.map(h => h.alias || h.hint_text) : ['(ว่าง)'];
     drawWheel(items);
   }, [dbHints, drawWheel]);
 
@@ -369,7 +369,7 @@ export default function RandomPage() {
               <div style={{ maxHeight: 250, overflowY: 'auto', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 12, fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
                 {dbHints.length === 0
                   ? <div style={{ textAlign: 'center', color: '#ef4444', fontWeight: 600 }}>หมดแล้ว!</div>
-                  : dbHints.map((h, i) => <div key={h._id || i} style={{ padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.02)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>• {h.hint_text}</div>)
+                  : dbHints.map((h, i) => <div key={h._id || i} style={{ padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.02)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>• {h.alias || h.hint_text}</div>)
                 }
               </div>
             </div>

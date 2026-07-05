@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 
 export async function POST(request) {
   try {
@@ -49,11 +49,20 @@ export async function POST(request) {
     }
 
     const hintsCollection = collection(db, 'hints');
+
+    // Delete all existing hints for this senior before inserting new ones
+    const existingQ = query(hintsCollection, where('senior_name', '==', seniorName));
+    const existingSnap = await getDocs(existingQ);
+    const deletePromises = existingSnap.docs.map((d) => deleteDoc(doc(db, 'hints', d.id)));
+    await Promise.all(deletePromises);
+
+    // Insert fresh hints
+    const createdAt = new Date().toISOString();
     let insertedCount = 0;
-    for (const doc of docs) {
+    for (const d of docs) {
       await addDoc(hintsCollection, {
-        ...doc,
-        created_at: new Date().toISOString(),
+        ...d,
+        created_at: createdAt,
       });
       insertedCount++;
     }
