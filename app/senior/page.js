@@ -14,6 +14,10 @@ export default function SeniorPage() {
   // Check if senior already set up
   useEffect(() => {
     const username = localStorage.getItem('cpe_username');
+    if (!username) {
+      window.location.replace('/login');
+      return;
+    }
     if (username && username.startsWith('69')) {
       window.location.replace('/random');
       return;
