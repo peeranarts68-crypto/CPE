@@ -7,7 +7,7 @@ const DEVELOPERS = [
     name: 'นายณิชกานต์ สุภผล',
     faculty: 'วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม',
     major: 'วิศวกรรมคอมพิวเตอร์',
-    year: 'ปีที่ 4 (CPE 66)',
+    year: 'ปีที่ 3 (CPE 67)',
     ig: 'https://www.instagram.com/neko_0739?igsh=NGwweG1ic2RxMDE2',
   },
   {
