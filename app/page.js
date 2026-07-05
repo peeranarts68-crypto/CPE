@@ -161,7 +161,7 @@ export default function HomePage() {
         {/* Left: Info */}
         <main className="main-section">
           <h2>ยินดีต้อนรับน้องๆเพื่อสุ่มสายรหัส</h2>
-          <p>ทำการสุ่มสายรหัสในวันที่ 15 กรกฏาคม 2569 เวลา 13.00 ณ ตึก Computer Engineering</p>
+          <p>ทำการสุ่มสายรหัสในวันที่ 8 กรกฏาคม 2569 เวลา 13.00 ณ ห้องโถงกิจการนักศึกษาคณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม</p>
 
           {/* Countdown */}
           <div className="countdown-wrapper">
@@ -176,7 +176,7 @@ export default function HomePage() {
           <div className="hint-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
             <span className="hint-tag" style={{ background: 'rgba(157,78,221,0.15)', color: '#d896ff' }}>ฟีเจอร์ใหม่</span>
             <h3>วงล้อสุ่มสายรหัส (CPE Lucky Wheel)</h3>
-            <p style={{ margin: 0 }}>ร่วมสนุกสุ่มจับคู่สายรหัสด้วยวงล้อนำโชคจำลองแบบ Canvas ที่มีเอฟเฟกต์การสุ่มและเสียงประกอบสมจริง!</p>
+            <p style={{ margin: 0 }}>เข้าร่วมการสุ่มสายรหัสด้วยวงล้อ คำใบ้ครั้งที่2-3 จะขึ้นอยู่กับการกดปล่อยคำใบ้จากรุ่นพี่</p>
             <Link href="/random" className="action-btn">เปิดวงล้อสุ่มสายรหัส</Link>
           </div>
         </main>

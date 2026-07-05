@@ -317,7 +317,7 @@ export default function RandomPage() {
       {/* Header */}
       <header style={{ margin: '40px 0 20px' }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: 800, background: 'linear-gradient(135deg,#fff 0%,var(--accent-color) 50%,var(--accent-purple) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 10 }}>วงล้อสุ่มสายรหัส CPE</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>ระบุรหัสหรือชื่อกลุ่ม แล้วหมุนวงล้อเพื่อสุ่มจับคู่สายรหัส!</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>หมุนวงล้อเพื่อสุ่มจับคู่สายรหัส!</p>
       </header>
 
       {/* Main area — either wheel or junior hints */}
