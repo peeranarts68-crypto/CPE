@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Sidebar from './components/Sidebar';
 
 // ── Countdown ──────────────────────────────────────────────
-const TARGET_DATE = new Date('2026-07-15T13:00:00+07:00');
+const TARGET_DATE = new Date('2026-07-08T13:30:00+07:00');
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
