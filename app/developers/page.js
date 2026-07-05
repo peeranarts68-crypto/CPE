@@ -98,8 +98,8 @@ export default function DevelopersPage() {
         .header h1 { font-size: 2.8rem; font-weight: 800; background: linear-gradient(135deg,#fff 0%,var(--accent-color) 50%,var(--accent-purple) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; letter-spacing: -0.5px; filter: drop-shadow(0 0 20px rgba(255,51,51,0.4)) drop-shadow(0 0 40px rgba(255,51,51,0.2)); animation: titleGlow 3s ease-in-out infinite alternate; }
         @keyframes titleGlow { from { filter: drop-shadow(0 0 15px rgba(255,51,51,0.3)) drop-shadow(0 0 30px rgba(255,51,51,0.1)); } to { filter: drop-shadow(0 0 30px rgba(255,51,51,0.6)) drop-shadow(0 0 60px rgba(255,51,51,0.3)); } }
         .header p { color: var(--text-secondary); font-size: 1.1rem; font-weight: 300; max-width: 600px; margin: 0 auto; }
-        .team-container { display: grid; grid-template-columns: repeat(5,1fr); gap: 20px; max-width: 1400px; width: 95%; margin: 40px auto 60px; }
-        @media (max-width: 1300px) { .team-container { grid-template-columns: repeat(3,1fr); } }
+        .team-container { display: grid; grid-template-columns: repeat(6,1fr); gap: 15px; max-width: 1600px; width: 98%; margin: 40px auto 60px; }
+        @media (max-width: 1500px) { .team-container { grid-template-columns: repeat(3,1fr); } }
         @media (max-width: 850px) { .team-container { grid-template-columns: repeat(2,1fr); } }
         @media (max-width: 550px) { .team-container { grid-template-columns: 1fr; } }
         .dev-card { background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 30px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); transition: all 0.4s cubic-bezier(0.165,0.84,0.44,1); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
