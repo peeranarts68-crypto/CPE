@@ -5,25 +5,32 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 export async function GET(request) {
   try {
     const hintsRef = collection(db, 'hints');
-    // Get all hints that haven't been drawn yet
-    const q = query(hintsRef, where('is_drawn', '==', false));
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocs(hintsRef);
     
     const results = querySnapshot.docs.map((doc) => ({
       _id: doc.id,
       ...doc.data(),
     }));
 
-    // Sort by senior_name and then hint_number
-    results.sort((a, b) => {
-      const nameA = a.senior_name || '';
-      const nameB = b.senior_name || '';
-      if (nameA < nameB) return -1;
-      if (nameA > nameB) return 1;
-      return (a.hint_number || 0) - (b.hint_number || 0);
+    // Group by senior
+    const grouped = {};
+    results.forEach(hint => {
+      const s = hint.senior_name || 'Unknown';
+      if (!grouped[s]) {
+        grouped[s] = { senior_name: s, hints: [] };
+      }
+      grouped[s].hints.push(hint);
     });
 
-    return NextResponse.json(results);
+    // Convert to array and sort
+    const finalData = Object.values(grouped).sort((a, b) => a.senior_name.localeCompare(b.senior_name));
+    
+    // Sort hints within each senior
+    finalData.forEach(item => {
+      item.hints.sort((a, b) => (a.hint_number || 0) - (b.hint_number || 0));
+    });
+
+    return NextResponse.json(finalData);
   } catch (err) {
     console.error('admin-hints error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

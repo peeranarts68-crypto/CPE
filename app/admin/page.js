@@ -69,35 +69,49 @@ export default function AdminPage() {
       <div className="admin-container">
         <div className="admin-header">
           <h1 className="admin-title">Admin Dashboard</h1>
-          <h2 className="admin-subtitle">คำใบ้ที่เหลือทั้งหมด ({hints.length} คำใบ้)</h2>
+          <h2 className="admin-subtitle">สถานะคำใบ้ของพี่รหัสทั้งหมด ({hints.length} คน)</h2>
         </div>
 
         {error && <div className="error-msg">{error}</div>}
 
         <div className="hints-list">
           {hints.length === 0 ? (
-            <div className="no-hints">ไม่มีคำใบ้เหลืออยู่</div>
+            <div className="no-hints">ไม่มีข้อมูลคำใบ้</div>
           ) : (
             <table className="hints-table">
               <thead>
                 <tr>
                   <th>พี่รหัส (Senior)</th>
-                  <th>คำใบ้ที่ (Hint #)</th>
-                  <th>ข้อความคำใบ้ (Text)</th>
-                  <th>วันที่สร้าง (Created)</th>
+                  <th>คำใบ้ที่ 1</th>
+                  <th>คำใบ้ที่ 2</th>
+                  <th>คำใบ้ที่ 3</th>
                 </tr>
               </thead>
               <tbody>
-                {hints.map((hint) => (
-                  <tr key={hint._id}>
-                    <td className="senior-name">{hint.senior_name}</td>
-                    <td className="hint-number">{hint.hint_number}</td>
-                    <td className="hint-text">{hint.hint_text}</td>
-                    <td className="created-date">
-                      {hint.created_at ? new Date(hint.created_at).toLocaleString('th-TH') : '-'}
-                    </td>
-                  </tr>
-                ))}
+                {hints.map((group) => {
+                  const getHintStatus = (num) => {
+                    const h = group.hints.find(x => x.hint_number === num);
+                    if (!h) return <div className="status-badge missing">ยังไม่สร้าง</div>;
+                    if (h.is_drawn) {
+                      return (
+                        <div className="status-badge drawn">
+                          <span className="icon">✅</span> ปล่อยแล้ว
+                          <div className="junior-name">({h.drawn_by_name || h.drawn_by || 'น้องรหัส'})</div>
+                        </div>
+                      );
+                    }
+                    return <div className="status-badge undrawn"><span className="icon">⏳</span> ยังไม่ปล่อย</div>;
+                  };
+
+                  return (
+                    <tr key={group.senior_name}>
+                      <td className="senior-name">{group.senior_name}</td>
+                      <td>{getHintStatus(1)}</td>
+                      <td>{getHintStatus(2)}</td>
+                      <td>{getHintStatus(3)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -218,13 +232,25 @@ export default function AdminPage() {
           color: #fff;
         }
         
-        .hint-number {
-          color: var(--text-secondary);
-        }
-        
-        .created-date {
-          color: var(--text-secondary);
+        .status-badge {
+          display: inline-block;
+          padding: 6px 10px;
+          border-radius: 8px;
           font-size: 0.85rem;
+          font-weight: 600;
+          text-align: center;
+          min-width: 100px;
+        }
+        .status-badge .icon { margin-right: 4px; }
+        .status-badge.missing { background: rgba(255,255,255,0.05); color: #888; }
+        .status-badge.drawn { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .status-badge.undrawn { background: rgba(255, 165, 0, 0.15); color: #ffb84d; border: 1px solid rgba(255, 165, 0, 0.3); }
+        
+        .junior-name {
+          font-size: 0.75rem;
+          color: rgba(255,255,255,0.6);
+          margin-top: 4px;
+          font-weight: 400;
         }
 
         .no-hints {
