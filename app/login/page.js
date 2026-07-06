@@ -24,8 +24,17 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     const username = localStorage.getItem('cpe_username');
+    const userStr = localStorage.getItem('cpe_user');
     if (username) {
-      const target = username.startsWith('68') ? '/senior' : '/random';
+      let target = username.startsWith('68') ? '/senior' : '/random';
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          if (user.role === 'admin') target = '/admin';
+        } catch (e) {}
+      } else if (username === '0611610900') {
+        target = '/admin';
+      }
       router.replace(target);
     }
   }, [router]);
@@ -49,7 +58,8 @@ export default function LoginPage() {
         localStorage.setItem('cpe_user', JSON.stringify(data.user || {}));
         localStorage.removeItem('cpe_has_spun');
         setLoginMsg({ text: `✓ ยินดีต้อนรับ ${data.user?.nickname || u}! กำลังพาไปหน้าหลัก...`, type: 'success' });
-        const targetPath = u.startsWith('68') ? '/senior' : '/random';
+        let targetPath = u.startsWith('68') ? '/senior' : '/random';
+        if (data.user?.role === 'admin') targetPath = '/admin';
         setTimeout(() => router.push(targetPath), 1000);
       } else {
         setLoginMsg({ text: data.message || 'เข้าสู่ระบบไม่สำเร็จ', type: 'error' });
