@@ -89,11 +89,37 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {hints.map((group) => {
+                  const deleteHint = async (hintId) => {
+                    if (!window.confirm('คุณแน่ใจหรือว่าต้องการลบคำใบ้นี้?')) return;
+                    try {
+                      const res = await fetch('/api/admin-hints/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ hintId }),
+                      });
+                      if (!res.ok) throw new Error('Delete failed');
+                      // Refresh hints list after delete
+                      setHints(prev => prev.map(g => {
+                        if (g.senior_name !== group.senior_name) return g;
+                        return { ...g, hints: g.hints.filter(h => h._id !== hintId) };
+                      }));
+                    } catch (e) {
+                      console.error(e);
+                      alert('ไม่สามารถลบคำใบ้ได้');
+                    }
+                  };
+
                   const getHintStatus = (num) => {
                     const h = group.hints.find(x => x.hint_number === num);
                     if (!h) return <div className="status-badge missing">ยังไม่สร้าง</div>;
                     
                     const hintText = <div className="hint-text-display">"{h.hint_text}"</div>;
+                    
+                    const deleteBtn = (
+                      <button className="delete-btn" onClick={() => deleteHint(h._id)} title="ลบคำใบ้">
+                        🗑️
+                      </button>
+                    );
                     
                     if (h.is_drawn) {
                       return (
@@ -103,6 +129,7 @@ export default function AdminPage() {
                             <div className="junior-name">({h.drawn_by_name || h.drawn_by || 'น้องรหัส'})</div>
                           </div>
                           {hintText}
+                          {deleteBtn}
                         </div>
                       );
                     }
@@ -110,6 +137,7 @@ export default function AdminPage() {
                       <div className="status-container">
                         <div className="status-badge undrawn"><span className="icon">⏳</span> ยังไม่ปล่อย</div>
                         {hintText}
+                        {deleteBtn}
                       </div>
                     );
                   };
@@ -251,6 +279,17 @@ export default function AdminPage() {
           font-weight: 600;
           text-align: center;
           min-width: 100px;
+          position: relative;
+        }
+        .delete-btn {
+          position: absolute;
+          top: 2px;
+          right: 2px;
+          background: transparent;
+          border: none;
+          color: var(--accent-color);
+          font-size: 0.9rem;
+          cursor: pointer;
         }
         .status-badge .icon { margin-right: 4px; }
         .status-badge.missing { background: rgba(255,255,255,0.05); color: #888; }
