@@ -59,16 +59,19 @@ export default function IGPage() {
 
       <main className="main-content">
         <header className="header">
-          {/* YouTube embed */}
-          <div className="video-wrapper">
-            <iframe
-              src="https://www.youtube.com/embed/Hc4OrO4LRWw"
-              title="YouTube video player"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              style={{ width: "100%", height: "100%" }}
-            ></iframe>
+          {/* Audio player */}
+          <div className="audio-wrapper">
+            <div className="audio-label">🎵 กลัวว่าฉันจะไม่เสียใจ — PURPEECH</div>
+            <audio
+              controls
+              autoPlay
+              loop
+              style={{ width: '100%' }}
+              ref={(el) => { if (el) el.volume = 0.25; }}
+            >
+              <source src="/audio/PURPEECH  กลัวว่าฉันจะไม่เสียใจ (Fear) (เนื้อเพลง).m4a" type="audio/mp4" />
+              เบราว์เซอร์ของคุณไม่รองรับการเล่นเสียง
+            </audio>
           </div>
           <h1>IG พี่รหัส <span>CPE 68</span></h1>
           <p>รวม IG พี่รหัสที่เข้าร่วมการเล่นสายรหัสทั้งหมด (กดที่การ์ดเพื่อไปยังโปรไฟล์)</p>
@@ -302,11 +305,27 @@ export default function IGPage() {
             gap: 15px;
           }
         }
-        .video-wrapper {
+        .audio-wrapper {
           width: 100%;
           max-width: 560px;
-          aspect-ratio: 16 / 9;
-          margin: 40px auto 20px;
+          margin: 30px auto 10px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 16px;
+          padding: 20px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .audio-label {
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          letter-spacing: 0.5px;
+        }
+        audio {
+          border-radius: 8px;
+          outline: none;
         }
       `}</style>
     </div>
