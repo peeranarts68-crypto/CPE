@@ -8,6 +8,31 @@ export default function AdminPage() {
   const [hints, setHints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deduping, setDeduping] = useState(false);
+  const [dedupeMsg, setDedupeMsg] = useState('');
+
+  const handleDedupe = async () => {
+    if (!window.confirm('ต้องการลบข้อมูลคำใบ้ที่ซ้ำกันทั้งหมดหรือไม่? ระบบจะเก็บเฉพาะอันล่าสุดของแต่ละคำใบ้')) return;
+    setDeduping(true);
+    setDedupeMsg('');
+    try {
+      const res = await fetch('/api/dedupe-hints', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setDedupeMsg(`✅ ลบข้อมูลซ้ำสำเร็จ! ลบไป ${data.deleted} รายการ`);
+        // Reload hints
+        const res2 = await fetch('/api/admin-hints');
+        const freshData = await res2.json();
+        setHints(freshData);
+      } else {
+        setDedupeMsg('❌ เกิดข้อผิดพลาด: ' + (data.error || 'unknown'));
+      }
+    } catch (e) {
+      setDedupeMsg('❌ เกิดข้อผิดพลาด: ' + e.message);
+    } finally {
+      setDeduping(false);
+    }
+  };
 
   useEffect(() => {
     const username = localStorage.getItem('cpe_username');
@@ -70,6 +95,12 @@ export default function AdminPage() {
         <div className="admin-header">
           <h1 className="admin-title">Admin Dashboard</h1>
           <h2 className="admin-subtitle">สถานะคำใบ้ของพี่รหัสทั้งหมด ({hints.length} คน)</h2>
+          <div className="dedupe-section">
+            <button className="dedupe-btn" onClick={handleDedupe} disabled={deduping}>
+              {deduping ? '⏳ กำลังลบ...' : '🧹 ลบข้อมูลซ้ำ (Deduplicate)'}
+            </button>
+            {dedupeMsg && <div className="dedupe-msg">{dedupeMsg}</div>}
+          </div>
         </div>
 
         {error && <div className="error-msg">{error}</div>}
@@ -344,6 +375,44 @@ export default function AdminPage() {
           text-align: center;
           margin-bottom: 24px;
           border: 1px solid rgba(255,51,51,0.2);
+        }
+
+        .dedupe-section {
+          margin-top: 16px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .dedupe-btn {
+          padding: 10px 24px;
+          background: rgba(255, 165, 0, 0.12);
+          border: 1px solid rgba(255, 165, 0, 0.4);
+          border-radius: 50px;
+          color: #ffb84d;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          font-family: 'Outfit', 'IBM Plex Sans Thai', sans-serif;
+        }
+        .dedupe-btn:hover:not(:disabled) {
+          background: rgba(255, 165, 0, 0.25);
+          box-shadow: 0 0 16px rgba(255, 165, 0, 0.25);
+          transform: translateY(-1px);
+        }
+        .dedupe-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .dedupe-msg {
+          font-size: 0.9rem;
+          padding: 8px 16px;
+          border-radius: 8px;
+          background: rgba(255,255,255,0.06);
+          color: var(--text-secondary);
         }
 
         @media (max-width: 768px) {
