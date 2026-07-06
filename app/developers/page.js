@@ -21,7 +21,7 @@ const DEVELOPERS = [
   },
   {
     img: '/img/dev6.jpg',
-    role: 'Support',
+    role: 'Supporter',
     name: 'นายภูริณัฐ หินอ่อน',
     faculty: 'วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม',
     major: 'วิศวกรรมคอมพิวเตอร์',
@@ -30,7 +30,7 @@ const DEVELOPERS = [
   },
   {
     img: '/img/devnew2.jpg',
-    role: 'Support',
+    role: 'Supporter',
     name: 'นายพิชญางกูร ขำปลอด',
     faculty: 'วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม',
     major: 'วิศวกรรมคอมพิวเตอร์',
