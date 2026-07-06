@@ -59,20 +59,7 @@ export default function IGPage() {
 
       <main className="main-content">
         <header className="header">
-          {/* Audio player */}
-          <div className="audio-wrapper">
-            <div className="audio-label">🎵 กลัวว่าฉันจะไม่เสียใจ — PURPEECH</div>
-            <audio
-              controls
-              autoPlay
-              loop
-              style={{ width: '100%' }}
-              ref={(el) => { if (el) el.volume = 0.25; }}
-            >
-              <source src="/audio/PURPEECH  กลัวว่าฉันจะไม่เสียใจ (Fear) (เนื้อเพลง).m4a" type="audio/mp4" />
-              เบราว์เซอร์ของคุณไม่รองรับการเล่นเสียง
-            </audio>
-          </div>
+
           <h1>IG พี่รหัส <span>CPE 68</span></h1>
           <p>รวม IG พี่รหัสที่เข้าร่วมการเล่นสายรหัสทั้งหมด (กดที่การ์ดเพื่อไปยังโปรไฟล์)</p>
         </header>
@@ -305,28 +292,7 @@ export default function IGPage() {
             gap: 15px;
           }
         }
-        .audio-wrapper {
-          width: 100%;
-          max-width: 560px;
-          margin: 30px auto 10px;
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 16px;
-          padding: 20px 24px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .audio-label {
-          font-size: 0.95rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-          letter-spacing: 0.5px;
-        }
-        audio {
-          border-radius: 8px;
-          outline: none;
-        }
+
       `}</style>
     </div>
   );
