@@ -83,8 +83,11 @@ export default function AdminPage() {
                 <tr>
                   <th>พี่รหัส (Senior)</th>
                   <th>คำใบ้ที่ 1</th>
+                  <th>ลบ 1</th>
                   <th>คำใบ้ที่ 2</th>
+                  <th>ลบ 2</th>
                   <th>คำใบ้ที่ 3</th>
+                  <th>ลบ 3</th>
                 </tr>
               </thead>
               <tbody>
@@ -115,12 +118,6 @@ export default function AdminPage() {
                     
                     const hintText = <div className="hint-text-display">"{h.hint_text}"</div>;
                     
-                    const deleteBtn = (
-                      <button className="delete-btn" onClick={() => deleteHint(h._id)} title="ลบคำใบ้">
-                        🗑️
-                      </button>
-                    );
-                    
                     if (h.is_drawn) {
                       return (
                         <div className="status-container">
@@ -129,7 +126,6 @@ export default function AdminPage() {
                             <div className="junior-name">({h.drawn_by_name || h.drawn_by || 'น้องรหัส'})</div>
                           </div>
                           {hintText}
-                          {deleteBtn}
                         </div>
                       );
                     }
@@ -137,8 +133,17 @@ export default function AdminPage() {
                       <div className="status-container">
                         <div className="status-badge undrawn"><span className="icon">⏳</span> ยังไม่ปล่อย</div>
                         {hintText}
-                        {deleteBtn}
                       </div>
+                    );
+                  };
+
+                  const getDeleteButton = (num) => {
+                    const h = group.hints.find(x => x.hint_number === num);
+                    if (!h) return null;
+                    return (
+                      <button className="delete-btn" onClick={() => deleteHint(h._id)} title="ลบคำใบ้">
+                        🗑️
+                      </button>
                     );
                   };
 
@@ -146,8 +151,11 @@ export default function AdminPage() {
                     <tr key={group.senior_name}>
                       <td className="senior-name">{group.senior_name}</td>
                       <td>{getHintStatus(1)}</td>
+                      <td>{getDeleteButton(1)}</td>
                       <td>{getHintStatus(2)}</td>
+                      <td>{getDeleteButton(2)}</td>
                       <td>{getHintStatus(3)}</td>
+                      <td>{getDeleteButton(3)}</td>
                     </tr>
                   );
                 })}
