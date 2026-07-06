@@ -92,15 +92,26 @@ export default function AdminPage() {
                   const getHintStatus = (num) => {
                     const h = group.hints.find(x => x.hint_number === num);
                     if (!h) return <div className="status-badge missing">ยังไม่สร้าง</div>;
+                    
+                    const hintText = <div className="hint-text-display">"{h.hint_text}"</div>;
+                    
                     if (h.is_drawn) {
                       return (
-                        <div className="status-badge drawn">
-                          <span className="icon">✅</span> ปล่อยแล้ว
-                          <div className="junior-name">({h.drawn_by_name || h.drawn_by || 'น้องรหัส'})</div>
+                        <div className="status-container">
+                          <div className="status-badge drawn">
+                            <span className="icon">✅</span> ปล่อยแล้ว
+                            <div className="junior-name">({h.drawn_by_name || h.drawn_by || 'น้องรหัส'})</div>
+                          </div>
+                          {hintText}
                         </div>
                       );
                     }
-                    return <div className="status-badge undrawn"><span className="icon">⏳</span> ยังไม่ปล่อย</div>;
+                    return (
+                      <div className="status-container">
+                        <div className="status-badge undrawn"><span className="icon">⏳</span> ยังไม่ปล่อย</div>
+                        {hintText}
+                      </div>
+                    );
                   };
 
                   return (
@@ -251,6 +262,24 @@ export default function AdminPage() {
           color: rgba(255,255,255,0.6);
           margin-top: 4px;
           font-weight: 400;
+        }
+
+        .status-container {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .hint-text-display {
+          font-size: 0.85rem;
+          color: rgba(255, 255, 255, 0.85);
+          background: rgba(255, 255, 255, 0.05);
+          padding: 8px;
+          border-radius: 8px;
+          border-left: 3px solid var(--accent-color);
+          font-style: italic;
+          word-break: break-word;
+          max-width: 250px;
         }
 
         .no-hints {
