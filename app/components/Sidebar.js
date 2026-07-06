@@ -86,6 +86,17 @@ export default function Sidebar() {
               </Link>
             </li>
           ))}
+          {user?.role === 'admin' && (
+            <li>
+              <Link
+                href="/admin"
+                className={`sidebar-link${pathname === '/admin' ? ' active-link' : ''}`}
+                style={{ color: 'var(--accent-color)' }}
+              >
+                ระบบจัดการคำใบ้ (Admin)
+              </Link>
+            </li>
+          )}
         </ul>
 
         {/* Dynamic Auth Slot */}
@@ -96,9 +107,11 @@ export default function Sidebar() {
                 <div style={{ padding: 15, background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', marginBottom: 15 }}>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 4 }}>เข้าสู่ระบบโดย</p>
                   <p style={{ fontWeight: 600, color: '#fff', marginBottom: 2 }}>
-                    {user.username.startsWith('68') 
-                      ? `พี่ ${user.nickname || user.username} (CPE 68)` 
-                      : `น้อง ${user.nickname || user.username} (CPE 69)`}
+                    {user.role === 'admin'
+                      ? `แอดมินระบบ (Admin)`
+                      : user.username.startsWith('68') 
+                        ? `พี่ ${user.nickname || user.username} (CPE 68)` 
+                        : `น้อง ${user.nickname || user.username} (CPE 69)`}
                   </p>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user.username}</p>
                 </div>
