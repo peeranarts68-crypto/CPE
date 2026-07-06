@@ -322,7 +322,7 @@ export default function RandomPage() {
   }, [dbHints, drawWheel]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', textAlign: 'center', background: 'var(--bg-color)', backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(255,51,51,0.05) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(153,0,0,0.05) 0%, transparent 40%)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', textAlign: 'center' }}>
       <Sidebar />
 
       {/* Navbar */}
@@ -420,7 +420,7 @@ export default function RandomPage() {
       <canvas ref={confettiRef} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 999 }} />
 
       <footer>
-        Powerd By Computer Engineering 66&68
+        Powerd By Computer Engineering 67 & 68
       </footer>
 
       <style>{`

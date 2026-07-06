@@ -59,7 +59,7 @@ const DEVELOPERS = [
 
 export default function DevelopersPage() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', textAlign: 'center', background: 'var(--bg-color)', backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(255,51,51,0.05) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(153,0,0,0.05) 0%, transparent 40%)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', textAlign: 'center' }}>
       <Sidebar />
 
       <header className="header">
@@ -91,7 +91,7 @@ export default function DevelopersPage() {
         ))}
       </div>
 
-      <footer>Powerd By Computer Engineering 66&68</footer>
+      <footer>Powerd By Computer Engineering 67 & 68</footer>
 
       <style>{`
         .header { margin: 60px 0 20px; padding: 0 20px; }

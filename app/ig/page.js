@@ -94,7 +94,7 @@ export default function IGPage() {
         </div>
       </main>
 
-      <footer>Powerd By Computer Engineering 66&68</footer>
+      <footer>Powerd By Computer Engineering 67 & 68</footer>
 
       <style>{`
         .ig-page-container {
@@ -102,10 +102,6 @@ export default function IGPage() {
           flex-direction: column;
           align-items: center;
           min-height: 100vh;
-          background: var(--bg-color);
-          background-image: radial-gradient(circle at 15% 50%, rgba(131, 58, 180, 0.05) 0%, transparent 40%), 
-                            radial-gradient(circle at 85% 30%, rgba(253, 29, 29, 0.05) 0%, transparent 40%),
-                            radial-gradient(circle at 50% 80%, rgba(252, 176, 69, 0.05) 0%, transparent 40%);
         }
 
         .navbar {

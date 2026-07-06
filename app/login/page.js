@@ -104,11 +104,6 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      {/* Animated orbs */}
-      <div className="bg-orb bg-orb-1" />
-      <div className="bg-orb bg-orb-2" />
-      <div className="bg-orb bg-orb-3" />
-
       {/* Back button */}
       <Link href="/" className="back-btn" id="backBtn">
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -185,14 +180,11 @@ export default function LoginPage() {
           )}
         </div>
 
-        <div className="auth-footer">Powerd By Computer Engineering 66&68</div>
+        <div className="auth-footer">Powerd By Computer Engineering 67 & 68</div>
       </div>
 
       <style>{`
         .login-page {
-          font-family: 'Outfit', 'IBM Plex Sans Thai', sans-serif;
-          background-color: var(--bg-color);
-          color: var(--text-primary);
           min-height: 100vh;
           display: flex;
           align-items: center;
@@ -200,22 +192,6 @@ export default function LoginPage() {
           overflow-x: hidden;
           position: relative;
         }
-        .login-page::before {
-          content: '';
-          position: fixed;
-          inset: 0;
-          background-image:
-            linear-gradient(rgba(255,51,51,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,51,51,0.03) 1px, transparent 1px);
-          background-size: 40px 40px;
-          pointer-events: none;
-          z-index: 0;
-        }
-        .bg-orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.18; pointer-events: none; animation: drift 12s ease-in-out infinite alternate; }
-        .bg-orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #ff3333, transparent); top: -150px; left: -150px; animation-duration: 10s; }
-        .bg-orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, #990000, transparent); bottom: -100px; right: -100px; animation-duration: 14s; animation-direction: alternate-reverse; }
-        .bg-orb-3 { width: 300px; height: 300px; background: radial-gradient(circle, #ff6666, transparent); top: 50%; left: 50%; transform: translate(-50%,-50%); animation-duration: 8s; }
-        @keyframes drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,30px) scale(1.08); } }
         .back-btn {
           position: fixed; top: 24px; left: 24px; z-index: 100;
           display: flex; align-items: center; gap: 8px;

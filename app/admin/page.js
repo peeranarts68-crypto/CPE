@@ -82,10 +82,6 @@ export default function AdminPage() {
 
   return (
     <div className="admin-page">
-      {/* Background orbs */}
-      <div className="bg-orb bg-orb-1" />
-      <div className="bg-orb bg-orb-2" />
-      
       <Link href="/" className="back-btn">
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
         หน้าแรก
@@ -198,28 +194,11 @@ export default function AdminPage() {
 
       <style>{`
         .admin-page {
-          font-family: 'Outfit', 'IBM Plex Sans Thai', sans-serif;
-          background-color: var(--bg-color);
-          color: var(--text-primary);
           min-height: 100vh;
           padding: 80px 20px 40px;
           position: relative;
           overflow-x: hidden;
         }
-        .admin-page::before {
-          content: '';
-          position: fixed;
-          inset: 0;
-          background-image:
-            linear-gradient(rgba(255,51,51,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,51,51,0.03) 1px, transparent 1px);
-          background-size: 40px 40px;
-          pointer-events: none;
-          z-index: 0;
-        }
-        .bg-orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.15; pointer-events: none; }
-        .bg-orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, #ff3333, transparent); top: -100px; left: -100px; }
-        .bg-orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, #990000, transparent); bottom: -100px; right: -100px; }
         
         .back-btn {
           position: fixed; top: 24px; left: 24px; z-index: 100;

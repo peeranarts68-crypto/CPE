@@ -188,7 +188,7 @@ export default function HomePage() {
       </div>
 
       <footer>
-        Powerd By Computer Engineering 66&68
+        Powerd By Computer Engineering 67 & 68
       </footer>
 
       <style>{`

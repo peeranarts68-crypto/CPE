@@ -13,7 +13,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="th">
-      <body>{children}</body>
+      <body>
+        {/* Global animated background orbs */}
+        <div className="bg-orb bg-orb-1" />
+        <div className="bg-orb bg-orb-2" />
+        <div className="bg-orb bg-orb-3" />
+        {children}
+      </body>
     </html>
   );
 }

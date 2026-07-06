@@ -126,7 +126,7 @@ export default function Sidebar() {
         )}
 
         <div className="sidebar-footer">
-          Powerd By Computer Engineering 66&68
+          Powerd By Computer Engineering 67 & 68
         </div>
       </div>
     </>
