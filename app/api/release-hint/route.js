@@ -1,72 +1,77 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, limit } from 'firebase/firestore';
+
+const USE_DUMMY = process.env.USE_DUMMY === 'true';
+
+// ── DUMMY handler ──────────────────────────────────────────
+async function handleDummy(request) {
+  const { hintsStore } = await import('@/lib/dummy-store');
+  const data = await request.json();
+  const seniorName = (data.senior_name || '').trim();
+  const hintNumber = parseInt(data.hint_number || 0);
+  const juniorId = (data.junior_id || '').trim();
+
+  if (!seniorName || hintNumber <= 1 || !juniorId) {
+    return NextResponse.json({ success: false, message: 'ข้อมูลไม่ครบถ้วน (senior_name, hint_number, junior_id)' }, { status: 400 });
+  }
+
+  // ตรวจสอบว่า junior นี้ draw hint_number=1 ของ senior นี้จริง
+  const firstHint = hintsStore.findOne({ senior_name: seniorName, hint_number: 1, drawn_by: juniorId });
+  if (!firstHint) {
+    return NextResponse.json({ success: false, message: 'ไม่พบข้อมูลความสัมพันธ์สายรหัสที่ถูกต้อง' }, { status: 403 });
+  }
+
+  const juniorName = firstHint.drawn_by_name || 'น้องรหัส';
+  const targetHint = hintsStore.findOne({ senior_name: seniorName, hint_number: hintNumber });
+  if (!targetHint) {
+    return NextResponse.json({ success: false, message: 'ไม่พบข้อมูลคำใบ้' }, { status: 404 });
+  }
+
+  hintsStore.update(targetHint._id, { is_drawn: true, drawn_by: juniorId, drawn_by_name: juniorName });
+  return NextResponse.json({ success: true, message: 'ปล่อยคำใบ้สำเร็จ!' });
+}
+
+// ── REAL handler ───────────────────────────────────────────
+async function handleReal(request) {
+  const { db } = await import('@/lib/firebase');
+  const { collection, query, where, getDocs, doc, updateDoc, limit } = await import('firebase/firestore');
+
+  const data = await request.json();
+  const seniorName = (data.senior_name || '').trim();
+  const hintNumber = parseInt(data.hint_number || 0);
+  const juniorId = (data.junior_id || '').trim();
+
+  if (!seniorName || hintNumber <= 1 || !juniorId) {
+    return NextResponse.json({ success: false, message: 'ข้อมูลไม่ครบถ้วน (senior_name, hint_number, junior_id)' }, { status: 400 });
+  }
+
+  const hintsRef = collection(db, 'hints');
+  const q1 = query(hintsRef, where('senior_name', '==', seniorName), where('hint_number', '==', 1), where('drawn_by', '==', juniorId), limit(1));
+  const querySnapshot1 = await getDocs(q1);
+
+  if (querySnapshot1.empty) {
+    return NextResponse.json({ success: false, message: 'ไม่พบข้อมูลความสัมพันธ์สายรหัสที่ถูกต้อง' }, { status: 403 });
+  }
+
+  const firstHintDoc = querySnapshot1.docs[0].data();
+  const juniorName = firstHintDoc.drawn_by_name || 'น้องรหัส';
+
+  const q2 = query(hintsRef, where('senior_name', '==', seniorName), where('hint_number', '==', hintNumber), limit(1));
+  const querySnapshot2 = await getDocs(q2);
+
+  if (querySnapshot2.empty) {
+    return NextResponse.json({ success: false, message: 'ไม่พบข้อมูลคำใบ้หรือไม่มีการเปลี่ยนแปลง' }, { status: 404 });
+  }
+
+  const targetDoc = querySnapshot2.docs[0];
+  await updateDoc(doc(db, 'hints', targetDoc.id), { is_drawn: true, drawn_by: juniorId, drawn_by_name: juniorName });
+  return NextResponse.json({ success: true, message: 'ปล่อยคำใบ้สำเร็จ!' });
+}
 
 export async function POST(request) {
   try {
-    const data = await request.json();
-    const seniorName = (data.senior_name || '').trim();
-    const hintNumber = parseInt(data.hint_number || 0);
-    const juniorId = (data.junior_id || '').trim();
-
-    if (!seniorName || hintNumber <= 1 || !juniorId) {
-      return NextResponse.json(
-        { success: false, message: 'ข้อมูลไม่ครบถ้วน (senior_name, hint_number, junior_id)' },
-        { status: 400 }
-      );
-    }
-
-    const hintsRef = collection(db, 'hints');
-
-    // Security check: hint_number=1 must be drawn by this junior
-    const q1 = query(
-      hintsRef,
-      where('senior_name', '==', seniorName),
-      where('hint_number', '==', 1),
-      where('drawn_by', '==', juniorId),
-      limit(1)
-    );
-    const querySnapshot1 = await getDocs(q1);
-
-    if (querySnapshot1.empty) {
-      return NextResponse.json(
-        { success: false, message: 'ไม่พบข้อมูลความสัมพันธ์สายรหัสที่ถูกต้อง' },
-        { status: 403 }
-      );
-    }
-
-    const firstHintDoc = querySnapshot1.docs[0].data();
-    const juniorName = firstHintDoc.drawn_by_name || 'น้องรหัส';
-
-    // Find the target hint number document to update
-    const q2 = query(
-      hintsRef,
-      where('senior_name', '==', seniorName),
-      where('hint_number', '==', hintNumber),
-      limit(1)
-    );
-    const querySnapshot2 = await getDocs(q2);
-
-    if (querySnapshot2.empty) {
-      return NextResponse.json(
-        { success: false, message: 'ไม่พบข้อมูลคำใบ้หรือไม่มีการเปลี่ยนแปลง' },
-        { status: 404 }
-      );
-    }
-
-    const targetDoc = querySnapshot2.docs[0];
-    await updateDoc(doc(db, 'hints', targetDoc.id), {
-      is_drawn: true,
-      drawn_by: juniorId,
-      drawn_by_name: juniorName,
-    });
-
-    return NextResponse.json({ success: true, message: 'ปล่อยคำใบ้สำเร็จ!' });
+    return USE_DUMMY ? await handleDummy(request) : await handleReal(request);
   } catch (err) {
     console.error('release-hint error:', err);
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

@@ -215,11 +215,24 @@ export default function RandomPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: winner._id, drawn_by: juniorId, drawn_by_name: nick }),
-      }).then(() => checkJuniorHints()).catch(() => {});
+      }).then(async (res) => {
+        if (res.status === 409) {
+          // hint ถูกคนอื่น draw ไปก่อนหน้าแล้ว (race condition)
+          // reset สถานะและโหลดวงล้อใหม่
+          localStorage.removeItem('cpe_has_spun');
+          setHasSpun(false);
+          setModalOpen(false);
+          stopConfetti();
+          alert('คำใบ้นี้ถูกสุ่มไปแล้วโดยน้องคนอื่น กรุณาหมุนใหม่อีกครั้ง!');
+          await loadHints();
+        } else {
+          checkJuniorHints();
+        }
+      }).catch(() => {});
 
       return prev;
     });
-  }, [checkJuniorHints]);
+  }, [checkJuniorHints, loadHints]);
 
   // ── spin wheel ──────────────────────────────────────────
   const spinWheel = useCallback(() => {
