@@ -69,7 +69,8 @@ export default function Navbar() {
               if (!user) return true;
               const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
               const isJunior = user.username?.startsWith('69') || user.role === 'cpe69';
-              if (isSenior || isJunior) return false;
+              const isAdmin = user.username === '0611610900' || user.role === 'admin';
+              if (isSenior || isJunior || isAdmin) return false;
             }
             return true;
           }).map(({ href, label }) => (
@@ -173,7 +174,8 @@ export default function Navbar() {
               if (!user) return true;
               const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
               const isJunior = user.username?.startsWith('69') || user.role === 'cpe69';
-              if (isSenior || isJunior) return false;
+              const isAdmin = user.username === '0611610900' || user.role === 'admin';
+              if (isSenior || isJunior || isAdmin) return false;
             }
             return true;
           }).map(({ href, label }) => (

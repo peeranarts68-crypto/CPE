@@ -18,6 +18,9 @@ export default function SeniorPage() {
     let userObj = null;
     try { userObj = JSON.parse(localStorage.getItem('cpe_user') || 'null'); } catch (_) {}
     
+    const isAdmin = username === '0611610900' || userObj?.role === 'admin';
+    if (isAdmin) { window.location.replace('/admin'); return; }
+
     const isJunior = username.startsWith('69') || userObj?.role === 'cpe69';
     if (isJunior) { window.location.replace('/random'); return; }
 
