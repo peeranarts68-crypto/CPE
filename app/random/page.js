@@ -291,7 +291,7 @@ export default function RandomPage() {
     let userObj = null;
     try { userObj = JSON.parse(localStorage.getItem('cpe_user') || 'null'); } catch (_) {}
     
-    const senior = username.startsWith('68') || userObj?.role === 'cpe68';
+    const senior = username.startsWith('68') || userObj?.role === 'cpe68' || userObj?.role === 'admin' || username === '0611610900';
     setIsSenior(senior);
 
     const params = new URLSearchParams(window.location.search);
