@@ -48,7 +48,7 @@ const DEVELOPERS = [
     ig: 'https://www.instagram.com/jakxx_03',
   },
   {
-    img: '/img/leaddev.jpg',
+    img: '/img/support.png',
     role: 'Database & Support Developer',
     name: 'นายณิชกานต์ สุภผล',
     faculty: 'วิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม',
