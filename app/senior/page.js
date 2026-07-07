@@ -100,7 +100,7 @@ export default function SeniorPage() {
   if (!authorized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-[1.2rem] font-semibold text-text-muted animate-pulse">
+        <div className="text-[1.2rem] font-semibold text-text-muted">
           กำลังโหลดข้อมูล...
         </div>
       </div>

@@ -26,8 +26,17 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     const username = localStorage.getItem('cpe_username');
+    const userStr = localStorage.getItem('cpe_user');
     if (username) {
       let target = username.startsWith('68') ? '/senior' : '/random';
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          if (user.role === 'admin') target = '/admin';
+        } catch (e) {}
+      } else if (username === '0611610900') {
+        target = '/admin';
+      }
       router.replace(target);
     } else {
       setCheckingAuth(false);
@@ -57,6 +66,7 @@ export default function LoginPage() {
         localStorage.setItem('cpe_user', JSON.stringify(data.user || {}));
         localStorage.removeItem('cpe_has_spun');
         let targetPath = u.startsWith('68') ? '/senior' : '/random';
+        if (data.user?.role === 'admin') targetPath = '/admin';
         setTimeout(() => router.push(targetPath), 300);
       } else {
         setLoginMsg({ text: data.message || 'เข้าสู่ระบบไม่สำเร็จ', type: 'error' });
@@ -102,7 +112,7 @@ export default function LoginPage() {
   if (checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-[1.2rem] font-semibold text-text-muted animate-pulse">
+        <div className="text-[1.2rem] font-semibold text-text-muted">
           กำลังโหลดข้อมูล...
         </div>
       </div>

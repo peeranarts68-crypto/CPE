@@ -38,9 +38,11 @@ export default function Navbar() {
   }
 
   const displayName = user
-    ? (user.username?.startsWith('68')
-        ? `พี่ ${user.nickname || user.username}`
-        : `น้อง ${user.nickname || user.username}`)
+    ? (user.role === 'admin'
+        ? 'แอดมินระบบ (Admin)'
+        : user.username?.startsWith('68')
+          ? `พี่ ${user.nickname || user.username}`
+          : `น้อง ${user.nickname || user.username}`)
     : null;
 
   return (
@@ -62,7 +64,15 @@ export default function Navbar() {
 
         {/* Desktop nav links */}
         <div className="hidden lg:flex items-center gap-0.5 flex-1">
-          {NAV_LINKS.map(({ href, label }) => (
+          {NAV_LINKS.filter(({ href }) => {
+            if (href === '/senior') {
+              if (!user) return true;
+              const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
+              const isJunior = user.username?.startsWith('69') || user.role === 'cpe69';
+              if (isSenior || isJunior) return false;
+            }
+            return true;
+          }).map(({ href, label }) => (
             <Link
               key={href}
               href={href}
@@ -75,6 +85,18 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
+          {user?.role === 'admin' && (
+            <Link
+              href="/admin"
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200
+                ${pathname === '/admin'
+                  ? 'text-accent bg-[rgba(255,51,51,0.12)] border border-[rgba(255,51,51,0.28)]'
+                  : 'text-accent hover:text-white hover:bg-white/5'
+                }`}
+            >
+              ระบบจัดการคำใบ้ (Admin)
+            </Link>
+          )}
         </div>
 
         {/* Flex spacer for mobile */}
@@ -146,7 +168,15 @@ export default function Navbar() {
         style={{ background: 'rgba(13,13,13,0.97)', backdropFilter: 'blur(20px)' }}
       >
         <div className="flex flex-col gap-1 px-4 py-3">
-          {NAV_LINKS.map(({ href, label }) => (
+          {NAV_LINKS.filter(({ href }) => {
+            if (href === '/senior') {
+              if (!user) return true;
+              const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
+              const isJunior = user.username?.startsWith('69') || user.role === 'cpe69';
+              if (isSenior || isJunior) return false;
+            }
+            return true;
+          }).map(({ href, label }) => (
             <Link
               key={href}
               href={href}
@@ -159,6 +189,18 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
+          {user?.role === 'admin' && (
+            <Link
+              href="/admin"
+              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200
+                ${pathname === '/admin'
+                  ? 'text-accent bg-[rgba(255,51,51,0.1)] border border-[rgba(255,51,51,0.25)]'
+                  : 'text-accent hover:text-white hover:bg-white/5'
+                }`}
+            >
+              ระบบจัดการคำใบ้ (Admin)
+            </Link>
+          )}
         </div>
       </div>
     </>

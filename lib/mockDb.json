@@ -1,0 +1,112 @@
+{
+  "users": [
+    {
+      "username": "6912345678",
+      "first_name": "สมหญิง",
+      "nickname": "หญิง",
+      "role": "cpe69",
+      "password": "$2a$10$wR.t6B2iP93k7K1xVp.0ReDdHhFwKq8m.pTjXn7zE7eQxGqH7F3P.",
+      "created_at": "2026-07-07T05:52:34.477Z"
+    },
+    {
+      "username": "6812345678",
+      "first_name": "สมชาย",
+      "nickname": "ชาย",
+      "role": "cpe68",
+      "password": "$2a$10$wR.t6B2iP93k7K1xVp.0ReDdHhFwKq8m.pTjXn7zE7eQxGqH7F3P.",
+      "created_at": "2026-07-07T05:52:34.477Z"
+    }
+  ],
+  "hints": [
+    {
+      "_id": "hint_chai_1",
+      "senior_name": "ชาย",
+      "hint_text": "ชอบใส่แว่นและชอบกินชาไข่มุก",
+      "hint_number": 1,
+      "is_drawn": true,
+      "drawn_by": "6912345678",
+      "drawn_by_name": "หญิง",
+      "created_at": "2026-07-07T05:52:34.477Z"
+    },
+    {
+      "_id": "hint_chai_2",
+      "senior_name": "ชาย",
+      "hint_text": "เป็นคนเงียบๆ แต่เรียนเก่งมาก",
+      "hint_number": 2,
+      "is_drawn": true,
+      "drawn_by": "6912345678",
+      "drawn_by_name": "หญิง",
+      "created_at": "2026-07-07T05:52:34.477Z"
+    },
+    {
+      "_id": "hint_chai_3",
+      "senior_name": "ชาย",
+      "hint_text": "ชอบเล่นเกมบอร์ดเกม",
+      "hint_number": 3,
+      "is_drawn": false,
+      "drawn_by": "6912345678",
+      "drawn_by_name": "หญิง",
+      "created_at": "2026-07-07T05:52:34.477Z"
+    },
+    {
+      "_id": "hint_sak_1",
+      "senior_name": "ศักดิ์",
+      "hint_text": "ขับรถกระบะสีดำ",
+      "hint_number": 1,
+      "is_drawn": false,
+      "drawn_by": "",
+      "drawn_by_name": "",
+      "created_at": "2026-07-07T05:52:34.477Z"
+    },
+    {
+      "_id": "hint_sak_2",
+      "senior_name": "ศักดิ์",
+      "hint_text": "ชอบเสื้อสีส้ม",
+      "hint_number": 2,
+      "is_drawn": false,
+      "drawn_by": "",
+      "drawn_by_name": "",
+      "created_at": "2026-07-07T05:52:34.477Z"
+    },
+    {
+      "_id": "hint_sak_3",
+      "senior_name": "ศักดิ์",
+      "hint_text": "ชอบทานข้าวผัดกระเพรา",
+      "hint_number": 3,
+      "is_drawn": false,
+      "drawn_by": "",
+      "drawn_by_name": "",
+      "created_at": "2026-07-07T05:52:34.477Z"
+    },
+    {
+      "_id": "hint_wichai_1",
+      "senior_name": "วิชัย",
+      "hint_text": "ชอบใส่เสื้อยืดสีขาว",
+      "hint_number": 1,
+      "is_drawn": false,
+      "drawn_by": "",
+      "drawn_by_name": "",
+      "created_at": "2026-07-07T05:52:34.477Z"
+    },
+    {
+      "_id": "hint_naree_1",
+      "senior_name": "นารี",
+      "hint_text": "ชอบกินชาบู",
+      "hint_number": 1,
+      "is_drawn": false,
+      "drawn_by": "",
+      "drawn_by_name": "",
+      "created_at": "2026-07-07T05:52:34.477Z"
+    },
+    {
+      "_id": "hint_somsri_1",
+      "senior_name": "สมศรี",
+      "hint_text": "เลี้ยงแมวส้มสามตัว",
+      "hint_number": 1,
+      "is_drawn": false,
+      "drawn_by": "",
+      "drawn_by_name": "",
+      "created_at": "2026-07-07T05:52:34.477Z"
+    }
+  ]
+}

@@ -3,21 +3,6 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import bcrypt from 'bcryptjs';
 
-// ── Dummy accounts (no DB needed) ─────────────────────────
-// Each entry: { password, user }
-const DUMMY_USERS = {
-  // CPE 69 junior  →  redirects to /random
-  '6900000001': {
-    password: 'demo69',
-    user: { username: '6900000001', first_name: 'น้องทดสอบ', nickname: 'Junior', role: 'cpe69' },
-  },
-  // CPE 68 senior  →  redirects to /senior
-  '6800000001': {
-    password: 'demo68',
-    user: { username: '6800000001', first_name: 'พี่ทดสอบ', nickname: 'Senior', role: 'cpe68' },
-  },
-};
-
 export async function POST(request) {
   try {
     const data = await request.json();
@@ -28,18 +13,6 @@ export async function POST(request) {
       return NextResponse.json(
         { success: false, message: 'กรุณากรอกรหัสนักศึกษาและรหัสผ่าน' },
         { status: 400 }
-      );
-    }
-
-    // ── Short-circuit: dummy accounts bypass Firebase entirely ──
-    if (DUMMY_USERS[username]) {
-      const dummy = DUMMY_USERS[username];
-      if (password === dummy.password) {
-        return NextResponse.json({ success: true, user: dummy.user });
-      }
-      return NextResponse.json(
-        { success: false, message: 'รหัสผ่านไม่ถูกต้อง' },
-        { status: 401 }
       );
     }
 
@@ -67,7 +40,7 @@ export async function POST(request) {
           username: user.username,
           first_name: user.first_name,
           nickname: user.nickname,
-          role: user.role || 'cpe69',
+          role: user.username === '0611610900' ? 'admin' : (user.role || 'cpe69'),
         },
       });
     } else {

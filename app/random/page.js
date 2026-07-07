@@ -56,8 +56,9 @@ export default function RandomPage() {
   const [juniorData, setJuniorData]   = useState(null);
   const [authorized, setAuthorized]   = useState(false);
   const [isSenior, setIsSenior]         = useState(false);
+  const [loadingHints, setLoadingHints] = useState(true);
 
-  const TARGET_DATE = useRef(new Date('2026-07-08T13:30:00+07:00')).current;
+  const TARGET_DATE = useRef(new Date('2026-07-08T17:20:00+07:00')).current;
   const [timeLocked, setTimeLocked] = useState(true);
 
   useEffect(() => {
@@ -77,6 +78,9 @@ export default function RandomPage() {
     const center = size / 2;
     const radius = center - 20;
     ctx.clearRect(0, 0, size, size);
+
+
+
     const arc = (2 * Math.PI) / items.length;
     items.forEach((item, i) => {
       const a = angleRef.current + i * arc;
@@ -84,15 +88,17 @@ export default function RandomPage() {
       ctx.arc(center, center, radius, a, a + arc);
       ctx.fillStyle = COLORS[i % COLORS.length]; ctx.fill();
       ctx.strokeStyle = '#0b0f19'; ctx.lineWidth = 4; ctx.stroke();
-      ctx.save(); ctx.translate(center, center); ctx.rotate(a + arc / 2);
-      ctx.textAlign = 'right';
-      const col = COLORS[i % COLORS.length];
-      ctx.fillStyle = (col === '#ffffff' || col === '#f2f2f2') ? '#0d0d0d' : '#ffffff';
-      ctx.font = `bold ${items.length > 15 ? '14px' : '20px'} 'Outfit', 'IBM Plex Sans Thai', sans-serif`;
-      ctx.shadowColor = (col === '#ffffff' || col === '#f2f2f2') ? 'transparent' : 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 4;
-      ctx.fillText(item, radius - 30, 8);
-      ctx.restore();
+      if (item !== '(ว่าง)') {
+        ctx.save(); ctx.translate(center, center); ctx.rotate(a + arc / 2);
+        ctx.textAlign = 'right';
+        const col = COLORS[i % COLORS.length];
+        ctx.fillStyle = (col === '#ffffff' || col === '#f2f2f2') ? '#0d0d0d' : '#ffffff';
+        ctx.font = `bold ${items.length > 15 ? '14px' : '20px'} 'Outfit', 'IBM Plex Sans Thai', sans-serif`;
+        ctx.shadowColor = (col === '#ffffff' || col === '#f2f2f2') ? 'transparent' : 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(item, radius - 30, 8);
+        ctx.restore();
+      }
     });
     ctx.beginPath(); ctx.arc(center, center, 45, 0, 2 * Math.PI); ctx.fillStyle = '#1a1a1a'; ctx.fill();
     ctx.strokeStyle = '#ff3333'; ctx.lineWidth = 3; ctx.stroke();
@@ -121,7 +127,9 @@ export default function RandomPage() {
       const res = await fetch(`/api/get-hints?t=${Date.now()}`);
       const data = await res.json();
       if (Array.isArray(data)) setDbHints(data);
-    } catch (_) {}
+    } catch (_) {} finally {
+      setLoadingHints(false);
+    }
   }, []);
 
   const checkJuniorHints = useCallback(async () => {
@@ -313,14 +321,14 @@ export default function RandomPage() {
   }, [loadHints, checkJuniorHints]);
 
   useEffect(() => {
-    const items = dbHints.length ? dbHints.map(h => h.alias || h.hint_text) : ['(ว่าง)'];
+    const items = dbHints.length ? dbHints.map(h => h.alias || h.hint_text) : ['', '', '', ''];
     drawWheel(items);
   }, [dbHints, drawWheel]);
 
   if (!authorized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-[1.2rem] font-semibold text-text-muted animate-pulse">
+        <div className="text-[1.2rem] font-semibold text-text-muted">
           กำลังโหลดข้อมูล...
         </div>
       </div>
@@ -386,48 +394,67 @@ export default function RandomPage() {
 
           {/* Wheel */}
           <main className="glass-card p-10 sm:p-6 flex flex-col items-center justify-center">
-            <div className="relative mb-8"
-              style={{ width: 'min(420px, 85vw)', height: 'min(420px, 85vw)' }}>
-              {/* Pointer */}
-              <div className="absolute -top-[15px] left-1/2 -translate-x-1/2 z-10 w-[30px] h-[40px]
-                bg-gradient-to-b from-accent to-accent-deep"
-                style={{ clipPath: 'polygon(50% 100%, 0 0, 100% 0)', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' }}
-              />
-              <canvas
-                ref={canvasRef} id="wheelCanvas"
-                width={800} height={800}
-                className="w-full h-full rounded-full pointer-events-none"
-                style={{ boxShadow: '0 0 40px rgba(255,51,51,0.22), inset 0 0 20px rgba(255,255,255,0.05)' }}
-              />
-              <button
-                onClick={spinWheel}
-                disabled={hasSpun || timeLocked || isSenior}
-                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[15]
-                  w-20 h-20 rounded-full font-extrabold text-[0.9rem] cursor-pointer
-                  flex flex-col justify-center items-center select-none transition-all duration-200 text-center leading-tight
-                  ${(hasSpun || timeLocked || isSenior)
-                    ? 'bg-[#1f2937] text-[#4b5563] border-[5px] border-[#111827] cursor-not-allowed shadow-none'
-                    : 'bg-gradient-to-br from-white to-[#e0e0e0] text-[#0b0f19] border-[5px] border-[#1a2333] hover:scale-[1.08] active:scale-95'
-                  }`}
-                style={(hasSpun || timeLocked || isSenior) ? {} : { boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 15px rgba(255,255,255,0.2)' }}
-              >
-                {hasSpun ? (
-                  'สุ่มแล้ว'
-                ) : (isSenior || timeLocked) ? (
-                  <>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mb-0.5 text-[#4b5563]">
-                      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                    </svg>
-                    <span className="text-[0.7rem] font-bold">
-                      {isSenior ? 'เฉพาะน้อง' : 'รอเวลา'}
-                    </span>
-                  </>
-                ) : (
-                  'SPIN'
-                )}
-              </button>
-            </div>
+            {loadingHints ? (
+              <div className="flex flex-col items-center justify-center h-[350px] w-full">
+                <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin mb-4" />
+                <div className="text-[1.1rem] font-semibold text-text-muted">
+                  กำลังโหลดข้อมูลวงล้อ...
+                </div>
+              </div>
+            ) : (
+              <div className="relative mb-8"
+                style={{ width: 'min(420px, 85vw)', height: 'min(420px, 85vw)' }}>
+                {/* Pointer */}
+                <div className="absolute -top-[15px] left-1/2 -translate-x-1/2 z-10 w-[30px] h-[40px]
+                  bg-gradient-to-b from-accent to-accent-deep"
+                  style={{ clipPath: 'polygon(50% 100%, 0 0, 100% 0)', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' }}
+                />
+                <canvas
+                  ref={canvasRef} id="wheelCanvas"
+                  width={800} height={800}
+                  className="w-full h-full rounded-full pointer-events-none"
+                  style={{ boxShadow: '0 0 40px rgba(255,51,51,0.22), inset 0 0 20px rgba(255,255,255,0.05)' }}
+                />
+                <button
+                  onClick={spinWheel}
+                  disabled={hasSpun || timeLocked || isSenior || dbHints.length === 0}
+                  className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[15]
+                    w-20 h-20 rounded-full font-extrabold text-[0.9rem] cursor-pointer
+                    flex flex-col justify-center items-center select-none transition-all duration-200 text-center leading-tight
+                    ${(hasSpun || timeLocked || isSenior || dbHints.length === 0)
+                      ? 'bg-[#1f2937] text-[#4b5563] border-[5px] border-[#111827] cursor-not-allowed shadow-none'
+                      : 'bg-gradient-to-br from-white to-[#e0e0e0] text-[#0b0f19] border-[5px] border-[#1a2333] hover:scale-[1.08] active:scale-95'
+                    }`}
+                  style={(hasSpun || timeLocked || isSenior || dbHints.length === 0) ? {} : { boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 15px rgba(255,255,255,0.2)' }}
+                >
+                  {hasSpun ? (
+                    'หมุนไปแล้ว'
+                  ) : dbHints.length === 0 ? (
+                    <>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mb-0.5">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="m4.9 4.9 14.2 14.2"/>
+                      </svg>
+                      <span className="text-[0.7rem] font-bold text-[#ef4444]">
+                        หมดแล้ว
+                      </span>
+                    </>
+                  ) : (isSenior || timeLocked) ? (
+                    <>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mb-0.5 text-[#4b5563]">
+                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                      <span className="text-[0.7rem] font-bold">
+                        {isSenior ? 'เฉพาะน้อง' : 'รอเวลา'}
+                      </span>
+                    </>
+                  ) : (
+                    'SPIN'
+                  )}
+                </button>
+              </div>
+            )}
           </main>
 
           {/* Controls */}

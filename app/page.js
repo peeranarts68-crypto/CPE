@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Sidebar from './components/Sidebar';
 
 // ── Countdown ──────────────────────────────────────────────
-const TARGET_DATE = new Date('2026-07-08T13:30:00+07:00');
+const TARGET_DATE = new Date('2026-07-08T17:20:00+07:00');
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
@@ -115,7 +115,7 @@ export default function HomePage() {
             ยินดีต้อนรับน้องๆเพื่อสุ่มสายรหัส
           </h2>
           <p className="text-text-muted leading-[1.8] mb-5 text-[1.05rem]">
-            ทำการสุ่มสายรหัสในวันที่ 8 กรกฏาคม 2569 เวลา 13.00
+            ทำการสุ่มสายรหัสในวันที่ 8 กรกฏาคม 2569 เวลา 17.20
             ณ ห้องโถงกิจการนักศึกษาคณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม
           </p>
 
