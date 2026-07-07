@@ -1,13 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "CPE Hint 68-69",
-  description: "ระบบสุ่มสายรหัส CPE 68-69 — คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม",
-  icons: {
-    icon: "/logo.jpg",
-    shortcut: "/logo.jpg",
-    apple: "/logo.jpg",
-  },
+  title: "CPE Hint 68 • 69",
+  description: "ระบบสุ่มสายรหัส CPE 68 • 69 — คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม",
 };
 
 export default function RootLayout({ children }) {
