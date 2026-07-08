@@ -12,6 +12,8 @@ export default function LoginPage() {
   const [loginPass, setLoginPass] = useState('');
   const [loginMsg, setLoginMsg] = useState({ text: '', type: '' });
   const [loginLoading, setLoginLoading] = useState(false);
+  const [debugBypass, setDebugBypass] = useState(false);
+
 
   // Register state
   const [regUser, setRegUser]   = useState('');
@@ -28,7 +30,7 @@ export default function LoginPage() {
     const username = localStorage.getItem('cpe_username');
     const userStr = localStorage.getItem('cpe_user');
     if (username) {
-      let target = username.startsWith('68') ? '/senior' : '/random';
+      let target = username.startsWith('68') ? '/senior' : '/my-hint';
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
@@ -54,18 +56,26 @@ export default function LoginPage() {
     e.preventDefault();
     const u = loginUser.trim();
     const p = loginPass;
-    if (!/^\d{10}$/.test(u)) { setLoginMsg({ text: 'รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก', type: 'error' }); return; }
-    if (!p) { setLoginMsg({ text: 'กรุณากรอกรหัสผ่าน', type: 'error' }); return; }
+    if (u !== '0611610900' && !/^(68|69)12247\d{3}$/.test(u)) { setLoginMsg({ text: 'รหัสนักศึกษาไม่ถูกต้อง (ต้องขึ้นต้นด้วย 6812247 หรือ 6912247 และมีความยาว 10 หลัก)', type: 'error' }); return; }
+    if (!debugBypass && !p) { setLoginMsg({ text: 'กรุณากรอกรหัสผ่าน', type: 'error' }); return; }
     setLoginLoading(true);
     setLoginMsg({ text: '', type: '' });
     try {
-      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: u,
+          password: p,
+          debugBypass: debugBypass && process.env.NEXT_PUBLIC_DEBUG_MODE === 'true'
+        })
+      });
       const data = await res.json();
       if (data.success) {
         localStorage.setItem('cpe_username', data.user?.username || u);
         localStorage.setItem('cpe_user', JSON.stringify(data.user || {}));
         localStorage.removeItem('cpe_has_spun');
-        let targetPath = u.startsWith('68') ? '/senior' : '/random';
+        let targetPath = u.startsWith('68') ? '/senior' : '/my-hint';
         if (data.user?.role === 'admin') targetPath = '/admin';
         setTimeout(() => router.push(targetPath), 300);
       } else {
@@ -84,7 +94,7 @@ export default function LoginPage() {
     const p = regPass;
     const f = regFirst.trim();
     const n = regNick.trim();
-    if (!/^\d{10}$/.test(u)) { setRegMsg({ text: 'รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก', type: 'error' }); return; }
+    if (!/^(68|69)12247\d{3}$/.test(u)) { setRegMsg({ text: 'รหัสนักศึกษาไม่ถูกต้อง (ต้องขึ้นต้นด้วย 6812247 หรือ 6912247 และมีความยาว 10 หลัก)', type: 'error' }); return; }
     if (p.length < 4)        { setRegMsg({ text: 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร', type: 'error' }); return; }
     if (!f || !n)            { setRegMsg({ text: 'กรุณากรอกชื่อจริงและชื่อเล่น', type: 'error' }); return; }
     setRegLoading(true);
@@ -182,16 +192,39 @@ export default function LoginPage() {
                     onChange={e => setLoginUser(numOnly(e.target.value))} required
                   />
                 </div>
-                <div className="mb-[18px]">
-                  <label htmlFor="loginPassword" className="block text-[0.78rem] text-text-muted mb-2 uppercase tracking-[1.2px] font-semibold">
-                    รหัสผ่าน
-                  </label>
-                  <input
-                    id="loginPassword" type="password" className="form-input-field"
-                    placeholder="••••••••" autoComplete="current-password"
-                    value={loginPass} onChange={e => setLoginPass(e.target.value)} required
-                  />
-                </div>
+                {!debugBypass && (
+                  <div className="mb-[18px] animate-[fadeSlideIn_0.2s_ease]">
+                    <label htmlFor="loginPassword" className="block text-[0.78rem] text-text-muted mb-2 uppercase tracking-[1.2px] font-semibold">
+                      รหัสผ่าน
+                    </label>
+                    <input
+                      id="loginPassword" type="password" className="form-input-field"
+                      placeholder="••••••••" autoComplete="current-password"
+                      value={loginPass} onChange={e => setLoginPass(e.target.value)} required={!debugBypass}
+                    />
+                  </div>
+                )}
+                {process.env.NEXT_PUBLIC_DEBUG_MODE === 'true' && (
+                  <div className="mb-[18px] flex items-center justify-between bg-white/[0.02] border border-dashed border-accent/20 rounded-xl p-3 animate-[fadeSlideIn_0.35s_ease]">
+                    <span className="text-[0.8rem] text-accent font-semibold uppercase tracking-[0.5px]">
+                      โหมดผู้พัฒนา (ข้ามรหัสผ่าน)
+                    </span>
+                    <label className="relative inline-flex items-center cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={debugBypass}
+                        onChange={e => {
+                          setDebugBypass(e.target.checked);
+                          if (e.target.checked) {
+                            setLoginPass('');
+                          }
+                        }}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-muted peer-checked:after:bg-white after:border-transparent after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
+                    </label>
+                  </div>
+                )}
                 <button type="submit" id="loginBtn" className="submit-btn-full" disabled={loginLoading}>
                   {loginLoading
                     ? <><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin align-middle mr-2" />กำลังดำเนินการ...</>
@@ -217,44 +250,20 @@ export default function LoginPage() {
 
           {/* Register panel */}
           {tab === 'register' && (
-            <div id="panel-register" role="tabpanel" className="animate-[fadeSlideIn_0.35s_ease]">
-              <form onSubmit={handleRegister} noValidate>
-                {[
-                  { id: 'regUsername',  label: 'รหัสนักศึกษา (10 หลัก)', type: 'text',     ph: '6812345678',     val: regUser,  onChange: e => setRegUser(numOnly(e.target.value)),  extra: { maxLength: 10, inputMode: 'numeric', autoComplete: 'username' } },
-                  { id: 'regPassword',  label: 'รหัสผ่าน',               type: 'password',  ph: '••••••••',       val: regPass,  onChange: e => setRegPass(e.target.value),            extra: { autoComplete: 'new-password' } },
-                  { id: 'regFirstName', label: 'ชื่อจริง',               type: 'text',     ph: 'เช่น สมชาย',    val: regFirst, onChange: e => setRegFirst(e.target.value),           extra: { autoComplete: 'given-name' } },
-                  { id: 'regNickname',  label: 'ชื่อเล่น',               type: 'text',     ph: 'เช่น ชาย',      val: regNick,  onChange: e => setRegNick(e.target.value),            extra: {} },
-                ].map(({ id, label, type, ph, val, onChange, extra }) => (
-                  <div key={id} className="mb-[18px]">
-                    <label htmlFor={id} className="block text-[0.78rem] text-text-muted mb-2 uppercase tracking-[1.2px] font-semibold">
-                      {label}
-                    </label>
-                    <input
-                      id={id} type={type} className="form-input-field"
-                      placeholder={ph} value={val} onChange={onChange} required {...extra}
-                    />
-                  </div>
-                ))}
-                <button type="submit" id="registerBtn" className="submit-btn-full" disabled={regLoading}>
-                  {regLoading
-                    ? <><span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin align-middle mr-2" />กำลังดำเนินการ...</>
-                    : 'REGISTER'}
-                </button>
-                {regMsg.text && (
-                  <div role="alert" className={`mt-3.5 min-h-[22px] text-[0.875rem] text-center font-medium
-                    ${regMsg.type === 'success' ? 'text-[#4ade80]' : 'text-accent'}`}>
-                    {regMsg.text}
-                  </div>
-                )}
-              </form>
-              <div className="text-center mt-4 text-[0.83rem] text-text-muted">
-                มีบัญชีแล้ว?{' '}
-                <button onClick={() => setTab('login')}
-                  className="bg-transparent border-0 text-accent font-semibold cursor-pointer
-                    underline underline-offset-[3px] text-[inherit] font-sans hover:text-[#ff6666]">
-                  เข้าสู่ระบบที่นี่
-                </button>
+            <div id="panel-register" role="tabpanel" className="animate-[fadeSlideIn_0.35s_ease] text-center py-6">
+              <div className="text-[2.2rem] mb-4 text-accent">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-accent">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
               </div>
+              <h3 className="text-[1.25rem] font-bold text-white mb-2">ปิดการลงทะเบียนแล้ว</h3>
+              <p className="text-text-muted text-[0.9rem] leading-relaxed mb-6">
+                ระบบลงทะเบียนปิดทำการแล้วเนื่องจากการจับสุ่มสายรหัสเสร็จสิ้นแล้ว
+              </p>
+              <button onClick={() => setTab('login')} className="submit-btn-full">
+                ย้อนกลับไปหน้าเข้าสู่ระบบ
+              </button>
             </div>
           )}
         </div>

@@ -22,7 +22,7 @@ export default function SeniorPage() {
     if (isAdmin) { window.location.replace('/admin'); return; }
 
     const isJunior = username.startsWith('69') || userObj?.role === 'cpe69';
-    if (isJunior) { window.location.replace('/random'); return; }
+    if (isJunior) { window.location.replace('/my-hint'); return; }
 
     let loggedInName = '';
     if (userObj) loggedInName = userObj.nickname || userObj.username || '';
@@ -44,7 +44,7 @@ export default function SeniorPage() {
   useEffect(() => {
     if (!setupDone || !mySeniorName) return;
     fetchStatus(mySeniorName);
-    trackRef.current = setInterval(() => fetchStatus(mySeniorName), 3000);
+    trackRef.current = setInterval(() => fetchStatus(mySeniorName), 60000);
     return () => { if (trackRef.current) clearInterval(trackRef.current); };
   }, [setupDone, mySeniorName]);
 
@@ -183,7 +183,7 @@ export default function SeniorPage() {
                 if (h.is_drawn) {
                   statusEl = <span className={badgeDrawn}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-                    ปล่อยคำใบ้ให้สายน้องเรียบร้อยแล้ว ({h.drawn_by_name ? `${h.drawn_by_name}(${h.drawn_by})` : h.drawn_by})
+                    ปล่อยคำใบ้นี้ให้น้องรหัสแล้ว
                   </span>;
                 } else if (juniorId) {
                   statusEl = (
@@ -200,12 +200,10 @@ export default function SeniorPage() {
                           hover:-translate-y-0.5 hover:shadow-[0_6px_15px_rgba(16,185,129,0.3)]"
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M4.5 16.5c-1.5 1.26-2.5 3.19-2.5 5.5s3.19-1 5.5-2.5c2.31-1.5 5.5-4.5 5.5-4.5H8.5L4.5 16.5z"/>
-                          <path d="M12 12c2.5-2.5 4.5-5.5 4.5-5.5L12 2 2 12l4.5 4.5s3-2 5.5-4.5z"/>
-                          <path d="M9 15l3-3"/><path d="M15 9l3-3"/>
-                          <path d="M9 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                          <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
                         </svg>
-                        กดปล่อยคำใบ้ให้สายน้อง
+                        กดเพื่อปล่อยคำใบ้นี้ให้น้องรหัส
                       </button>
                     </div>
                   );

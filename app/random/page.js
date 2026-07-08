@@ -292,33 +292,13 @@ export default function RandomPage() {
     try { userObj = JSON.parse(localStorage.getItem('cpe_user') || 'null'); } catch (_) {}
     
     const senior = username.startsWith('68') || userObj?.role === 'cpe68' || userObj?.role === 'admin' || username === '0611610900';
-    setIsSenior(senior);
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('reset')) { localStorage.removeItem('cpe_has_spun'); window.history.replaceState({}, '', '/random'); }
-
+    
     if (senior) {
-      // Seniors just view
-      loadHints();
-      pollRef.current = setInterval(() => { if (!spinningRef.current) loadHints(); }, 5000);
+      window.location.replace('/senior');
     } else {
-      // Juniors normal flow
-      const spun = localStorage.getItem('cpe_has_spun') === 'true';
-      setHasSpun(spun);
-      checkJuniorHints();
-      if (!spun) {
-        loadHints();
-        pollRef.current = setInterval(() => { if (!spinningRef.current) loadHints(); }, 5000);
-      }
+      window.location.replace('/my-hint');
     }
-    setAuthorized(true);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      if (jrPollRef.current) clearInterval(jrPollRef.current);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      stopConfetti();
-    };
-  }, [loadHints, checkJuniorHints]);
+  }, []);
 
   useEffect(() => {
     const items = dbHints.length ? dbHints.map(h => h.alias || h.hint_text) : ['', '', '', ''];
@@ -364,28 +344,60 @@ export default function RandomPage() {
               <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
             </svg>
           </h2>
-          {juniorData.hints.map(h => (
-            <div key={h.hint_number}
-              className={`p-5 rounded-[18px] mb-4 flex items-center gap-4
-                ${h.is_released
-                  ? 'bg-[rgba(255,51,51,0.04)] border border-[rgba(255,51,51,0.2)] text-white'
-                  : 'bg-white/[.02] border border-dashed border-white/15 text-text-muted'}`}>
-              <div className={`flex-shrink-0 w-[45px] h-[45px] rounded-full flex items-center justify-center
-                ${h.is_released ? 'bg-[rgba(255,51,51,0.15)]' : 'bg-white/5'}`}>
-                {h.is_released
-                  ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-                  : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                }
+          {juniorData.seniors && juniorData.seniors.length > 0 ? (
+            juniorData.seniors.map((senior, sIdx) => (
+              <div key={senior.senior_index || sIdx} className={sIdx > 0 ? "mt-8 pt-6 border-t border-white/10" : ""}>
+                <div className="flex items-center gap-2 mb-4 bg-white/[0.03] border border-white/5 px-4 py-2 rounded-xl">
+                  <span className="text-[1.1rem] font-bold text-accent">พี่รหัส {String(senior.senior_index || (sIdx + 1)).padStart(2, '0')}</span>
+                </div>
+                {senior.hints.map(h => (
+                  <div key={h.hint_number}
+                    className={`p-5 rounded-[18px] mb-4 flex items-center gap-4
+                      ${h.is_released
+                        ? 'bg-[rgba(255,51,51,0.04)] border border-[rgba(255,51,51,0.2)] text-white'
+                        : 'bg-white/[.02] border border-dashed border-white/15 text-text-muted'}`}>
+                    <div className={`flex-shrink-0 w-[45px] h-[45px] rounded-full flex items-center justify-center
+                      ${h.is_released ? 'bg-[rgba(255,51,51,0.15)]' : 'bg-white/5'}`}>
+                      {h.is_released
+                        ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                        : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      }
+                    </div>
+                    <div className="flex-grow">
+                      <span className={`block text-[0.75rem] font-bold uppercase tracking-[1px] mb-1
+                        ${h.is_released ? 'text-accent' : 'text-text-muted'}`}>
+                        คำใบ้ที่ {h.hint_number} {h.is_released ? '(เปิดเผยแล้ว)' : '(ถูกล็อค)'}
+                      </span>
+                      <div className="text-[1.05rem] font-medium leading-[1.5]">{h.hint_text}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex-grow">
-                <span className={`block text-[0.75rem] font-bold uppercase tracking-[1px] mb-1
-                  ${h.is_released ? 'text-accent' : 'text-text-muted'}`}>
-                  คำใบ้ที่ {h.hint_number} {h.is_released ? '(เปิดเผยแล้ว)' : '(ถูกล็อค)'}
-                </span>
-                <div className="text-[1.05rem] font-medium leading-[1.5]">{h.hint_text}</div>
+            ))
+          ) : (
+            juniorData.hints?.map(h => (
+              <div key={h.hint_number}
+                className={`p-5 rounded-[18px] mb-4 flex items-center gap-4
+                  ${h.is_released
+                    ? 'bg-[rgba(255,51,51,0.04)] border border-[rgba(255,51,51,0.2)] text-white'
+                    : 'bg-white/[.02] border border-dashed border-white/15 text-text-muted'}`}>
+                <div className={`flex-shrink-0 w-[45px] h-[45px] rounded-full flex items-center justify-center
+                  ${h.is_released ? 'bg-[rgba(255,51,51,0.15)]' : 'bg-white/5'}`}>
+                  {h.is_released
+                    ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                    : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  }
+                </div>
+                <div className="flex-grow">
+                  <span className={`block text-[0.75rem] font-bold uppercase tracking-[1px] mb-1
+                    ${h.is_released ? 'text-accent' : 'text-text-muted'}`}>
+                    คำใบ้ที่ {h.hint_number} {h.is_released ? '(เปิดเผยแล้ว)' : '(ถูกล็อค)'}
+                  </span>
+                  <div className="text-[1.05rem] font-medium leading-[1.5]">{h.hint_text}</div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       ) : (
         /* ── Wheel + controls grid ── */

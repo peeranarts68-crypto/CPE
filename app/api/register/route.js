@@ -5,6 +5,10 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
   try {
+    return NextResponse.json(
+      { success: false, message: 'ระบบปิดการลงทะเบียนแล้ว' },
+      { status: 403 }
+    );
     const data = await request.json();
     const username = (data.username || '').trim();
     const password = data.password || '';
@@ -18,9 +22,9 @@ export async function POST(request) {
       );
     }
 
-    if (!/^\d{10}$/.test(username)) {
+    if (!/^(68|69)12247\d{3}$/.test(username)) {
       return NextResponse.json(
-        { success: false, message: 'Username ต้องเป็นรหัสนักศึกษา 10 หลักเท่านั้น' },
+        { success: false, message: 'ไม่พบข้อมูลผู้ใช้ในระบบ' },
         { status: 400 }
       );
     }
@@ -30,6 +34,13 @@ export async function POST(request) {
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
+      const existingUser = querySnapshot.docs[0].data();
+      if (existingUser.is_duplicate) {
+        return NextResponse.json(
+          { success: false, message: 'ไม่พบข้อมูลผู้ใช้ในระบบ' },
+          { status: 404 }
+        );
+      }
       return NextResponse.json(
         { success: false, message: 'รหัสนักศึกษานี้เคยลงทะเบียนแล้ว' },
         { status: 409 }

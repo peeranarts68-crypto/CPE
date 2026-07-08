@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Sidebar from './components/Sidebar';
 
 // ── Countdown ──────────────────────────────────────────────
-const TARGET_DATE = new Date('2026-07-08T17:20:00+07:00');
+const TARGET_DATE = new Date('2026-07-15T16:30:00+07:00');
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
@@ -57,11 +57,11 @@ function CountdownTimer() {
       <div className="text-[1.4rem] font-bold text-accent text-center p-4 tracking-[2px] animate-[pulse-glow_1.5s_infinite_alternate]">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
           className="inline-block align-middle mr-2 -mt-0.5 text-accent">
-          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-          <path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5z"/>
-          <path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z"/>
+          <circle cx="12" cy="12" r="10"/>
+          <path d="m15 9-6 6"/>
+          <path d="m9 9 6 6"/>
         </svg>
-        กิจกรรมเริ่มแล้ว!
+        กิจกรรมสิ้นสุดแล้ว!
       </div>
     );
   }
@@ -94,6 +94,17 @@ function CountdownTimer() {
 
 // ── Page ───────────────────────────────────────────────────
 export default function HomePage() {
+  const [user, setUser] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const username = localStorage.getItem('cpe_username');
+    let userObj = null;
+    try { userObj = JSON.parse(localStorage.getItem('cpe_user') || 'null'); } catch (_) {}
+    if (username) setUser({ username, ...userObj });
+    setLoaded(true);
+  }, []);
+
   return (
     <div className="flex flex-col items-center min-h-screen">
       <Sidebar />
@@ -112,11 +123,11 @@ export default function HomePage() {
       {/* Content — single centred card */}
       <main className="glass-card p-8 sm:p-6 text-left max-w-[800px] w-[90%] my-10">
           <h2 className="text-[1.8rem] font-bold text-accent mb-4 border-l-4 border-accent-deep pl-4">
-            ยินดีต้อนรับน้องๆเพื่อสุ่มสายรหัส
+            ยินดีต้อนรับสู่กิจกรรมสายรหัส 68 • 69
           </h2>
           <p className="text-text-muted leading-[1.8] mb-5 text-[1.05rem]">
-            ทำการสุ่มสายรหัสในวันที่ 8 กรกฏาคม 2569 เวลา 17.20
-            ณ ห้องโถงกิจการนักศึกษาคณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม
+            ทำการเฉลยสายรหัสในวันที่ 15 กรกฏาคม 2569 เวลา 16.30
+            ณ อาคารสาขาวิศวกรรมคอมพิวเตอร์ (ตึก 6)
           </p>
 
           {/* Countdown */}
@@ -128,23 +139,37 @@ export default function HomePage() {
                 <path d="M19 2v4c0 3.83-3 7-7 7s-7-3.17-7-7V2" />
                 <path d="M12 13c-4 0-7 3.17-7 7v2h14v-2c0-3.83-3-7-7-7z" />
               </svg>
-              นับถอยหลังวันสุ่มสายรหัส
+              กิจกรรมจะสิ้นสุดในอีก
             </div>
             <CountdownTimer />
           </div>
 
-          {/* Lucky Wheel card */}
-          <div className="flex flex-col items-start gap-2.5 mt-5 p-5 rounded-2xl
-            bg-white/[.02] border border-white/[.03]
-            transition-all duration-300 hover:-translate-y-[5px] hover:border-[rgba(255,51,51,0.3)] hover:bg-white/[.04]">
-            <span className="inline-block px-3 py-1 text-[0.85rem] font-semibold rounded-full mb-1
-              bg-[rgba(157,78,221,0.15)] text-[#d896ff]">กิจกรรม</span>
-            <h3 className="text-base font-bold text-white mb-1">วงล้อสุ่มสายรหัส (CPE Lucky Wheel)</h3>
-            <p className="text-text-muted text-sm leading-relaxed m-0">
-              เข้าร่วมการสุ่มสายรหัสด้วยวงล้อ คำใบ้ครั้งที่2-3 จะขึ้นอยู่กับการกดปล่อยคำใบ้จากรุ่นพี่
-            </p>
-            <Link href="/random" className="action-btn mt-1 w-[100%] text-center">เปิดวงล้อสุ่มสายรหัส</Link>
-          </div>
+          {/* My Hint / Senior Portal card */}
+          {loaded && user && (user.username?.startsWith('68') || user.role === 'cpe68' || user.role === 'admin' || user.username === '0611610900') ? (
+            <div className="flex flex-col items-start gap-2.5 mt-5 p-5 rounded-2xl w-full
+              bg-white/[.02] border border-white/[.03]
+              transition-all duration-300 hover:-translate-y-[5px] hover:border-[rgba(255,51,51,0.3)] hover:bg-white/[.04]">
+              <span className="inline-block px-3 py-1 text-[0.85rem] font-semibold rounded-full mb-1
+                bg-[rgba(157,78,221,0.15)] text-[#d896ff]">ระบบพี่รหัส</span>
+              <h3 className="text-base font-bold text-white mb-1">หน้าหลักสำหรับพี่รหัส</h3>
+              <p className="text-text-muted text-sm leading-relaxed m-0">
+                ปล่อยคำใบ้ที่ 2 และ 3 ให้กับน้องรหัสที่สุ่มได้ที่นี่
+              </p>
+              <Link href="/senior" className="action-btn mt-1 w-[100%] text-center">เปิดหน้าจัดการสำหรับพี่รหัส</Link>
+            </div>
+          ) : (
+            <div className="flex flex-col items-start gap-2.5 mt-5 p-5 rounded-2xl w-full
+              bg-white/[.02] border border-white/[.03]
+              transition-all duration-300 hover:-translate-y-[5px] hover:border-[rgba(255,51,51,0.3)] hover:bg-white/[.04]">
+              <span className="inline-block px-3 py-1 text-[0.85rem] font-semibold rounded-full mb-1
+                bg-[rgba(157,78,221,0.15)] text-[#d896ff]">กิจกรรม</span>
+              <h3 className="text-base font-bold text-white mb-1">ตามหาพี่รหัสของคุณ</h3>
+              <p className="text-text-muted text-sm leading-relaxed m-0">
+                ตรวจสอบคำใบ้ทั้งหมดของคุณและติดตามการอัปเดตคำใบ้ใหม่ๆ ที่รุ่นพี่ของคุณปล่อยออกมาได้ที่นี่
+              </p>
+              <Link href="/my-hint" className="action-btn mt-1 w-[100%] text-center">ดูคำใบ้ของคุณ</Link>
+            </div>
+          )}
         </main>
 
       <footer className="page-footer">

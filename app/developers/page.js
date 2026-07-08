@@ -84,7 +84,7 @@ export default function DevelopersPage() {
           <a key={dev.name}
             href={dev.ig} target="_blank" rel="noopener noreferrer"
             className="group relative flex flex-col items-center p-8 pb-7 rounded-[24px] bg-[rgba(26,26,26,0.55)] border border-white/[.05]
-              transition-all duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] no-underline text-white block cursor-pointer
+              transition-all duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] no-underline text-white cursor-pointer
               hover:-translate-y-2 hover:border-accent/30 hover:bg-[rgba(26,26,26,0.85)]
               hover:shadow-[0_20px_45px_rgba(255,51,51,0.12),0_0_1px_rgba(255,51,51,0.4)]"
             style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}

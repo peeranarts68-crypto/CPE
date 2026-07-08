@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const NAV_LINKS = [
   { href: '/',           label: 'หน้าแรก' },
   { href: '/random',     label: 'วงล้อสุ่มสายรหัส' },
+  { href: '/my-hint',    label: 'ดูคำใบ้ของคุณ' },
   { href: '/senior',     label: 'สำหรับพี่รหัส' },
   { href: '/ig',         label: 'คอนแทคพี่รหัส' },
   { href: '/developers', label: 'ผู้พัฒนา' },
@@ -65,12 +66,20 @@ export default function Navbar() {
         {/* Desktop nav links */}
         <div className="hidden lg:flex items-center gap-0.5 flex-1">
           {NAV_LINKS.filter(({ href }) => {
+            if (href === '/random') {
+              return false; // Hide random page since everyone drew
+            }
+            if (href === '/my-hint') {
+              if (!user) return false; // Hide if not logged in
+              const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
+              const isAdmin = user.username === '0611610900' || user.role === 'admin';
+              if (isSenior && !isAdmin) return false; // Hide for senior (except admin)
+            }
             if (href === '/senior') {
               if (!user) return true;
               const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
-              const isJunior = user.username?.startsWith('69') || user.role === 'cpe69';
               const isAdmin = user.username === '0611610900' || user.role === 'admin';
-              if (isSenior || isJunior || isAdmin) return false;
+              return isSenior || isAdmin;
             }
             return true;
           }).map(({ href, label }) => (
@@ -170,12 +179,20 @@ export default function Navbar() {
       >
         <div className="flex flex-col gap-1 px-4 py-3">
           {NAV_LINKS.filter(({ href }) => {
+            if (href === '/random') {
+              return false; // Hide random page since everyone drew
+            }
+            if (href === '/my-hint') {
+              if (!user) return false; // Hide if not logged in
+              const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
+              const isAdmin = user.username === '0611610900' || user.role === 'admin';
+              if (isSenior && !isAdmin) return false; // Hide for senior (except admin)
+            }
             if (href === '/senior') {
               if (!user) return true;
               const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
-              const isJunior = user.username?.startsWith('69') || user.role === 'cpe69';
               const isAdmin = user.username === '0611610900' || user.role === 'admin';
-              if (isSenior || isJunior || isAdmin) return false;
+              return isSenior || isAdmin;
             }
             return true;
           }).map(({ href, label }) => (
