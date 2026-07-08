@@ -169,7 +169,7 @@ export default function HomePage() {
               </p>
               <Link href="/senior" className="action-btn mt-1 w-[100%] text-center">เปิดหน้าจัดการสำหรับพี่รหัส</Link>
             </div>
-          ) : (
+          ) : loaded && user ? (
             <div className="flex flex-col items-start gap-2.5 mt-5 p-5 rounded-2xl w-full
               bg-white/[.02] border border-white/[.03]
               transition-all duration-300 hover:-translate-y-[5px] hover:border-[rgba(255,51,51,0.3)] hover:bg-white/[.04]">
@@ -180,6 +180,18 @@ export default function HomePage() {
                 ตรวจสอบคำใบ้ทั้งหมดของคุณและติดตามการอัปเดตคำใบ้ใหม่ๆ ที่รุ่นพี่ของคุณปล่อยออกมาได้ที่นี่
               </p>
               <Link href="/my-hint" className="action-btn mt-1 w-[100%] text-center">ดูคำใบ้ของคุณ</Link>
+            </div>
+          ) : (
+            <div className="flex flex-col items-start gap-2.5 mt-5 p-5 rounded-2xl w-full
+              bg-white/[.02] border border-white/[.03]
+              transition-all duration-300 hover:-translate-y-[5px] hover:border-[rgba(255,51,51,0.3)] hover:bg-white/[.04]">
+              <span className="inline-block px-3 py-1 text-[0.85rem] font-semibold rounded-full mb-1
+                bg-[rgba(157,78,221,0.15)] text-[#d896ff]">กิจกรรม</span>
+              <h3 className="text-base font-bold text-white mb-1">เข้าสู่ระบบเพื่อดูคำใบ้สายรหัส</h3>
+              <p className="text-text-muted text-sm leading-relaxed m-0">
+                กรุณาเข้าสู่ระบบเพื่อตรวจสอบคำใบ้สายรหัสที่รุ่นพี่ปล่อยและติดตามตัวตนของพี่รหัสของคุณ
+              </p>
+              <Link href="/login" className="action-btn mt-1 w-[100%] text-center">เข้าสู่ระบบ</Link>
             </div>
           )}
         </main>

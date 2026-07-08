@@ -77,7 +77,7 @@ export default function Navbar() {
               if (isSenior) return false; // Hide for senior
             }
             if (href === '/senior') {
-              if (!user) return true;
+              if (!user) return false;
               const isAdmin = user.username === '0611610900' || user.role === 'admin';
               if (isAdmin) return false; // Hide for admin
               const isSenior = !user.username?.startsWith('69') && user.role !== 'cpe69';
@@ -145,7 +145,7 @@ export default function Navbar() {
                   hover:brightness-110 transition-all duration-200
                   shadow-[0_2px_12px_rgba(255,51,51,0.35)]"
               >
-                เข้าสู่ระบบ / สมัครสมาชิก
+                เข้าสู่ระบบ
               </Link>
             )}
           </div>
@@ -192,7 +192,7 @@ export default function Navbar() {
               if (isSenior) return false; // Hide for senior
             }
             if (href === '/senior') {
-              if (!user) return true;
+              if (!user) return false;
               const isAdmin = user.username === '0611610900' || user.role === 'admin';
               if (isAdmin) return false; // Hide for admin
               const isSenior = !user.username?.startsWith('69') && user.role !== 'cpe69';
