@@ -71,15 +71,17 @@ export default function Navbar() {
             }
             if (href === '/my-hint') {
               if (!user) return false; // Hide if not logged in
-              const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
               const isAdmin = user.username === '0611610900' || user.role === 'admin';
-              if (isSenior && !isAdmin) return false; // Hide for senior (except admin)
+              if (isAdmin) return false; // Hide for admin
+              const isSenior = !user.username?.startsWith('69') && user.role !== 'cpe69';
+              if (isSenior) return false; // Hide for senior
             }
             if (href === '/senior') {
               if (!user) return true;
-              const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
               const isAdmin = user.username === '0611610900' || user.role === 'admin';
-              return isSenior || isAdmin;
+              if (isAdmin) return false; // Hide for admin
+              const isSenior = !user.username?.startsWith('69') && user.role !== 'cpe69';
+              return isSenior; // Show for senior, hide for junior
             }
             return true;
           }).map(({ href, label }) => (
@@ -184,15 +186,17 @@ export default function Navbar() {
             }
             if (href === '/my-hint') {
               if (!user) return false; // Hide if not logged in
-              const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
               const isAdmin = user.username === '0611610900' || user.role === 'admin';
-              if (isSenior && !isAdmin) return false; // Hide for senior (except admin)
+              if (isAdmin) return false; // Hide for admin
+              const isSenior = !user.username?.startsWith('69') && user.role !== 'cpe69';
+              if (isSenior) return false; // Hide for senior
             }
             if (href === '/senior') {
               if (!user) return true;
-              const isSenior = user.username?.startsWith('68') || user.role === 'cpe68';
               const isAdmin = user.username === '0611610900' || user.role === 'admin';
-              return isSenior || isAdmin;
+              if (isAdmin) return false; // Hide for admin
+              const isSenior = !user.username?.startsWith('69') && user.role !== 'cpe69';
+              return isSenior; // Show for senior, hide for junior
             }
             return true;
           }).map(({ href, label }) => (

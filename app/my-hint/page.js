@@ -37,7 +37,13 @@ export default function MyHintPage() {
       userObj = JSON.parse(localStorage.getItem('cpe_user') || 'null');
     } catch (_) {}
 
-    const senior = username.startsWith('68') || userObj?.role === 'cpe68' || userObj?.role === 'admin' || username === '0611610900';
+    const isAdmin = username === '0611610900' || userObj?.role === 'admin';
+    if (isAdmin) {
+      window.location.replace('/admin');
+      return;
+    }
+
+    const senior = username.startsWith('68') || userObj?.role === 'cpe68';
     if (senior) {
       window.location.replace('/senior');
       return;
