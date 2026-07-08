@@ -40,7 +40,7 @@ export default function Navbar() {
 
   const displayName = user
     ? (user.role === 'admin'
-        ? 'แอดมินระบบ (Admin)'
+        ? 'Admin'
         : user.username?.startsWith('68')
           ? `พี่ ${user.nickname || user.username}`
           : `น้อง ${user.nickname || user.username}`)
