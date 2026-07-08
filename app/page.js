@@ -151,11 +151,11 @@ export default function HomePage() {
               transition-all duration-300 hover:-translate-y-[5px] hover:border-[rgba(255,51,51,0.3)] hover:bg-white/[.04]">
               <span className="inline-block px-3 py-1 text-[0.85rem] font-semibold rounded-full mb-1
                 bg-[rgba(255,51,51,0.15)] text-accent border border-accent/30">ระบบแอดมิน</span>
-              <h3 className="text-base font-bold text-white mb-1">ระบบจัดการคำใบ้ (Admin Panel)</h3>
+              <h3 className="text-base font-bold text-white mb-1">ระบบจัดการคำใบ้</h3>
               <p className="text-text-muted text-sm leading-relaxed m-0">
                 เข้าสู่ระบบแดชบอร์ดจัดการคำใบ้เพื่อดูข้อมูลคำใบ้และล้างข้อมูลที่ซ้ำกัน
               </p>
-              <Link href="/admin" className="action-btn mt-1 w-[100%] text-center">เข้าสู่ระบบจัดการคำใบ้ (Admin)</Link>
+              <Link href="/admin" className="action-btn mt-1 w-[100%] text-center">เข้าสู่ระบบจัดการคำใบ้</Link>
             </div>
           ) : loaded && user && (!user.username?.startsWith('69') && user.role !== 'cpe69') ? (
             <div className="flex flex-col items-start gap-2.5 mt-5 p-5 rounded-2xl w-full
