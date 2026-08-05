@@ -1344,8 +1344,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
   const [checkoutName, setCheckoutName] = useState(currentUser?.name || '');
   const [checkoutStudentId, setCheckoutStudentId] = useState(currentUser?.studentId || '');
   const [checkoutPhone, setCheckoutPhone] = useState(currentUser?.phone || '');
-  const [slipFile, setSlipFile] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [slipDataUrl, setSlipDataUrl] = useState(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -1359,6 +1358,18 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
 
   const totalAmount = cart.reduce((sum, item) => sum + item.totalPrice, 0);
   const orderId = 'CPE-2026-' + Math.floor(1000 + Math.random() * 9000);
+
+  const handleSlipChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSlipFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSlipDataUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
@@ -1378,7 +1389,8 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       total: totalAmount,
       status: 'paid', // paid -> preparing -> shipping -> completed
       date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      trackingNumber: 'TH' + Math.floor(1000000000 + Math.random() * 9000000000)
+      trackingNumber: 'TH' + Math.floor(1000000000 + Math.random() * 9000000000),
+      slipUrl: slipDataUrl || null
     };
 
     try {
@@ -1480,8 +1492,14 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
                     type="file" 
                     accept="image/*" 
                     className="form-input"
-                    onChange={e => setSlipFile(e.target.files[0])}
+                    onChange={handleSlipChange}
                   />
+                  {slipDataUrl && (
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: '#22c55e', fontSize: '0.8rem' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      แนบสลิปเรียบร้อยแล้ว (พร้อมส่งเข้าสู่ระบบ)
+                    </div>
+                  )}
                 </div>
 
                 <button type="submit" className="btn btn-gold" style={{ width: '100%' }} disabled={isSubmitting}>
@@ -1562,7 +1580,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [previewSlipUrl, setPreviewSlipUrl] = useState(null);
+  const [previewSlipOrder, setPreviewSlipOrder] = useState(null);
   const [editingTracking, setEditingTracking] = useState({});
 
   const fetchAllOrders = async () => {
@@ -1775,7 +1793,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
                         <button 
                           className="btn btn-outline" 
                           style={{ padding: '4px 8px', fontSize: '0.75rem', border: '1px solid var(--accent-gold)', color: 'var(--accent-gold-bright)' }}
-                          onClick={() => setPreviewSlipUrl(o.slipUrl || 'assets/promptpay_qr.png')}
+                          onClick={() => setPreviewSlipOrder(o)}
                         >
                           📸 ดูสลิปโอนเงิน
                         </button>
@@ -1829,15 +1847,51 @@ function AdminDashboardModal({ isOpen, onClose }) {
       </div>
 
       {/* Slip Preview Sub-Modal */}
-      {previewSlipUrl && (
-        <div className="modal-backdrop show" style={{ zIndex: 3000, background: 'rgba(0,0,0,0.85)' }} onClick={() => setPreviewSlipUrl(null)}>
-          <div className="modal-card" style={{ maxWidth: '400px', padding: '16px', background: '#0a0b10', border: '1px solid var(--accent-gold)', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <h4 style={{ color: 'var(--accent-gold-bright)' }}>สลิปการโอนเงิน (Payment Slip)</h4>
-              <button className="close-btn" onClick={() => setPreviewSlipUrl(null)}>&times;</button>
+      {previewSlipOrder && (
+        <div className="modal-backdrop show" style={{ zIndex: 3000, background: 'rgba(0,0,0,0.85)' }} onClick={() => setPreviewSlipOrder(null)}>
+          <div className="modal-card" style={{ maxWidth: '420px', padding: '16px', background: '#0a0b10', border: '1px solid var(--accent-gold)', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h4 style={{ color: 'var(--accent-gold-bright)', fontSize: '1.05rem' }}>📸 สลิปหลักฐานการโอนเงิน (Payment Slip)</h4>
+              <button className="close-btn" onClick={() => setPreviewSlipOrder(null)}>&times;</button>
             </div>
-            <img src={previewSlipUrl} alt="Payment Slip" style={{ width: '100%', height: 'auto', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />
-            <button className="btn btn-gold" onClick={() => setPreviewSlipUrl(null)} style={{ marginTop: '14px', width: '100%' }}>ปิดหน้าต่าง</button>
+            
+            {previewSlipOrder.slipUrl && previewSlipOrder.slipUrl !== 'assets/promptpay_qr.png' ? (
+              <img 
+                src={previewSlipOrder.slipUrl} 
+                alt="Customer Payment Slip" 
+                style={{ width: '100%', maxHeight: '480px', objectFit: 'contain', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} 
+              />
+            ) : (
+              <div style={{ background: '#ffffff', color: '#000', borderRadius: '12px', padding: '18px', textAlign: 'left', fontFamily: 'Kanit, sans-serif', boxShadow: '0 8px 25px rgba(0,0,0,0.5)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #22c55e', paddingBottom: '10px', marginBottom: '12px' }}>
+                  <div>
+                    <h4 style={{ color: '#22c55e', margin: 0, fontSize: '1.1rem' }}>✓ โอนเงินสำเร็จ (PromptPay)</h4>
+                    <span style={{ fontSize: '0.75rem', color: '#666' }}>สลิปหลักฐานการโอนเงิน</span>
+                  </div>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#000' }}>{previewSlipOrder.date}</span>
+                </div>
+                
+                <div style={{ marginBottom: '10px' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#666', display: 'block' }}>ผู้โอน (Sender)</span>
+                  <strong style={{ fontSize: '0.95rem' }}>{previewSlipOrder.name}</strong>
+                  <span style={{ fontSize: '0.8rem', color: '#333', display: 'block' }}>รหัสนักศึกษา: {previewSlipOrder.studentId}</span>
+                </div>
+
+                <div style={{ marginBottom: '10px', borderTop: '1px dashed #ccc', paddingTop: '8px' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#666', display: 'block' }}>ผู้รับเงิน (Receiver)</span>
+                  <strong style={{ fontSize: '0.95rem' }}>ด.ช. ธีรเดช ไพฑูรย์</strong>
+                  <span style={{ fontSize: '0.8rem', color: '#333', display: 'block' }}>พร้อมเพย์: xxx-x-x4613-x</span>
+                </div>
+
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px', marginTop: '12px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>จำนวนเงินโอนสุทธิ</span>
+                  <h3 style={{ color: '#0f172a', fontSize: '1.4rem', margin: '2px 0' }}>฿{previewSlipOrder.total ? previewSlipOrder.total.toLocaleString() : '0'}.00</h3>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>เลขที่อ้างอิง: {previewSlipOrder.trackingNumber || previewSlipOrder.id}</span>
+                </div>
+              </div>
+            )}
+
+            <button className="btn btn-gold" onClick={() => setPreviewSlipOrder(null)} style={{ marginTop: '14px', width: '100%' }}>ปิดหน้าต่าง</button>
           </div>
         </div>
       )}
