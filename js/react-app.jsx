@@ -119,6 +119,14 @@ function App() {
                   parsedStored?.studentId === '6800000000' || parsedStored?.role === 'admin';
   
   const [selectedProductKey, setSelectedProductKey] = useState('polo');
+
+  // Adjust default product based on student ID (68 → polo only, 69 → jacket only)
+  useEffect(() => {
+    if (!isAdmin && currentUser?.studentId) {
+      if (currentUser.studentId.startsWith('68')) setSelectedProductKey('polo');
+      else if (currentUser.studentId.startsWith('69')) setSelectedProductKey('jacket');
+    }
+  }, [currentUser, isAdmin]);
   const [searchTrackingQuery, setSearchTrackingQuery] = useState('');
   const [trackedOrder, setTrackedOrder] = useState(null);
 
@@ -553,20 +561,24 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
           <h2 className="title">สั่งซื้อเสื้อโปโล &amp; เสื้อคลุมสาขาวิศวกรรมคอมพิวเตอร์</h2>
         </div>
 
-        {/* Product Selector Switcher Tabs */}
+        {/* Product Selector Switcher Tabs - restricted by student ID */}
         <div className="product-select-tabs">
-          <button 
-            className={`product-tab-btn ${selectedProductKey === 'polo' ? 'active' : ''}`}
-            onClick={() => setSelectedProductKey('polo')}
-          >
-            <span>👕 เสื้อโปโลสาขา CPE (LXVIII) - ฿240</span>
-          </button>
-          <button 
-            className={`product-tab-btn ${selectedProductKey === 'jacket' ? 'active' : ''}`}
-            onClick={() => setSelectedProductKey('jacket')}
-          >
-            <span>🧥 เสื้อคลุมสาขา CPE 69 (LXIX) - ฿920</span>
-          </button>
+          {(isAdmin || (currentUser?.studentId && currentUser.studentId.startsWith('68'))) && (
+            <button
+              className={`product-tab-btn ${selectedProductKey === 'polo' ? 'active' : ''}`}
+              onClick={() => setSelectedProductKey('polo')}
+            >
+              <span>👕 เสื้อโปโลสาขา CPE (LXVIII) - ฿240</span>
+            </button>
+          )}
+          {(isAdmin || (currentUser?.studentId && currentUser.studentId.startsWith('69'))) && (
+            <button
+              className={`product-tab-btn ${selectedProductKey === 'jacket' ? 'active' : ''}`}
+              onClick={() => setSelectedProductKey('jacket')}
+            >
+              <span>🧥 เสื้อคลุมสาขา CPE 69 (LXIX) - ฿920</span>
+            </button>
+          )}
         </div>
 
         <div className="product-grid">
