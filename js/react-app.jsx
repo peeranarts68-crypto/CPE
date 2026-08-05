@@ -876,8 +876,8 @@ function CartDrawer({ isOpen, onClose, cart, setCart, onCheckout }) {
 
   return (
     <>
-      <div className="drawer-backdrop show" onClick={onClose}></div>
-      <aside className="cart-drawer show open">
+      <div className="drawer-backdrop show" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', zIndex: 9998, opacity: 1, pointerEvents: 'auto' }}></div>
+      <aside className="cart-drawer show open" style={{ position: 'fixed', top: 0, right: 0, width: '100%', maxWidth: '450px', height: '100vh', background: '#10121a', borderLeft: '1px solid var(--border-gold)', zIndex: 9999, display: 'flex', flexDirection: 'column', boxShadow: '-10px 0 40px rgba(0,0,0,0.8)' }}>
         <div className="drawer-header">
           <h3>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
@@ -1417,8 +1417,8 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
   };
 
   return (
-    <div className="modal-backdrop show">
-      <div className="modal-card lg">
+    <div className="modal-backdrop show" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto' }}>
+      <div className="modal-card lg" style={{ position: 'relative', zIndex: 9999, background: '#10121a', border: '1px solid var(--border-gold)', maxHeight: '90vh', overflowY: 'auto' }}>
         <div className="modal-header">
           <h3 className="modal-title">ชำระเงินสแกน QR Code PromptPay</h3>
           <button className="close-btn" onClick={onClose}>&times;</button>
