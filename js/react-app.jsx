@@ -113,10 +113,31 @@ function App() {
   const [searchTrackingQuery, setSearchTrackingQuery] = useState('');
   const [trackedOrder, setTrackedOrder] = useState(null);
 
+  const [myOrdersHistory, setMyOrdersHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cpe_my_orders');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+
   // Save Cart to LocalStorage
   useEffect(() => {
     localStorage.setItem('cpe_cart', JSON.stringify(cart));
   }, [cart]);
+
+  // Save My Orders History to LocalStorage
+  useEffect(() => {
+    localStorage.setItem('cpe_my_orders', JSON.stringify(myOrdersHistory));
+  }, [myOrdersHistory]);
+
+  // Auto load recent order on page load / refresh
+  useEffect(() => {
+    if (!trackedOrder && myOrdersHistory.length > 0) {
+      setTrackedOrder(myOrdersHistory[0]);
+      if (myOrdersHistory[0].id) setSearchTrackingQuery(myOrdersHistory[0].id);
+    }
+  }, [myOrdersHistory]);
 
   // Firebase Auth Listener
   useEffect(() => {
@@ -285,6 +306,8 @@ function App() {
           cart={cart}
           setCart={setCart}
           setTrackedOrder={setTrackedOrder}
+          setMyOrdersHistory={setMyOrdersHistory}
+          setSearchTrackingQuery={setSearchTrackingQuery}
         />
 
         {/* SIZE GUIDE MODAL */}
@@ -1196,8 +1219,8 @@ function AuthModal({ isOpen, onClose }) {
   );
 }
 
-// 7. CHECKOUT MODAL COMPONENT (Firestore Submission)
-function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder }) {
+// 7. CHECKOUT MODAL COMPONENT (Firestore Submission & Local Persistence)
+function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyOrdersHistory, setSearchTrackingQuery }) {
   const { currentUser, showToast } = useContext(AuthContext);
   const [checkoutName, setCheckoutName] = useState(currentUser?.name || '');
   const [checkoutStudentId, setCheckoutStudentId] = useState(currentUser?.studentId || '');
@@ -1248,7 +1271,13 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder }) {
       showToast(`สร้างคำสั่งซื้อ ${orderId} เรียบร้อยแล้ว!`, 'success');
     } finally {
       setIsSubmitting(false);
+      if (setMyOrdersHistory) {
+        setMyOrdersHistory(prev => [newOrder, ...prev]);
+      }
       setTrackedOrder(newOrder);
+      if (setSearchTrackingQuery) {
+        setSearchTrackingQuery(newOrder.id);
+      }
       setCart([]);
       onClose();
       const trackingSec = document.getElementById('tracking');
