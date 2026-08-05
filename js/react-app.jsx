@@ -1763,22 +1763,21 @@ function AdminDashboardModal({ isOpen, onClose }) {
     showToast(`อัปเดตสถานะออเดอร์ ${orderId} เป็น "${newStatus}" แล้ว`, 'success');
   };
 
-  const handleTrackingSave = async (orderId) => {
-    const trackingNum = editingTracking[orderId];
-    if (!trackingNum) return;
-    const updated = orders.map(o => o.id === orderId ? { ...o, trackingNumber: trackingNum } : o);
-    setOrders(updated);
-    localStorage.setItem('cpe_my_orders', JSON.stringify(updated));
-
+  const handleDelete = async (orderId) => {
     const target = orders.find(o => o.id === orderId);
-    if (target && target.firestoreId) {
-      try {
-        await setDoc(doc(db, 'orders', target.firestoreId), { ...target, trackingNumber: trackingNum }, { merge: true });
-      } catch (e) { console.log("Firestore update tracking:", e); }
+    if (!target?.firestoreId) return;
+    try {
+      await deleteDoc(doc(db, 'orders', target.firestoreId));
+      const updated = orders.filter(o => o.id !== orderId);
+      setOrders(updated);
+      localStorage.setItem('cpe_my_orders', JSON.stringify(updated));
+      showToast(`ลบออเดอร์ ${orderId} สำเร็จ`, 'success');
+    } catch (e) {
+      console.log('Delete error:', e);
+      showToast('ลบออเดอร์ไม่สำเร็จ', 'error');
     }
-
-    showToast(`บันทึกเลขพัสดุ ${trackingNum} เรียบร้อยแล้ว`, 'success');
   };
+
 
   const filteredOrders = orders.filter(o => {
     const matchSearch = (o.id || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -1957,8 +1956,21 @@ function AdminDashboardModal({ isOpen, onClose }) {
                             บันทึก
                           </button>
                         </div>
-                      </td>
-                    </tr>
+                       </td>
+                       <td style={{ padding: '10px' }}>
+                         <button
+                           className="btn btn-outline"
+                           style={{
+                             background: 'rgba(255,77,79,0.1)',
+                             borderColor: '#ff4d4f',
+                             color: '#ff4d4f',
+                             padding: '4px 8px',
+                             fontSize: '0.78rem'
+                           }}
+                           onClick={() => handleDelete(o.id)}
+                         >🗑️ ลบออเดอร์</button>
+                       </td>
+                     </tr>
                   ))}
                 </tbody>
               </table>
