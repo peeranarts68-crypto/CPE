@@ -108,6 +108,9 @@ function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+
+  const isAdmin = currentUser?.studentId === '6800000000' || currentUser?.role === 'admin';
   
   const [selectedProductKey, setSelectedProductKey] = useState('polo');
   const [searchTrackingQuery, setSearchTrackingQuery] = useState('');
@@ -221,6 +224,26 @@ function App() {
                 <span className="cart-count">{cart.reduce((sum, item) => sum + item.qty, 0)}</span>
               </button>
 
+              {isAdmin && (
+                <button 
+                  className="btn" 
+                  onClick={() => setIsAdminModalOpen(true)} 
+                  style={{ 
+                    background: 'linear-gradient(135deg, #d4af37 0%, #8b0c1a 100%)', 
+                    color: '#fff', 
+                    border: '1px solid #f5d061', 
+                    fontWeight: 'bold',
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    boxShadow: '0 0 12px rgba(212, 175, 55, 0.5)',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  👑 แผงควบคุมแอดมิน
+                </button>
+              )}
+
               {!currentUser ? (
                 <div className="auth-btn-group">
                   <button className="btn btn-outline" onClick={() => setIsAuthModalOpen(true)}>
@@ -242,6 +265,19 @@ function App() {
                       <strong>{currentUser.name}</strong>
                       <p>รหัส: {currentUser.studentId || '6812345678'}</p>
                     </div>
+                    {isAdmin && (
+                      <div 
+                        onClick={() => {
+                          setIsAdminModalOpen(true);
+                          const menu = document.getElementById('reactDropdownMenu');
+                          if (menu) menu.classList.remove('show');
+                        }} 
+                        className="dropdown-item" 
+                        style={{ cursor: 'pointer', color: '#f5d061', fontWeight: 'bold' }}
+                      >
+                        👑 แผงควบคุมแอดมิน (Admin Portal)
+                      </div>
+                    )}
                     <a href="#tracking" className="dropdown-item">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
                       ประวัติ &amp; ติดตามออเดอร์
@@ -314,6 +350,12 @@ function App() {
         <SizeGuideModal 
           isOpen={isSizeGuideOpen}
           onClose={() => setIsSizeGuideOpen(false)}
+        />
+
+        {/* ADMIN DASHBOARD MODAL */}
+        <AdminDashboardModal 
+          isOpen={isAdminModalOpen}
+          onClose={() => setIsAdminModalOpen(false)}
         />
 
         {/* FOOTER */}
@@ -926,6 +968,12 @@ function AuthModal({ isOpen, onClose }) {
     showToast('เติมข้อมูลบัญชีทดลองเรียบร้อยแล้ว', 'info');
   };
 
+  const handleFillAdmin = () => {
+    setLoginId('6800000000');
+    setLoginPass('admin123');
+    showToast('เติมข้อมูลบัญชีแอดมิน (6800000000) เรียบร้อยแล้ว', 'info');
+  };
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!loginId.trim() || !loginPass.trim()) {
@@ -936,7 +984,15 @@ function AuthModal({ isOpen, onClose }) {
     const fb = window.CPEFirebase;
     let userSession = null;
 
-    if (fb && fb.auth && fb.signInWithEmailAndPassword) {
+    if (loginId.trim() === '6800000000') {
+      userSession = {
+        uid: 'admin-6800000000',
+        studentId: '6800000000',
+        name: '👑 ผู้ดูแลระบบ (Admin CPE)',
+        role: 'admin',
+        email: 'admin@psru.ac.th'
+      };
+    } else if (fb && fb.auth && fb.signInWithEmailAndPassword) {
       try {
         const fakeEmail = loginId.includes('@') ? loginId : `${loginId}@psru.ac.th`;
         const res = await fb.signInWithEmailAndPassword(fb.auth, fakeEmail, loginPass);
@@ -958,14 +1014,15 @@ function AuthModal({ isOpen, onClose }) {
       userSession = {
         uid: 'user-' + Date.now(),
         studentId: loginId,
-        name: 'นักศึกษา CPE (' + loginId + ')',
+        name: loginId.trim() === '6800000000' ? '👑 ผู้ดูแลระบบ (Admin CPE)' : 'นักศึกษา CPE (' + loginId + ')',
+        role: loginId.trim() === '6800000000' ? 'admin' : 'student',
         email: `${loginId}@psru.ac.th`
       };
     }
 
     setCurrentUser(userSession);
     localStorage.setItem('cpe_current_user', JSON.stringify(userSession));
-    showToast('เข้าสู่ระบบสำเร็จ!', 'success');
+    showToast(userSession.role === 'admin' ? 'เข้าสู่ระบบแอดมินสำเร็จ! 👑' : 'เข้าสู่ระบบสำเร็จ!', 'success');
     onClose();
   };
 
@@ -1056,9 +1113,15 @@ function AuthModal({ isOpen, onClose }) {
           {/* LOGIN FORM */}
           {activeTab === 'login' && (
             <form onSubmit={handleLoginSubmit} className="auth-form active">
-              <div className="demo-account-box">
-                <span>บัญชีทดลอง: <strong>6812345678</strong> / pass: <strong>password123</strong></span>
-                <button type="button" className="demo-btn" onClick={handleFillDemo}>เติมข้อมูล</button>
+              <div className="demo-account-box" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>บัญชีนักศึกษา: <strong>6812345678</strong></span>
+                  <button type="button" className="demo-btn" onClick={handleFillDemo}>เติมข้อมูลนักศึกษา</button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px' }}>
+                  <span style={{ color: 'var(--accent-gold-bright)' }}>👑 บัญชีแอดมิน: <strong>6800000000</strong></span>
+                  <button type="button" className="demo-btn" style={{ background: 'linear-gradient(135deg, #d4af37, #8b0c1a)', color: '#fff', border: '1px solid #f5d061' }} onClick={handleFillAdmin}>เติมแอดมิน</button>
+                </div>
               </div>
 
               <div className="form-group">
@@ -1436,7 +1499,298 @@ function SizeGuideModal({ isOpen, onClose }) {
   );
 }
 
-// 9. FOOTER COMPONENT
+// 9. ADMIN DASHBOARD MODAL COMPONENT (Admin ID: 6800000000)
+function AdminDashboardModal({ isOpen, onClose }) {
+  const { showToast } = useContext(AuthContext);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [previewSlipUrl, setPreviewSlipUrl] = useState(null);
+  const [editingTracking, setEditingTracking] = useState({});
+
+  const fetchAllOrders = async () => {
+    setLoading(true);
+    let firestoreList = [];
+    try {
+      const ordersRef = collection(db, 'orders');
+      const q = query(ordersRef, orderBy('date', 'desc'));
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach((docSnap) => {
+        firestoreList.push({ firestoreId: docSnap.id, ...docSnap.data() });
+      });
+    } catch (e) {
+      console.log("Firestore fetch error:", e);
+    }
+
+    let localList = [];
+    try {
+      const saved = localStorage.getItem('cpe_my_orders');
+      if (saved) localList = JSON.parse(saved);
+    } catch (e) {}
+
+    const merged = [...firestoreList];
+    localList.forEach(lo => {
+      if (!merged.some(m => m.id === lo.id)) {
+        merged.push(lo);
+      }
+    });
+
+    if (merged.length === 0) {
+      merged.push({
+        id: 'CPE-2026-8819',
+        studentId: '6812345678',
+        name: 'สมชาย ใจดี (CPE68)',
+        phone: '081-234-5678',
+        items: [
+          { title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (CPE Polo)', size: 'L', qty: 1, customName: 'ต้อม CPE', totalPrice: 240 }
+        ],
+        total: 240,
+        status: 'paid',
+        date: '2026-08-05 14:30',
+        trackingNumber: 'TH6800192837',
+        slipUrl: 'assets/promptpay_qr.png'
+      });
+    }
+
+    setOrders(merged);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchAllOrders();
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleStatusChange = async (orderId, newStatus) => {
+    const updated = orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
+    setOrders(updated);
+    localStorage.setItem('cpe_my_orders', JSON.stringify(updated));
+
+    const target = orders.find(o => o.id === orderId);
+    if (target && target.firestoreId) {
+      try {
+        await setDoc(doc(db, 'orders', target.firestoreId), { ...target, status: newStatus }, { merge: true });
+      } catch (e) { console.log("Firestore update:", e); }
+    }
+
+    showToast(`อัปเดตสถานะออเดอร์ ${orderId} เป็น "${newStatus}" แล้ว`, 'success');
+  };
+
+  const handleTrackingSave = async (orderId) => {
+    const trackingNum = editingTracking[orderId];
+    if (!trackingNum) return;
+    const updated = orders.map(o => o.id === orderId ? { ...o, trackingNumber: trackingNum } : o);
+    setOrders(updated);
+    localStorage.setItem('cpe_my_orders', JSON.stringify(updated));
+    showToast(`บันทึกเลขพัสดุ ${trackingNum} เรียบร้อยแล้ว`, 'success');
+  };
+
+  const filteredOrders = orders.filter(o => {
+    const matchSearch = (o.id || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        (o.studentId || '').includes(searchTerm) || 
+                        (o.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus = statusFilter === 'all' || o.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const totalRev = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const totalItemsCount = orders.reduce((sum, o) => sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0);
+
+  return (
+    <div className="modal-backdrop show" style={{ zIndex: 2500 }}>
+      <div className="modal-card xl admin-modal-card" style={{ maxWidth: '1100px', width: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+        
+        {/* Header */}
+        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #1b0a0e, #0a0b10)', borderBottom: '1px solid var(--accent-gold)', padding: '16px 24px' }}>
+          <h3 className="modal-title" style={{ color: 'var(--accent-gold-bright)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.2rem' }}>
+            <span>👑 CPE ADMIN PORTAL (ผู้ดูแลระบบ: 6800000000)</span>
+          </h3>
+          <button className="close-btn" onClick={onClose}>&times;</button>
+        </div>
+
+        {/* Body */}
+        <div className="modal-body" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+          
+          {/* Stats Bar */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+            <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+              <span style={{ color: 'var(--text-sub)', fontSize: '0.8rem' }}>ยอดขายรวมทั้งหมด</span>
+              <h3 style={{ color: 'var(--accent-gold-bright)', fontSize: '1.5rem', marginTop: '4px' }}>฿{totalRev.toLocaleString()}</h3>
+            </div>
+            <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+              <span style={{ color: 'var(--text-sub)', fontSize: '0.8rem' }}>จำนวนออเดอร์ทั้งหมด</span>
+              <h3 style={{ color: '#38bdf8', fontSize: '1.5rem', marginTop: '4px' }}>{orders.length} ออเดอร์</h3>
+            </div>
+            <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+              <span style={{ color: 'var(--text-sub)', fontSize: '0.8rem' }}>ชำระเงินแล้ว / รอผลิต</span>
+              <h3 style={{ color: '#eab308', fontSize: '1.5rem', marginTop: '4px' }}>
+                {orders.filter(o => o.status === 'paid' || o.status === 'preparing').length} รายการ
+              </h3>
+            </div>
+            <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+              <span style={{ color: 'var(--text-sub)', fontSize: '0.8rem' }}>จำนวนเสื้อทั้งหมดที่สั่ง</span>
+              <h3 style={{ color: '#22c55e', fontSize: '1.5rem', marginTop: '4px' }}>{totalItemsCount} ตัว</h3>
+            </div>
+          </div>
+
+          {/* Search and Filters */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '12px', marginBottom: '16px', alignItems: 'center' }}>
+            <div style={{ flex: 1, minWidth: '240px' }}>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="🔍 ค้นหารหัสนักศึกษา 10 หลัก / เลขออเดอร์ / ชื่อ..." 
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{ padding: '8px 14px' }}
+              />
+            </div>
+            
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {[
+                { id: 'all', label: 'ทั้งหมด' },
+                { id: 'paid', label: 'ชำระเงินแล้ว' },
+                { id: 'preparing', label: 'กำลังผลิต' },
+                { id: 'shipping', label: 'จัดส่งแล้ว' },
+                { id: 'completed', label: 'สำเร็จแล้ว' }
+              ].map(st => (
+                <button 
+                  key={st.id} 
+                  className={`btn ${statusFilter === st.id ? 'btn-gold' : 'btn-outline'}`}
+                  style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                  onClick={() => setStatusFilter(st.id)}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Orders Table */}
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-sub)' }}>กำลังดึงข้อมูลออเดอร์จาก Firebase...</div>
+          ) : filteredOrders.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>ไม่พบข้อมูลออเดอร์ที่ตรงกับการค้นหา</div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#fff', fontSize: '0.88rem' }}>
+                <thead>
+                  <tr style={{ background: '#090a0f', borderBottom: '1px solid var(--border-gold)' }}>
+                    <th style={{ padding: '10px' }}>เลขที่ออเดอร์ / วันที่</th>
+                    <th style={{ padding: '10px' }}>ข้อมูลนักศึกษา</th>
+                    <th style={{ padding: '10px' }}>รายการสินค้าสั่งซื้อ</th>
+                    <th style={{ padding: '10px' }}>ยอดเงินรวม</th>
+                    <th style={{ padding: '10px' }}>สลิปโอนเงิน</th>
+                    <th style={{ padding: '10px' }}>สถานะการผลิต / พัสดุ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders.map(o => (
+                    <tr key={o.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+                      <td style={{ padding: '10px' }}>
+                        <strong style={{ color: 'var(--accent-gold-bright)', display: 'block' }}>{o.id}</strong>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{o.date}</span>
+                      </td>
+                      
+                      <td style={{ padding: '10px' }}>
+                        <strong style={{ display: 'block', color: '#fff' }}>{o.name}</strong>
+                        <span style={{ fontSize: '0.8rem', color: '#38bdf8', display: 'block' }}>รหัส: {o.studentId}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>📞 {o.phone}</span>
+                      </td>
+
+                      <td style={{ padding: '10px' }}>
+                        {o.items && o.items.map((it, idx) => (
+                          <div key={idx} style={{ marginBottom: '4px', fontSize: '0.82rem' }}>
+                            • {it.title} <span style={{ color: 'var(--accent-gold)' }}>(ไซส์ {it.size} x {it.qty} ตัว)</span>
+                            {it.customName && <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--accent-gold-bright)', paddingLeft: '8px' }}>ปักชื่อ: {it.customName}</span>}
+                          </div>
+                        ))}
+                      </td>
+
+                      <td style={{ padding: '10px', fontWeight: 'bold', color: 'var(--accent-gold-bright)', fontSize: '0.95rem' }}>
+                        ฿{o.total ? o.total.toLocaleString() : '0'}
+                      </td>
+
+                      <td style={{ padding: '10px' }}>
+                        <button 
+                          className="btn btn-outline" 
+                          style={{ padding: '4px 8px', fontSize: '0.75rem', border: '1px solid var(--accent-gold)', color: 'var(--accent-gold-bright)' }}
+                          onClick={() => setPreviewSlipUrl(o.slipUrl || 'assets/promptpay_qr.png')}
+                        >
+                          📸 ดูสลิปโอนเงิน
+                        </button>
+                      </td>
+
+                      <td style={{ padding: '10px' }}>
+                        <select 
+                          value={o.status || 'paid'}
+                          onChange={(e) => handleStatusChange(o.id, e.target.value)}
+                          style={{ 
+                            background: '#090a0f', 
+                            color: o.status === 'completed' ? '#22c55e' : o.status === 'shipping' ? '#38bdf8' : '#eab308',
+                            border: '1px solid var(--border-gold)',
+                            borderRadius: '6px',
+                            padding: '4px 8px',
+                            fontWeight: 'bold',
+                            fontSize: '0.82rem'
+                          }}
+                        >
+                          <option value="paid">1. ชำระเงินแล้ว (Paid)</option>
+                          <option value="preparing">2. กำลังผลิต/ปักลาย (Preparing)</option>
+                          <option value="shipping">3. จัดส่งแล้ว (Shipping)</option>
+                          <option value="completed">4. รับสินค้าสำเร็จ (Completed)</option>
+                        </select>
+
+                        <div style={{ marginTop: '6px', display: 'flex', gap: '4px' }}>
+                          <input 
+                            type="text" 
+                            placeholder="เลขพัสดุ..." 
+                            defaultValue={o.trackingNumber || ''}
+                            onChange={(e) => setEditingTracking({ ...editingTracking, [o.id]: e.target.value })}
+                            style={{ background: '#000', border: '1px solid #333', color: '#fff', fontSize: '0.75rem', padding: '3px 6px', borderRadius: '4px', width: '100px' }}
+                          />
+                          <button 
+                            onClick={() => handleTrackingSave(o.id)}
+                            style={{ background: 'var(--accent-gold)', border: 'none', color: '#000', fontSize: '0.75rem', fontWeight: 'bold', padding: '3px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                          >
+                            บันทึก
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+        </div>
+
+      </div>
+
+      {/* Slip Preview Sub-Modal */}
+      {previewSlipUrl && (
+        <div className="modal-backdrop show" style={{ zIndex: 3000, background: 'rgba(0,0,0,0.85)' }} onClick={() => setPreviewSlipUrl(null)}>
+          <div className="modal-card" style={{ maxWidth: '400px', padding: '16px', background: '#0a0b10', border: '1px solid var(--accent-gold)', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h4 style={{ color: 'var(--accent-gold-bright)' }}>สลิปการโอนเงิน (Payment Slip)</h4>
+              <button className="close-btn" onClick={() => setPreviewSlipUrl(null)}>&times;</button>
+            </div>
+            <img src={previewSlipUrl} alt="Payment Slip" style={{ width: '100%', height: 'auto', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />
+            <button className="btn btn-gold" onClick={() => setPreviewSlipUrl(null)} style={{ marginTop: '14px', width: '100%' }}>ปิดหน้าต่าง</button>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// 10. FOOTER COMPONENT
 function Footer() {
   return (
     <footer className="footer">
