@@ -1270,17 +1270,21 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder }) {
               
               {/* Left: PromptPay QR Code */}
               <div>
-                <h4 style={{ color: '#fff', fontSize: '1rem', marginBottom: '10px' }}>1. สแกน QR Code ชำระเงิน</h4>
-                <div style={{ background: '#fff', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                <h4 style={{ color: '#fff', fontSize: '1rem', marginBottom: '10px' }}>1. สแกน QR Code ชำระเงิน (PromptPay)</h4>
+                <div style={{ background: '#fff', padding: '14px', borderRadius: '12px', textAlign: 'center', boxShadow: '0 8px 25px rgba(0,0,0,0.5)' }}>
                   <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=00020101021129370016A000000677010111011300668123456785802TH5303764540${totalAmount}.006304`} 
-                    alt="PromptPay QR Code"
-                    style={{ width: '200px', height: '200px', margin: '0 auto', display: 'block' }}
+                    src="assets/promptpay_qr.png" 
+                    alt="PromptPay Thai QR Payment - ด.ช. ธีรเดช ไพฑูรย์"
+                    style={{ width: '100%', maxWidth: '280px', height: 'auto', margin: '0 auto', display: 'block', borderRadius: '8px' }}
                   />
-                  <p style={{ color: '#000', fontWeight: '700', fontSize: '1.2rem', marginTop: '10px' }}>
-                    ยอดชำระ: ฿{totalAmount.toLocaleString()}
-                  </p>
-                  <p style={{ color: '#666', fontSize: '0.8rem' }}> PromptPay: สาขาวิชาวิศวกรรมคอมพิวเตอร์ มรพ.</p>
+                  <div style={{ background: '#0f1017', border: '1px solid var(--accent-gold)', borderRadius: '8px', padding: '8px', marginTop: '12px' }}>
+                    <p style={{ color: 'var(--accent-gold-bright)', fontWeight: '700', fontSize: '1.2rem', margin: 0 }}>
+                      ยอดชำระสุทธิ: ฿{totalAmount.toLocaleString()}
+                    </p>
+                    <p style={{ color: '#94A3B8', fontSize: '0.8rem', marginTop: '2px', margin: 0 }}>
+                      ชื่อบัญชี: ด.ช. ธีรเดช ไพฑูรย์
+                    </p>
+                  </div>
                 </div>
               </div>
 
