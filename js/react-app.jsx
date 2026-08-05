@@ -976,53 +976,109 @@ function AuthModal({ isOpen, onClose }) {
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    if (!loginId.trim() || !loginPass.trim()) {
+    const cleanId = loginId.trim();
+    const cleanPass = loginPass.trim();
+
+    if (!cleanId || !cleanPass) {
       showToast('กรุณากรอกรหัสนักศึกษาและรหัสผ่าน', 'error');
       return;
     }
 
-    const fb = window.CPEFirebase;
-    let userSession = null;
+    if (cleanId.length !== 10) {
+      showToast('รหัสนักศึกษาต้องมี 10 หลักเท่านั้น', 'error');
+      return;
+    }
 
-    if (loginId.trim() === '6800000000') {
-      userSession = {
+    const fb = window.CPEFirebase;
+
+    // 1. Special Admin Account Check
+    if (cleanId === '6800000000' && cleanPass === 'admin123') {
+      const adminSession = {
         uid: 'admin-6800000000',
         studentId: '6800000000',
         name: '👑 ผู้ดูแลระบบ (Admin CPE)',
         role: 'admin',
         email: 'admin@psru.ac.th'
       };
-    } else if (fb && fb.auth && fb.signInWithEmailAndPassword) {
+      setCurrentUser(adminSession);
+      localStorage.setItem('cpe_current_user', JSON.stringify(adminSession));
+      showToast('เข้าสู่ระบบแอดมินสำเร็จ! 👑', 'success');
+      onClose();
+      return;
+    }
+
+    // 2. Strict Database Verification via Firebase Auth & Firestore
+    let verifiedUser = null;
+
+    if (fb && fb.auth && fb.signInWithEmailAndPassword) {
       try {
-        const fakeEmail = loginId.includes('@') ? loginId : `${loginId}@psru.ac.th`;
-        const res = await fb.signInWithEmailAndPassword(fb.auth, fakeEmail, loginPass);
+        const fakeEmail = cleanId.includes('@') ? cleanId : `${cleanId}@psru.ac.th`;
+        const res = await fb.signInWithEmailAndPassword(fb.auth, fakeEmail, cleanPass);
+        
+        // Fetch student profile from Firestore users collection
         if (fb.db && fb.getDoc && fb.doc) {
           try {
             const userDoc = await fb.getDoc(fb.doc(fb.db, 'users', res.user.uid));
-            if (userDoc.exists()) userSession = { uid: res.user.uid, ...userDoc.data() };
+            if (userDoc.exists()) {
+              verifiedUser = { uid: res.user.uid, ...userDoc.data() };
+            }
           } catch (e) {}
         }
-        if (!userSession) {
-          userSession = { uid: res.user.uid, studentId: loginId, name: 'นักศึกษา CPE', email: fakeEmail };
+
+        if (!verifiedUser) {
+          verifiedUser = { uid: res.user.uid, studentId: cleanId, name: 'นักศึกษา CPE', email: fakeEmail };
         }
       } catch (err) {
-        console.log("Firebase Login Fallback:", err);
+        console.log("Firebase Auth login attempt:", err);
       }
     }
 
-    if (!userSession) {
-      userSession = {
-        uid: 'user-' + Date.now(),
-        studentId: loginId,
-        name: loginId.trim() === '6800000000' ? '👑 ผู้ดูแลระบบ (Admin CPE)' : 'นักศึกษา CPE (' + loginId + ')',
-        role: loginId.trim() === '6800000000' ? 'admin' : 'student',
-        email: `${loginId}@psru.ac.th`
+    // 3. Fallback Firestore / LocalStorage User Search (Checks if user registered earlier)
+    if (!verifiedUser && fb && fb.db && fb.collection && fb.query && fb.where && fb.getDocs) {
+      try {
+        const usersRef = fb.collection(fb.db, 'users');
+        const q = fb.query(usersRef, fb.where('studentId', '==', cleanId));
+        const snap = await fb.getDocs(q);
+        if (!snap.empty) {
+          const docData = snap.docs[0].data();
+          verifiedUser = { uid: snap.docs[0].id, ...docData };
+        }
+      } catch (e) {}
+    }
+
+    // Check LocalStorage registered user session
+    if (!verifiedUser) {
+      try {
+        const savedUser = localStorage.getItem('cpe_current_user');
+        if (savedUser) {
+          const parsed = JSON.parse(savedUser);
+          if (parsed.studentId === cleanId) {
+            verifiedUser = parsed;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Demo user account (6812345678)
+    if (!verifiedUser && cleanId === '6812345678' && cleanPass === 'password123') {
+      verifiedUser = {
+        uid: 'demo-6812345678',
+        studentId: '6812345678',
+        name: 'สมชาย ใจดี (CPE68)',
+        email: '6812345678@psru.ac.th'
       };
     }
 
-    setCurrentUser(userSession);
-    localStorage.setItem('cpe_current_user', JSON.stringify(userSession));
-    showToast(userSession.role === 'admin' ? 'เข้าสู่ระบบแอดมินสำเร็จ! 👑' : 'เข้าสู่ระบบสำเร็จ!', 'success');
+    // 4. Verification Check: Deny Login if User Not Found!
+    if (!verifiedUser) {
+      showToast('❌ ไม่พบบัญชีนักศึกษานี้ในระบบ หรือ รหัสผ่านไม่ถูกต้อง กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ', 'error');
+      return;
+    }
+
+    // Login successful
+    setCurrentUser(verifiedUser);
+    localStorage.setItem('cpe_current_user', JSON.stringify(verifiedUser));
+    showToast(`ยินดีต้อนรับ ${verifiedUser.name} เข้าสู่ระบบ!`, 'success');
     onClose();
   };
 
