@@ -1792,10 +1792,16 @@ function AdminDashboardModal({ isOpen, onClose }) {
                       <td style={{ padding: '10px' }}>
                         <button 
                           className="btn btn-outline" 
-                          style={{ padding: '4px 8px', fontSize: '0.75rem', border: '1px solid var(--accent-gold)', color: 'var(--accent-gold-bright)' }}
+                          style={{ 
+                            padding: '4px 10px', 
+                            fontSize: '0.78rem', 
+                            borderColor: o.slipUrl ? '#22c55e' : 'var(--accent-gold)', 
+                            color: o.slipUrl ? '#22c55e' : 'var(--accent-gold-bright)',
+                            background: o.slipUrl ? 'rgba(34,197,94,0.1)' : 'transparent'
+                          }}
                           onClick={() => setPreviewSlipOrder(o)}
                         >
-                          📸 ดูสลิปโอนเงิน
+                          {o.slipUrl ? '🖼️ ดูรูปสลิปจากลูกค้า (DB)' : '📄 ดูข้อมูลสลิปโอนเงิน'}
                         </button>
                       </td>
 
