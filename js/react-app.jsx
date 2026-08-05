@@ -1138,8 +1138,8 @@ function AuthModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="modal-backdrop show">
-      <div className="modal-card auth-modal-card">
+    <div className="modal-backdrop show" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto', padding: '16px' }}>
+      <div className="modal-card auth-modal-card" onClick={e => e.stopPropagation()} style={{ position: 'relative', zIndex: 10000, background: '#10121a', border: '1px solid var(--border-gold)', borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', opacity: 1, visibility: 'visible' }}>
         <button className="close-btn auth-close-btn" onClick={onClose}>&times;</button>
         
         {/* CPE PORTAL BRANDING */}
@@ -1417,8 +1417,8 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
   };
 
   return (
-    <div className="modal-backdrop show" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto' }}>
-      <div className="modal-card lg" style={{ position: 'relative', zIndex: 9999, background: '#10121a', border: '1px solid var(--border-gold)', maxHeight: '90vh', overflowY: 'auto' }}>
+    <div className="modal-backdrop show" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto', padding: '16px' }}>
+      <div className="modal-card lg" onClick={e => e.stopPropagation()} style={{ position: 'relative', zIndex: 10000, background: '#10121a', border: '1px solid var(--border-gold)', borderRadius: '16px', width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', opacity: 1, visibility: 'visible', boxShadow: '0 20px 60px rgba(0,0,0,0.95)' }}>
         <div className="modal-header">
           <h3 className="modal-title">ชำระเงินสแกน QR Code PromptPay</h3>
           <button className="close-btn" onClick={onClose}>&times;</button>
@@ -1675,8 +1675,8 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const totalItemsCount = orders.reduce((sum, o) => sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0);
 
   return (
-    <div className="modal-backdrop show" style={{ zIndex: 2500 }}>
-      <div className="modal-card xl admin-modal-card" style={{ maxWidth: '1100px', width: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+    <div className="modal-backdrop show" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto', padding: '16px' }}>
+      <div className="modal-card xl admin-modal-card" onClick={e => e.stopPropagation()} style={{ position: 'relative', zIndex: 10000, background: '#10121a', border: '1px solid var(--border-gold)', borderRadius: '16px', maxWidth: '1100px', width: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', opacity: 1, visibility: 'visible' }}>
         
         {/* Header */}
         <div className="modal-header" style={{ background: 'linear-gradient(135deg, #1b0a0e, #0a0b10)', borderBottom: '1px solid var(--accent-gold)', padding: '16px 24px' }}>
