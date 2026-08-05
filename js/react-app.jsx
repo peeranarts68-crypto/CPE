@@ -1417,25 +1417,64 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
   };
 
   return (
-    <div className="modal-backdrop show" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto', padding: '16px' }}>
-      <div className="modal-card lg" onClick={e => e.stopPropagation()} style={{ position: 'relative', zIndex: 10000, background: '#10121a', border: '1px solid var(--border-gold)', borderRadius: '16px', width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', opacity: 1, visibility: 'visible', boxShadow: '0 20px 60px rgba(0,0,0,0.95)' }}>
-        <div className="modal-header">
-          <h3 className="modal-title">ชำระเงินสแกน QR Code PromptPay</h3>
-          <button className="close-btn" onClick={onClose}>&times;</button>
+    <div 
+      className="modal-backdrop show" 
+      onClick={onClose} 
+      style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0, 
+        width: '100vw', 
+        height: '100vh', 
+        background: 'rgba(0,0,0,0.85)', 
+        backdropFilter: 'blur(8px)', 
+        zIndex: 99999, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        opacity: 1, 
+        pointerEvents: 'auto', 
+        padding: '16px' 
+      }}
+    >
+      <div 
+        className="modal-card lg" 
+        onClick={e => e.stopPropagation()} 
+        style={{ 
+          position: 'relative', 
+          zIndex: 100000, 
+          background: '#10121a', 
+          border: '1px solid var(--border-gold)', 
+          borderRadius: '16px', 
+          width: '100%', 
+          maxWidth: '780px', 
+          maxHeight: '90vh', 
+          overflowY: 'auto', 
+          opacity: 1, 
+          visibility: 'visible', 
+          boxShadow: '0 25px 70px rgba(0,0,0,0.95)',
+          margin: 'auto'
+        }}
+      >
+        <div className="modal-header" style={{ borderBottom: '1px solid var(--border-color)', padding: '16px 20px' }}>
+          <h3 className="modal-title" style={{ color: 'var(--accent-gold-bright)', fontSize: '1.2rem' }}>💳 ชำระเงินสแกน QR Code PromptPay</h3>
+          <button className="close-btn" onClick={onClose} style={{ color: '#fff', fontSize: '1.8rem' }}>&times;</button>
         </div>
 
-        <div className="modal-body">
+        <div className="modal-body" style={{ padding: '20px' }}>
           <form onSubmit={handleSubmitOrder}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
               
               {/* Left: PromptPay QR Code */}
-              <div>
-                <h4 style={{ color: '#fff', fontSize: '1rem', marginBottom: '10px' }}>1. สแกน QR Code ชำระเงิน (PromptPay)</h4>
+              <div style={{ flex: '1 1 300px' }}>
+                <h4 style={{ color: '#fff', fontSize: '0.95rem', marginBottom: '10px' }}>1. สแกน QR Code ชำระเงิน (PromptPay)</h4>
                 <div style={{ background: '#fff', padding: '14px', borderRadius: '12px', textAlign: 'center', boxShadow: '0 8px 25px rgba(0,0,0,0.5)' }}>
                   <img 
                     src="assets/promptpay_qr.png" 
                     alt="PromptPay Thai QR Payment - ด.ช. ธีรเดช ไพฑูรย์"
-                    style={{ width: '100%', maxWidth: '280px', height: 'auto', margin: '0 auto', display: 'block', borderRadius: '8px' }}
+                    style={{ width: '100%', maxWidth: '260px', height: 'auto', margin: '0 auto', display: 'block', borderRadius: '8px' }}
                   />
                   <div style={{ background: '#0f1017', border: '1px solid var(--accent-gold)', borderRadius: '8px', padding: '8px', marginTop: '12px' }}>
                     <p style={{ color: 'var(--accent-gold-bright)', fontWeight: '700', fontSize: '1.2rem', margin: 0 }}>
@@ -1449,11 +1488,11 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
               </div>
 
               {/* Right: Student Receiver Info & Slip Upload */}
-              <div>
-                <h4 style={{ color: '#fff', fontSize: '1rem', marginBottom: '10px' }}>2. ข้อมูลผู้รับเสื้อ &amp; หลักฐาน</h4>
+              <div style={{ flex: '1 1 300px' }}>
+                <h4 style={{ color: '#fff', fontSize: '0.95rem', marginBottom: '10px' }}>2. ข้อมูลผู้รับเสื้อ &amp; หลักฐาน</h4>
                 
                 <div className="form-group" style={{ marginBottom: '10px' }}>
-                  <label>ชื่อ-นามสกุล ผู้สั่งซื้อ</label>
+                  <label style={{ color: '#fff' }}>ชื่อ-นามสกุล ผู้สั่งซื้อ</label>
                   <input 
                     type="text" 
                     className="form-input" 
@@ -1464,7 +1503,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '10px' }}>
-                  <label>รหัสนักศึกษา (10 หลัก)</label>
+                  <label style={{ color: '#fff' }}>รหัสนักศึกษา (10 หลัก)</label>
                   <input 
                     type="text" 
                     className="form-input" 
@@ -1476,7 +1515,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '10px' }}>
-                  <label>เบอร์โทรศัพท์ติดต่อ</label>
+                  <label style={{ color: '#fff' }}>เบอร์โทรศัพท์ติดต่อ</label>
                   <input 
                     type="tel" 
                     className="form-input" 
@@ -1487,7 +1526,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '15px' }}>
-                  <label>แนบสลิปการโอนเงิน (Slip Attachment)</label>
+                  <label style={{ color: '#fff' }}>แนบสลิปการโอนเงิน (Slip Attachment)</label>
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -1502,7 +1541,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
                   )}
                 </div>
 
-                <button type="submit" className="btn btn-gold" style={{ width: '100%' }} disabled={isSubmitting}>
+                <button type="submit" className="btn btn-gold" style={{ width: '100%', padding: '12px', fontWeight: 'bold' }} disabled={isSubmitting}>
                   {isSubmitting ? 'กำลังบันทึกลง Firebase...' : 'ยืนยันการแจ้งชำระเงิน'}
                 </button>
               </div>
