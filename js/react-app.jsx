@@ -1344,7 +1344,9 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
   const [checkoutName, setCheckoutName] = useState(currentUser?.name || '');
   const [checkoutStudentId, setCheckoutStudentId] = useState(currentUser?.studentId || '');
   const [checkoutPhone, setCheckoutPhone] = useState(currentUser?.phone || '');
+  const [slipFile, setSlipFile] = useState(null);
   const [slipDataUrl, setSlipDataUrl] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -1393,10 +1395,15 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       slipUrl: slipDataUrl || null
     };
 
+    const fb = window.CPEFirebase;
+
     try {
-      // Save order to Firebase Cloud Firestore
-      await addDoc(collection(db, 'orders'), newOrder);
-      showToast(`บันทึกคำสั่งซื้อ ${orderId} ลงบน Firebase Firestore เรียบร้อยแล้ว!`, 'success');
+      if (fb && fb.db && fb.addDoc && fb.collection) {
+        await fb.addDoc(fb.collection(fb.db, 'orders'), newOrder);
+        showToast(`บันทึกคำสั่งซื้อ ${orderId} ลงบน Firebase Firestore เรียบร้อยแล้ว!`, 'success');
+      } else {
+        showToast(`สร้างคำสั่งซื้อ ${orderId} เรียบร้อยแล้ว!`, 'success');
+      }
     } catch (err) {
       console.log("Firestore order save:", err);
       showToast(`สร้างคำสั่งซื้อ ${orderId} เรียบร้อยแล้ว!`, 'success');
