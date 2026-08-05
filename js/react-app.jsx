@@ -112,7 +112,11 @@ function App() {
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
-  const isAdmin = currentUser?.studentId === '6800000000' || currentUser?.role === 'admin';
+  // Determine admin status – include fallback from localStorage in case auth state hasn't loaded yet
+  const storedUser = typeof localStorage !== 'undefined' ? localStorage.getItem('cpe_current_user') : null;
+  const parsedStored = storedUser ? JSON.parse(storedUser) : null;
+  const isAdmin = currentUser?.studentId === '6800000000' || currentUser?.role === 'admin' ||
+                  parsedStored?.studentId === '6800000000' || parsedStored?.role === 'admin';
   
   const [selectedProductKey, setSelectedProductKey] = useState('polo');
   const [searchTrackingQuery, setSearchTrackingQuery] = useState('');
