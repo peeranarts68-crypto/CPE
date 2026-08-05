@@ -508,6 +508,16 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
   const [studentIdInput, setStudentIdInput] = useState(currentUser?.studentId || '');
   const [qty, setQty] = useState(1);
 
+  // Determine admin status – include fallback from localStorage in case auth state hasn't loaded yet
+  const storedUser = typeof localStorage !== 'undefined' ? localStorage.getItem('cpe_current_user') : null;
+  const parsedStored = storedUser ? JSON.parse(storedUser) : null;
+  const isAdmin = currentUser?.studentId === '6800000000' || currentUser?.role === 'admin' ||
+                  parsedStored?.studentId === '6800000000' || parsedStored?.role === 'admin';
+
+  const userStudentId = currentUser?.studentId;
+  const showPolo = isAdmin || !userStudentId || userStudentId.startsWith('68') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69'));
+  const showJacket = isAdmin || !userStudentId || userStudentId.startsWith('69') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69'));
+
   useEffect(() => {
     if (currentUser?.studentId) setStudentIdInput(currentUser.studentId);
   }, [currentUser]);
@@ -563,7 +573,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
 
         {/* Product Selector Switcher Tabs - restricted by student ID */}
         <div className="product-select-tabs">
-          {(isAdmin || (currentUser?.studentId && currentUser.studentId.startsWith('68'))) && (
+          {showPolo && (
             <button
               className={`product-tab-btn ${selectedProductKey === 'polo' ? 'active' : ''}`}
               onClick={() => setSelectedProductKey('polo')}
@@ -571,7 +581,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
               <span>👕 เสื้อโปโลสาขา CPE (LXVIII) - ฿240</span>
             </button>
           )}
-          {(isAdmin || (currentUser?.studentId && currentUser.studentId.startsWith('69'))) && (
+          {showJacket && (
             <button
               className={`product-tab-btn ${selectedProductKey === 'jacket' ? 'active' : ''}`}
               onClick={() => setSelectedProductKey('jacket')}
