@@ -866,48 +866,77 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
 
 // 5. CART DRAWER COMPONENT
 function CartDrawer({ isOpen, onClose, cart, setCart, onCheckout }) {
+  const { showToast } = useContext(AuthContext);
   if (!isOpen) return null;
 
   const subtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0);
 
-  const removeItem = (id) => {
-    setCart(prev => prev.filter(item => item.id !== id));
+  const removeItem = (indexToDelete) => {
+    const updated = cart.filter((_, idx) => idx !== indexToDelete);
+    setCart(updated);
+    try {
+      localStorage.setItem('cpe_cart', JSON.stringify(updated));
+    } catch (e) {}
+    if (showToast) showToast('ลบรายการออกจากตะกร้าเรียบร้อยแล้ว', 'info');
+  };
+
+  const clearAllCart = () => {
+    setCart([]);
+    try {
+      localStorage.setItem('cpe_cart', JSON.stringify([]));
+    } catch (e) {}
+    if (showToast) showToast('ล้างตะกร้าสินค้าทั้งหมดแล้ว', 'info');
   };
 
   return (
     <>
       <div className="drawer-backdrop show" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', zIndex: 9998, opacity: 1, pointerEvents: 'auto' }}></div>
       <aside className="cart-drawer show open" style={{ position: 'fixed', top: 0, right: 0, width: '100%', maxWidth: '450px', height: '100vh', background: '#10121a', borderLeft: '1px solid var(--border-gold)', zIndex: 9999, display: 'flex', flexDirection: 'column', boxShadow: '-10px 0 40px rgba(0,0,0,0.8)' }}>
-        <div className="drawer-header">
-          <h3>
+        <div className="drawer-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-            ตะกร้าสินค้าของคุณ
+            ตะกร้าสินค้า ({cart.length})
           </h3>
-          <button className="close-btn" onClick={onClose}>&times;</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {cart.length > 0 && (
+              <button 
+                onClick={clearAllCart}
+                style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '4px', padding: '2px 8px', fontSize: '0.75rem', cursor: 'pointer' }}
+              >
+                🗑️ ล้างทั้งหมด
+              </button>
+            )}
+            <button className="close-btn" onClick={onClose}>&times;</button>
+          </div>
         </div>
 
-        <div className="drawer-body">
+        <div className="drawer-body" style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
           {cart.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--text-muted)' }}>
-              ไม่มีสินค้าในตะกร้าขณะนี้
+            <div style={{ textAlign: 'center', padding: '60px 10px', color: 'var(--text-muted)' }}>
+              🛒 ไม่มีสินค้าในตะกร้าขณะนี้
             </div>
           ) : (
-            cart.map(item => (
-              <div key={item.id} className="cart-item-card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            cart.map((item, idx) => (
+              <div key={item.id || idx} className="cart-item-card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h4 style={{ color: '#fff', fontSize: '0.92rem' }}>{item.title}</h4>
-                  <p style={{ color: 'var(--accent-gold)', fontSize: '0.8rem' }}>
+                  <h4 style={{ color: '#fff', fontSize: '0.92rem', margin: '0 0 4px 0' }}>{item.title}</h4>
+                  <p style={{ color: 'var(--accent-gold)', fontSize: '0.8rem', margin: 0 }}>
                     ไซส์: <strong>{item.size}</strong> | จำนวน: {item.qty} ตัว
                   </p>
                   {item.customName && (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--accent-gold-bright)', display: 'block' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--accent-gold-bright)', display: 'block', marginTop: '2px' }}>
                       ปักชื่อ: {item.customName}
                     </span>
                   )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <strong style={{ color: 'var(--accent-gold-bright)', fontSize: '1rem', display: 'block' }}>฿{item.totalPrice.toLocaleString()}</strong>
-                  <button onClick={() => removeItem(item.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', marginTop: '4px' }}>ลบรายการ</button>
+                  <strong style={{ color: 'var(--accent-gold-bright)', fontSize: '1rem', display: 'block' }}>฿{(item.totalPrice || item.price * item.qty).toLocaleString()}</strong>
+                  <button 
+                    onClick={() => removeItem(idx)} 
+                    style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '0.78rem', marginTop: '6px' }}
+                  >
+                    🗑️ ลบรายการ
+                  </button>
                 </div>
               </div>
             ))
