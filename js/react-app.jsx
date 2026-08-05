@@ -254,11 +254,13 @@ function App() {
                 </div>
               ) : (
                 <div className="user-profile-menu">
-                  <button className="profile-btn" onClick={() => {
+                  <button className={`user-avatar-btn ${isAdmin ? 'admin-badge' : ''}`} onClick={() => {
                     const menu = document.getElementById('reactDropdownMenu');
                     if (menu) menu.classList.toggle('show');
                   }}>
-                    <div className="avatar">{currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}</div>
+                    <div className={`user-avatar-img ${isAdmin ? 'admin-avatar' : ''}`}>
+                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
                     <span className="user-name">{currentUser.name || 'นักศึกษา CPE'}</span>
                   </button>
 
@@ -731,6 +733,17 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
   const { showToast } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
 
+  // Real-time order update listener
+  useEffect(() => {
+    if (!trackedOrder || !trackedOrder.firestoreId || !db) return;
+    const unsub = onSnapshot(doc(db, 'orders', trackedOrder.firestoreId), (docSnap) => {
+      if (docSnap.exists()) {
+        setTrackedOrder(prev => ({ ...prev, ...docSnap.data() }));
+      }
+    });
+    return () => unsub();
+  }, [trackedOrder?.firestoreId]);
+
   const handleSearch = async (e) => {
     if (e) e.preventDefault();
     const queryStr = searchQuery.trim();
@@ -752,7 +765,8 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
       }
 
       if (!querySnapshot.empty) {
-        const orderData = querySnapshot.docs[0].data();
+        const docSnap = querySnapshot.docs[0];
+        const orderData = { firestoreId: docSnap.id, ...docSnap.data() };
         setTrackedOrder(orderData);
         showToast('พบข้อมูลออเดอร์ในระบบ Firebase!', 'success');
       } else {
@@ -785,8 +799,23 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
     const currentIdx = order.indexOf(currentStatus || 'pending');
     const stepIdx = order.indexOf(stepKey);
     if (stepIdx < currentIdx) return 'completed';
-    if (stepIdx === currentIdx) return 'active';
+    if (stepIdx === currentIdx) return 'current';
     return '';
+  };
+
+  const getProgressWidth = (currentStatus) => {
+    switch (currentStatus) {
+      case 'paid':
+        return '0%';
+      case 'preparing':
+        return '33.33%';
+      case 'shipping':
+        return '66.67%';
+      case 'completed':
+        return '100%';
+      default:
+        return '0%';
+    }
   };
 
   return (
@@ -833,21 +862,22 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
 
               {/* Stepper Timeline */}
               <div className="stepper" style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', marginTop: '24px' }}>
+                <div className="stepper-progress" style={{ width: getProgressWidth(trackedOrder.status), background: 'var(--primary-red-light)' }}></div>
                 <div className={`step-item ${getStepStatus('paid', trackedOrder.status)}`}>
-                  <div className="step-circle">1</div>
-                  <div className="step-title">ชำระเงินแล้ว</div>
+                  <div className="step-node">1</div>
+                  <div className="step-label">ชำระเงินแล้ว</div>
                 </div>
                 <div className={`step-item ${getStepStatus('preparing', trackedOrder.status)}`}>
-                  <div className="step-circle">2</div>
-                  <div className="step-title">กำลังผลิต/ปักลาย</div>
+                  <div className="step-node">2</div>
+                  <div className="step-label">กำลังผลิต/ปักลาย</div>
                 </div>
                 <div className={`step-item ${getStepStatus('shipping', trackedOrder.status)}`}>
-                  <div className="step-circle">3</div>
-                  <div className="step-title">เตรียมจัดส่ง/รับที่สาขา</div>
+                  <div className="step-node">3</div>
+                  <div className="step-label">เตรียมจัดส่ง/รับที่สาขา</div>
                 </div>
                 <div className={`step-item ${getStepStatus('completed', trackedOrder.status)}`}>
-                  <div className="step-circle">4</div>
-                  <div className="step-title">รับสินค้าเรียบร้อย</div>
+                  <div className="step-node">4</div>
+                  <div className="step-label">รับสินค้าเรียบร้อย</div>
                 </div>
               </div>
 
@@ -1410,6 +1440,10 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       showToast('กรุณากรอกข้อมูลและรหัสนักศึกษา 10 หลักให้ครบถ้วน', 'error');
       return;
     }
+    if (!slipDataUrl) {
+      showToast('กรุณาอัพโหลดสลิปการโอนเงินก่อนดำเนินการ', 'error');
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -1430,7 +1464,8 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
 
     try {
       if (fb && fb.db && fb.addDoc && fb.collection) {
-        await fb.addDoc(fb.collection(fb.db, 'orders'), newOrder);
+        const docRef = await fb.addDoc(fb.collection(fb.db, 'orders'), newOrder);
+        newOrder.firestoreId = docRef.id;
         showToast(`บันทึกคำสั่งซื้อ ${orderId} ลงบน Firebase Firestore เรียบร้อยแล้ว!`, 'success');
       } else {
         showToast(`สร้างคำสั่งซื้อ ${orderId} เรียบร้อยแล้ว!`, 'success');
@@ -1448,6 +1483,9 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
         setSearchTrackingQuery(newOrder.id);
       }
       setCart([]);
+      // Reset slip data after successful submission
+      setSlipFile(null);
+      setSlipDataUrl(null);
       onClose();
       const trackingSec = document.getElementById('tracking');
       if (trackingSec) trackingSec.scrollIntoView({ behavior: 'smooth' });
@@ -1707,6 +1745,14 @@ function AdminDashboardModal({ isOpen, onClose }) {
     const updated = orders.map(o => o.id === orderId ? { ...o, trackingNumber: trackingNum } : o);
     setOrders(updated);
     localStorage.setItem('cpe_my_orders', JSON.stringify(updated));
+
+    const target = orders.find(o => o.id === orderId);
+    if (target && target.firestoreId) {
+      try {
+        await setDoc(doc(db, 'orders', target.firestoreId), { ...target, trackingNumber: trackingNum }, { merge: true });
+      } catch (e) { console.log("Firestore update tracking:", e); }
+    }
+
     showToast(`บันทึกเลขพัสดุ ${trackingNum} เรียบร้อยแล้ว`, 'success');
   };
 

@@ -121,6 +121,24 @@ body {
   display: block;
 }
 
+.avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--primary-red-light), var(--primary-red-dark));
+  border: 2px solid var(--accent-gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-gold-bright);
+  font-family: var(--font-tech);
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 0 10px var(--primary-red-glow);
+  text-transform: uppercase;
+}
+
+
 .brand-text h1 {
   font-family: var(--font-tech);
   font-size: 1.25rem;
@@ -281,35 +299,84 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-gold);
+  background: rgba(10, 11, 16, 0.7);
+  border: 1px solid var(--border-color);
   padding: 6px 14px;
-  border-radius: 30px;
+  border-radius: 6px;
   cursor: pointer;
   transition: var(--transition);
+  box-shadow: inset 0 0 10px rgba(184, 30, 48, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.user-avatar-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.2), transparent);
+  transition: 0.5s;
+}
+
+.user-avatar-btn:hover::before {
+  left: 100%;
 }
 
 .user-avatar-btn:hover {
-  background: rgba(212, 175, 55, 0.1);
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 15px var(--accent-gold-glow);
+  background: rgba(20, 22, 33, 0.9);
+}
+
+.user-avatar-btn.admin-badge {
+  border-color: var(--accent-gold);
+  background: rgba(212, 175, 55, 0.05);
+  box-shadow: 0 0 12px var(--accent-gold-glow);
+}
+
+.user-avatar-btn.admin-badge:hover {
+  background: rgba(212, 175, 55, 0.12);
+  border-color: var(--accent-gold-bright);
 }
 
 .user-avatar-img {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  background: var(--primary-red);
-  color: var(--accent-gold);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: linear-gradient(135deg, var(--primary-red-light), var(--primary-red-dark));
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-family: var(--font-tech);
+  font-size: 0.95rem;
+  transition: var(--transition);
+}
+
+.user-avatar-btn:hover .user-avatar-img {
+  transform: scale(1.1) rotate(10deg);
+}
+
+.user-avatar-img.admin-avatar {
+  background: linear-gradient(135deg, var(--accent-gold-bright), var(--accent-gold-dark));
+  color: var(--bg-dark);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
 }
 
 .user-name {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   color: var(--text-main);
-  font-weight: 500;
+  font-weight: 600;
+  font-family: var(--font-tech);
+  letter-spacing: 0.5px;
+}
+
+.user-avatar-btn.admin-badge .user-name {
+  color: var(--accent-gold-bright);
 }
 
 .dropdown-menu {
