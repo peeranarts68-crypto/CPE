@@ -19,6 +19,7 @@ const {
   query, 
   where, 
   onSnapshot, 
+  orderBy,
   serverTimestamp 
 } = window.CPEFirebase || {};
 
