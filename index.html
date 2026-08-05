@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CPE Shirt &amp; CPE 69 Jacket Portal - วิศวกรรมคอมพิวเตอร์ มรพ.พิบูลสงคราม (PSRU)</title>
-  <meta name="description" content="ระบบสั่งจองเสื้อโปโลและเสื้อคลุมสาขาวิศวกรรมคอมพิวเตอร์ คณะเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม (PSRU) ขับเคลื่อนด้วย React & Firebase Cloud Database">
+  <meta name="description" content="ระบบสั่งจองเสื้อโปโลและเสื้อคลุมสาขาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม (PSRU) ขับเคลื่อนด้วย React & Firebase Cloud Database">
   
   <!-- Google Fonts (Kanit & Chakra Petch) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,7 +31,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, doc, getDoc, getDocs, setDoc, query, where, onSnapshot, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, onSnapshot, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDPch8_YKWsu9g8UhloMeSKwWbkSWhj-QQ",
@@ -53,7 +53,7 @@
       window.CPEFirebase = {
         app, auth, db, analytics,
         signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
-        collection, addDoc, doc, getDoc, getDocs, setDoc, query, where, onSnapshot, orderBy, serverTimestamp
+        collection, addDoc, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, onSnapshot, orderBy, serverTimestamp
       };
     } catch (e) {
       console.log("Firebase setup warning:", e);
