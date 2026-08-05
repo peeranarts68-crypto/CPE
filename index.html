@@ -26,8 +26,43 @@
   <!-- REACT ROOT CONTAINER -->
   <div id="root"></div>
 
-  <!-- FIREBASE & REACT APP MODULE SCRIPTS -->
-  <script type="module" src="js/firebase.js"></script>
+  <!-- FIREBASE INITIALIZER SCRIPT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, doc, getDoc, getDocs, setDoc, query, where, onSnapshot, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPch8_YKWsu9g8UhloMeSKwWbkSWhj-QQ",
+      authDomain: "cpeshirt.firebaseapp.com",
+      projectId: "cpeshirt",
+      storageBucket: "cpeshirt.firebasestorage.app",
+      messagingSenderId: "998516352986",
+      appId: "1:998516352986:web:69e2cc6ff55ca40b7782e3",
+      measurementId: "G-B7TB1LSMSZ"
+    };
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      let analytics = null;
+      try { analytics = getAnalytics(app); } catch (e) {}
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      window.CPEFirebase = {
+        app, auth, db, analytics,
+        signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
+        collection, addDoc, doc, getDoc, getDocs, setDoc, query, where, onSnapshot, orderBy, serverTimestamp
+      };
+    } catch (e) {
+      console.log("Firebase setup warning:", e);
+    }
+    
+    window.dispatchEvent(new Event('cpe-firebase-ready'));
+  </script>
+
+  <!-- REACT APPLICATION SCRIPT -->
   <script type="text/babel" src="js/react-app.jsx"></script>
 
 </body>

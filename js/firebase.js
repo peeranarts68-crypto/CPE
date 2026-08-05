@@ -38,37 +38,20 @@ const firebaseConfig = {
   measurementId: "G-B7TB1LSMSZ"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-let analytics = null;
 try {
-  analytics = getAnalytics(app);
+  const app = initializeApp(firebaseConfig);
+  let analytics = null;
+  try { analytics = getAnalytics(app); } catch (e) {}
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  window.CPEFirebase = {
+    app, auth, db, analytics,
+    signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
+    collection, addDoc, doc, getDoc, getDocs, setDoc, query, where, onSnapshot, orderBy, serverTimestamp
+  };
 } catch (e) {
-  console.log("Firebase Analytics init:", e);
+  console.log("Firebase module setup:", e);
 }
 
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-window.CPEFirebase = {
-  app,
-  auth,
-  db,
-  analytics,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  collection,
-  addDoc,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  query,
-  where,
-  onSnapshot,
-  orderBy,
-  serverTimestamp
-};
+window.dispatchEvent(new Event('cpe-firebase-ready'));

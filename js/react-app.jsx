@@ -905,37 +905,53 @@ function AuthModal({ isOpen, onClose }) {
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    if (!loginId || !loginPass) {
+    if (!loginId.trim() || !loginPass.trim()) {
       showToast('กรุณากรอกรหัสนักศึกษาและรหัสผ่าน', 'error');
       return;
     }
 
-    try {
-      // Firebase Auth attempt
-      const fakeEmail = loginId.includes('@') ? loginId : `${loginId}@psru.ac.th`;
-      const res = await signInWithEmailAndPassword(auth, fakeEmail, loginPass);
-      const userDoc = await getDoc(doc(db, 'users', res.user.uid));
-      const uData = userDoc.exists() ? userDoc.data() : { studentId: loginId, name: 'นักศึกษา CPE' };
-      setCurrentUser({ uid: res.user.uid, ...uData });
-      showToast('เข้าสู่ระบบ Firebase สำเร็จ!', 'success');
-      onClose();
-    } catch (err) {
-      // Local persistent fallback login
-      const user = {
+    const fb = window.CPEFirebase;
+    let userSession = null;
+
+    if (fb && fb.auth && fb.signInWithEmailAndPassword) {
+      try {
+        const fakeEmail = loginId.includes('@') ? loginId : `${loginId}@psru.ac.th`;
+        const res = await fb.signInWithEmailAndPassword(fb.auth, fakeEmail, loginPass);
+        if (fb.db && fb.getDoc && fb.doc) {
+          try {
+            const userDoc = await fb.getDoc(fb.doc(fb.db, 'users', res.user.uid));
+            if (userDoc.exists()) userSession = { uid: res.user.uid, ...userDoc.data() };
+          } catch (e) {}
+        }
+        if (!userSession) {
+          userSession = { uid: res.user.uid, studentId: loginId, name: 'นักศึกษา CPE', email: fakeEmail };
+        }
+      } catch (err) {
+        console.log("Firebase Login Fallback:", err);
+      }
+    }
+
+    if (!userSession) {
+      userSession = {
         uid: 'user-' + Date.now(),
         studentId: loginId,
-        name: 'สมชาย ใจดี (CPE68)',
+        name: 'นักศึกษา CPE (' + loginId + ')',
         email: `${loginId}@psru.ac.th`
       };
-      setCurrentUser(user);
-      localStorage.setItem('cpe_current_user', JSON.stringify(user));
-      showToast('เข้าสู่ระบบสำเร็จ!', 'success');
-      onClose();
     }
+
+    setCurrentUser(userSession);
+    localStorage.setItem('cpe_current_user', JSON.stringify(userSession));
+    showToast('เข้าสู่ระบบสำเร็จ!', 'success');
+    onClose();
   };
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
+    if (!regName.trim()) {
+      showToast('กรุณากรอกชื่อ-นามสกุล', 'error');
+      return;
+    }
     if (regStudentId.length !== 10) {
       showToast('กรุณากรอกรหัสนักศึกษาให้ครบ 10 หลัก (เช่น 6812345678)', 'error');
       return;
@@ -950,34 +966,39 @@ function AuthModal({ isOpen, onClose }) {
     }
 
     const userData = {
-      studentId: regStudentId,
-      name: regName,
-      nickname: regNickname,
+      uid: 'user-' + Date.now(),
+      studentId: regStudentId.trim(),
+      name: regName.trim(),
+      nickname: regNickname.trim() || regName.trim(),
       year: regYear,
-      phone: regPhone,
-      email: regEmail || `${regStudentId}@psru.ac.th`,
+      phone: regPhone.trim(),
+      email: regEmail.trim() || `${regStudentId.trim()}@psru.ac.th`,
       createdAt: new Date().toISOString()
     };
 
-    try {
-      const fakeEmail = regEmail || `${regStudentId}@psru.ac.th`;
-      const res = await createUserWithEmailAndPassword(auth, fakeEmail, regPass);
+    const fb = window.CPEFirebase;
+
+    if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
       try {
-        await setDoc(doc(db, 'users', res.user.uid), userData);
-      } catch (docErr) {
-        console.log("Firestore User Doc Write Error:", docErr);
+        const fakeEmail = regEmail.trim() || `${regStudentId.trim()}@psru.ac.th`;
+        const res = await fb.createUserWithEmailAndPassword(fb.auth, fakeEmail, regPass);
+        userData.uid = res.user.uid;
+        if (fb.db && fb.setDoc && fb.doc) {
+          try {
+            await fb.setDoc(fb.doc(fb.db, 'users', res.user.uid), userData);
+          } catch (docErr) {
+            console.log("Firestore Doc Write Error:", docErr);
+          }
+        }
+      } catch (err) {
+        console.log("Firebase Register Fallback:", err);
       }
-      setCurrentUser({ uid: res.user.uid, ...userData });
-      localStorage.setItem('cpe_current_user', JSON.stringify(userData));
-      showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
-      onClose();
-    } catch (err) {
-      console.log("Firebase Auth Register Error:", err);
-      setCurrentUser(userData);
-      localStorage.setItem('cpe_current_user', JSON.stringify(userData));
-      showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
-      onClose();
     }
+
+    setCurrentUser(userData);
+    localStorage.setItem('cpe_current_user', JSON.stringify(userData));
+    showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
+    onClose();
   };
 
   return (
