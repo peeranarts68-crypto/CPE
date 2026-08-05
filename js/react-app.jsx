@@ -1673,37 +1673,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
       console.log("Firestore fetch error:", e);
     }
 
-    let localList = [];
-    try {
-      const saved = localStorage.getItem('cpe_my_orders');
-      if (saved) localList = JSON.parse(saved);
-    } catch (e) {}
-
-    const merged = [...firestoreList];
-    localList.forEach(lo => {
-      if (!merged.some(m => m.id === lo.id)) {
-        merged.push(lo);
-      }
-    });
-
-    if (merged.length === 0) {
-      merged.push({
-        id: 'CPE-2026-8819',
-        studentId: '6812345678',
-        name: 'สมชาย ใจดี (CPE68)',
-        phone: '081-234-5678',
-        items: [
-          { title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (CPE Polo)', size: 'L', qty: 1, customName: 'ต้อม CPE', totalPrice: 240 }
-        ],
-        total: 240,
-        status: 'paid',
-        date: '2026-08-05 14:30',
-        trackingNumber: 'TH6800192837',
-        slipUrl: 'assets/promptpay_qr.png'
-      });
-    }
-
-    setOrders(merged);
+    setOrders(firestoreList);
     setLoading(false);
   };
 
