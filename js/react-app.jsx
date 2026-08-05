@@ -1930,8 +1930,8 @@ function AdminDashboardModal({ isOpen, onClose }) {
 
       {/* Slip Preview Sub-Modal */}
       {previewSlipOrder && (
-        <div className="modal-backdrop show" style={{ zIndex: 3000, background: 'rgba(0,0,0,0.85)' }} onClick={() => setPreviewSlipOrder(null)}>
-          <div className="modal-card" style={{ maxWidth: '420px', padding: '16px', background: '#0a0b10', border: '1px solid var(--accent-gold)', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+        <div className="modal-backdrop show" onClick={() => setPreviewSlipOrder(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', zIndex: 200000, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto', padding: '16px' }}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ position: 'relative', zIndex: 200001, maxWidth: '440px', width: '100%', padding: '18px', background: '#0a0b10', border: '1px solid var(--accent-gold)', borderRadius: '16px', textAlign: 'center', opacity: 1, visibility: 'visible', boxShadow: '0 25px 70px rgba(0,0,0,0.95)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h4 style={{ color: 'var(--accent-gold-bright)', fontSize: '1.05rem' }}>📸 สลิปหลักฐานการโอนเงิน (Payment Slip)</h4>
               <button className="close-btn" onClick={() => setPreviewSlipOrder(null)}>&times;</button>
