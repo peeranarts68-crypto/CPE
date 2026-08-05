@@ -794,6 +794,18 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
     }
   };
 
+  const handleCancel = async () => {
+    if (!trackedOrder?.firestoreId) return;
+    try {
+      await deleteDoc(doc(db, 'orders', trackedOrder.firestoreId));
+      showToast('ยกเลิกออเดอร์สำเร็จ', 'success');
+      setTrackedOrder(null);
+    } catch (err) {
+      console.log('Cancel order error:', err);
+      showToast('ยกเลิกออเดอร์ไม่สำเร็จ', 'error');
+    }
+  };
+
   const getStepStatus = (stepKey, currentStatus) => {
     const order = ['pending', 'paid', 'preparing', 'shipping', 'completed'];
     const currentIdx = order.indexOf(currentStatus || 'pending');
@@ -885,6 +897,37 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
                 <div style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid var(--border-gold)', padding: '10px 14px', borderRadius: '8px', marginTop: '20px', fontSize: '0.88rem', color: 'var(--accent-gold-bright)' }}>
                   📦 หมายเลขพัสดุ/อ้างอิงการรับสินค้า: <strong>{trackedOrder.trackingNumber}</strong>
                 </div>
+              )}
+
+              {trackedOrder && trackedOrder.status !== 'shipping' && trackedOrder.status !== 'completed' && (
+                <button 
+                  onClick={handleCancel} 
+                  style={{ 
+                    background: 'rgba(184, 30, 48, 0.15)', 
+                    color: '#ff4d4d', 
+                    border: '1px solid rgba(184, 30, 48, 0.5)', 
+                    padding: '8px 16px', 
+                    borderRadius: '6px', 
+                    marginTop: '16px', 
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s ease',
+                    width: '100%',
+                    textAlign: 'center',
+                    display: 'block'
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.background = 'var(--primary-red)';
+                    e.target.style.color = '#fff';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.background = 'rgba(184, 30, 48, 0.15)';
+                    e.target.style.color = '#ff4d4d';
+                  }}
+                >
+                  ❌ ยกเลิกออเดอร์ (Cancel Order)
+                </button>
               )}
             </div>
           )}
