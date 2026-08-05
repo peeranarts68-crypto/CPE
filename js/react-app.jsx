@@ -940,6 +940,10 @@ function AuthModal({ isOpen, onClose }) {
       showToast('กรุณากรอกรหัสนักศึกษาให้ครบ 10 หลัก (เช่น 6812345678)', 'error');
       return;
     }
+    if (regPass.length < 6) {
+      showToast('รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร', 'error');
+      return;
+    }
     if (regPass !== regConfirmPass) {
       showToast('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน', 'error');
       return;
@@ -951,19 +955,24 @@ function AuthModal({ isOpen, onClose }) {
       nickname: regNickname,
       year: regYear,
       phone: regPhone,
-      email: regEmail,
+      email: regEmail || `${regStudentId}@psru.ac.th`,
       createdAt: new Date().toISOString()
     };
 
     try {
       const fakeEmail = regEmail || `${regStudentId}@psru.ac.th`;
       const res = await createUserWithEmailAndPassword(auth, fakeEmail, regPass);
-      await setDoc(doc(db, 'users', res.user.uid), userData);
+      try {
+        await setDoc(doc(db, 'users', res.user.uid), userData);
+      } catch (docErr) {
+        console.log("Firestore User Doc Write Error:", docErr);
+      }
       setCurrentUser({ uid: res.user.uid, ...userData });
-      showToast('สมัครสมาชิกบน Firebase Cloud สำเร็จ!', 'success');
+      localStorage.setItem('cpe_current_user', JSON.stringify(userData));
+      showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
       onClose();
     } catch (err) {
-      // Local fallback
+      console.log("Firebase Auth Register Error:", err);
       setCurrentUser(userData);
       localStorage.setItem('cpe_current_user', JSON.stringify(userData));
       showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
