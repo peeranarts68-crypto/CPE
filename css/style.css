@@ -122,10 +122,10 @@ body {
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--primary-red-light), var(--primary-red-dark));
-  border: 2px solid var(--accent-gold);
+  width: 48px;
+  height: 48px;
+  background: radial-gradient(circle at 30% 30%, var(--primary-red-light), var(--primary-red-dark));
+  border: 3px solid var(--accent-gold);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -134,8 +134,14 @@ body {
   font-family: var(--font-tech);
   font-weight: 700;
   font-size: 1.1rem;
-  box-shadow: 0 0 10px var(--primary-red-glow);
   text-transform: uppercase;
+  box-shadow: 0 0 12px var(--primary-red-glow), 0 0 20px var(--accent-gold);
+  backdrop-filter: blur(4px);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.avatar:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 0 20px var(--primary-red-glow), 0 0 30px var(--accent-gold);
 }
 
 

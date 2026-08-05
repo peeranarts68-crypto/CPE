@@ -780,7 +780,7 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
           ],
           total: 270,
           status: 'shipping',
-          date: '2026-08-04 14:30',
+          date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().replace('T', ' ').substring(0, 16),
           trackingNumber: 'TH6800192837'
         };
         setTrackedOrder(demoOrder);
@@ -1436,7 +1436,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       items: cart,
       total: totalAmount,
       status: 'paid', // paid -> preparing -> shipping -> completed
-      date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().replace('T', ' ').substring(0, 16),
       trackingNumber: 'TH' + Math.floor(1000000000 + Math.random() * 9000000000),
       slipUrl: slipDataUrl || null
     };
