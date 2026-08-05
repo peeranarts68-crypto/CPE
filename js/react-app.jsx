@@ -67,14 +67,15 @@ const PRODUCTS = {
     originalPrice: 1200,
     badgeText: 'สำหรับน้อง CPE 69 (3XL+ +฿100)',
     images: {
-      front: 'assets/jacket_banner.png',
-      back: 'assets/jacket_banner.png',
-      sleeve: 'assets/jacket_banner.png'
+      front: 'assets/jacket_front.png',
+      back: 'assets/jacket_back.png',
+      sleeve: 'assets/jacket_side.png'
     },
     specs: [
-      'ผ้าไมโครโพลีเอสเตอร์: <strong>ระบายอากาศได้ดี</strong>',
-      'อกซ้าย: <strong>ปักตรา CPE PSRU</strong>',
-      'แขนขวา: <strong>ปักเลขโรมัน LXIX</strong>'
+      'ผ้าไมโครโพลีเอสเตอร์: <strong>ระบายอากาศได้ดี ซิปหน้าอย่างดี</strong>',
+      'อกซ้าย: <strong>ปักตรา CPE Computer Engineering 100 S</strong>',
+      'ด้านหลัง: <strong>สกรีน Computer Engineering 69 & ฟันเฟือง PSRU</strong>',
+      'แขนเสื้อ: <strong>ปักเลขโรมัน LXIX</strong>'
     ]
   }
 };
