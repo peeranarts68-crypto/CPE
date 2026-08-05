@@ -1023,17 +1023,7 @@ function AuthModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const handleFillDemo = () => {
-    setLoginId('6812345678');
-    setLoginPass('password123');
-    showToast('เติมข้อมูลบัญชีทดลองเรียบร้อยแล้ว', 'info');
-  };
 
-  const handleFillAdmin = () => {
-    setLoginId('6800000000');
-    setLoginPass('admin123');
-    showToast('เติมข้อมูลบัญชีแอดมิน (6800000000) เรียบร้อยแล้ว', 'info');
-  };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -1230,16 +1220,7 @@ function AuthModal({ isOpen, onClose }) {
           {/* LOGIN FORM */}
           {activeTab === 'login' && (
             <form onSubmit={handleLoginSubmit} className="auth-form active">
-              <div className="demo-account-box" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>บัญชีนักศึกษา: <strong>6812345678</strong></span>
-                  <button type="button" className="demo-btn" onClick={handleFillDemo}>เติมข้อมูลนักศึกษา</button>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px' }}>
-                  <span style={{ color: 'var(--accent-gold-bright)' }}>👑 บัญชีแอดมิน: <strong>6800000000</strong></span>
-                  <button type="button" className="demo-btn" style={{ background: 'linear-gradient(135deg, #d4af37, #8b0c1a)', color: '#fff', border: '1px solid #f5d061' }} onClick={handleFillAdmin}>เติมแอดมิน</button>
-                </div>
-              </div>
+
 
               <div className="form-group">
                 <label>รหัสนักศึกษา (10 หลัก)</label>
