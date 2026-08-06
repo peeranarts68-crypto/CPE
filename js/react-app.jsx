@@ -1483,9 +1483,23 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
     const file = e.target.files[0];
     if (file) {
       setSlipFile(file);
+      // Compress image via canvas to avoid Firestore 1MB doc limit
+      const img = new Image();
       const reader = new FileReader();
       reader.onloadend = () => {
-        setSlipDataUrl(reader.result);
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 800;
+          let w = img.width, h = img.height;
+          if (w > h && w > MAX_SIZE) { h = h * MAX_SIZE / w; w = MAX_SIZE; }
+          else if (h > MAX_SIZE) { w = w * MAX_SIZE / h; h = MAX_SIZE; }
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const compressed = canvas.toDataURL('image/jpeg', 0.6);
+          setSlipDataUrl(compressed);
+        };
+        img.src = reader.result;
       };
       reader.readAsDataURL(file);
     }
