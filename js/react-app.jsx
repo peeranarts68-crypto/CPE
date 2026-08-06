@@ -1062,7 +1062,7 @@ function CartDrawer({ isOpen, onClose, cart, setCart, onCheckout }) {
             <span style={{ color: '#22c55e', fontSize: '1.3rem', fontWeight: 'bold' }}>฿50</span>
           </div>
           <div style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: '8px', padding: '8px 10px', marginTop: '6px', fontSize: '0.78rem', color: '#eab308' }}>
-            ⚠️ ชำระค่ามัดจำ 50 บาท/ออเดอร์ • ส่วนที่เหลือชำระตอนรับเสื้อ
+            ⚠️ ชำระค่ามัดจำ 50 บาท/ออเดอร์ • ส่วนที่เหลือจะแจ้งอีกที
           </div>
 
           <button 
@@ -1617,7 +1617,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
                       💰 ค่ามัดจำ: ฿50
                     </p>
                     <p style={{ color: '#94A3B8', fontSize: '0.8rem', marginTop: '4px', margin: 0 }}>
-                      ยอดรวมทั้งหมด: ฿{totalAmount.toLocaleString()} (ส่วนที่เหลือ ฿{(totalAmount - 50).toLocaleString()} ชำระตอนรับเสื้อ)
+                      ยอดรวมทั้งหมด: ฿{totalAmount.toLocaleString()} (ส่วนที่เหลือ ฿{(totalAmount - 50).toLocaleString()} จะแจ้งอีกที)
                     </p>
                   </div>
                 </div>
@@ -1662,19 +1662,45 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '15px' }}>
-                  <label style={{ color: '#fff' }}>แนบสลิปค่ามัดจำ 50 บาท (Slip Attachment)</label>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="form-input"
-                    onChange={handleSlipChange}
-                  />
-                  {slipDataUrl && (
-                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: '#22c55e', fontSize: '0.8rem' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      แนบสลิปเรียบร้อยแล้ว (พร้อมส่งเข้าสู่ระบบ)
-                    </div>
-                  )}
+                  <label style={{ color: '#fff', marginBottom: '8px', display: 'block' }}>แนบสลิปค่ามัดจำ 50 บาท</label>
+                  <label 
+                    style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: slipDataUrl ? '12px' : '24px 16px', 
+                      border: slipDataUrl ? '2px solid #22c55e' : '2px dashed rgba(234,179,8,0.4)', 
+                      borderRadius: '12px', 
+                      background: slipDataUrl ? 'rgba(34,197,94,0.06)' : 'rgba(234,179,8,0.04)', 
+                      cursor: 'pointer', 
+                      transition: 'all 0.3s ease',
+                      textAlign: 'center'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = slipDataUrl ? '#22c55e' : '#eab308'; e.currentTarget.style.background = slipDataUrl ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.08)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = slipDataUrl ? '#22c55e' : 'rgba(234,179,8,0.4)'; e.currentTarget.style.background = slipDataUrl ? 'rgba(34,197,94,0.06)' : 'rgba(234,179,8,0.04)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleSlipChange}
+                      style={{ display: 'none' }}
+                    />
+                    {slipDataUrl ? (
+                      <>
+                        <div style={{ fontSize: '2rem' }}>✅</div>
+                        <span style={{ color: '#22c55e', fontWeight: '600', fontSize: '0.9rem' }}>แนบสลิปเรียบร้อยแล้ว!</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>แตะเพื่อเปลี่ยนไฟล์</span>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: '2.2rem' }}>📎</div>
+                        <span style={{ color: '#eab308', fontWeight: '600', fontSize: '0.9rem' }}>แตะเพื่ออัปโหลดสลิป</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>รองรับ JPG, PNG, HEIC</span>
+                      </>
+                    )}
+                  </label>
                 </div>
 
                 <button type="submit" className="btn btn-gold" style={{ width: '100%', padding: '12px', fontWeight: 'bold' }} disabled={isSubmitting}>
