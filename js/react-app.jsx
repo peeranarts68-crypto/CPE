@@ -45,10 +45,10 @@ const PRODUCTS = {
     id: 'polo',
     title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (CPE Polo Shirt)',
     batch: 'LXVIII (รุ่น 68)',
-    basePrice: 240,
+    basePrice: 350,
     largeFee: 10,
     originalPrice: 350,
-    badgeText: 'ราคาสาขาพิเศษ ฿240',
+    badgeText: 'ราคาเต็ม ฿350',
     images: {
       front: 'assets/shirt_front.jpg',
       back: 'assets/shirt_back.jpg',
@@ -407,7 +407,7 @@ function HeroSlider({ onSelectProduct }) {
                 <div className="banner-tagline">
                   <span className="tech-pill">CPE BATCH LXVIII</span>
                   <div className="banner-text-content">
-                    <h2>ดีไซน์เรียบเท่ โดดเด่นในสไตล์วิศวกรรมคอมพิวเตอร์ (เสื้อโปโล ฿240)</h2>
+                    <h2>ดีไซน์เรียบเท่ โดดเด่นในสไตล์วิศวกรรมคอมพิวเตอร์ (เสื้อโปโล ฿350)</h2>
                   </div>
                 </div>
                 <div className="banner-cta-group">
@@ -481,7 +481,7 @@ function Features() {
             </div>
             <div className="feature-info">
               <h3>ราคาสาขาพิเศษ สำหรับนักศึกษา</h3>
-              <p>เสื้อโปโล ฿240 / เสื้อคลุม CPE 69 ฿920 (ไซส์ SS - 8XL)</p>
+              <p>เสื้อโปโล ฿350 / เสื้อคลุม CPE 69 ฿920 (ไซส์ SS - 8XL)</p>
             </div>
           </div>
 
@@ -579,7 +579,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
               className={`product-tab-btn ${selectedProductKey === 'polo' ? 'active' : ''}`}
               onClick={() => setSelectedProductKey('polo')}
             >
-              <span>👕 เสื้อโปโลสาขา CPE (LXVIII) - ฿240</span>
+              <span>👕 เสื้อโปโลสาขา CPE (LXVIII) - ฿350</span>
             </button>
           )}
           {showJacket && (
@@ -1760,7 +1760,7 @@ function SizeGuideModal({ isOpen, onClose }) {
             ขนาดรอบอก (นิ้ว) และความยาวตัวเสื้อ (นิ้ว) สำหรับทรงเสื้อโปโล &amp; เสื้อคลุม CPE 69
           </p>
 
-          <h4 style={{ color: 'var(--accent-gold)', marginTop: '12px', fontSize: '0.95rem' }}>1. เสื้อโปโลสาขา CPE (Polo Shirt) - ฿240</h4>
+          <h4 style={{ color: 'var(--accent-gold)', marginTop: '12px', fontSize: '0.95rem' }}>1. เสื้อโปโลสาขา CPE (Polo Shirt) - ฿350</h4>
           <table className="size-table">
             <thead>
               <tr>
@@ -1771,8 +1771,8 @@ function SizeGuideModal({ isOpen, onClose }) {
               </tr>
             </thead>
             <tbody>
-              <tr><td><strong>SS - 2XL</strong></td><td>34" - 44"</td><td>25" - 30"</td><td>240 บาท</td></tr>
-              <tr><td><strong>3XL - 8XL</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+10฿)</span></td><td>46" - 56"</td><td>31" - 36"</td><td><strong style={{ color: '#F5D061' }}>250 บาท</strong></td></tr>
+              <tr><td><strong>SS - 2XL</strong></td><td>34" - 44"</td><td>25" - 30"</td><td>350 บาท</td></tr>
+              <tr><td><strong>3XL - 8XL</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+10฿)</span></td><td>46" - 56"</td><td>31" - 36"</td><td><strong style={{ color: '#F5D061' }}>360 บาท</strong></td></tr>
             </tbody>
           </table>
 
