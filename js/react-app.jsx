@@ -764,11 +764,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
               </div>
             </div>
 
-            <div className="shirt-detail-badges">
-              {prod.specs.map((spec, idx) => (
-                <div key={idx} className="detail-badge" dangerouslySetInnerHTML={{ __html: spec }}></div>
-              ))}
-            </div>
+
           </div>
 
           {/* Configurator Controls */}
