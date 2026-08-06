@@ -667,8 +667,12 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
               <h2>{prod.title}</h2>
               <div className="product-price-tag">
                 <span className="current-price">฿{totalPrice.toLocaleString()}</span>
-                <span className="original-price">฿{(prod.originalPrice * qty).toLocaleString()}</span>
-                <span className="discount-badge">{prod.badgeText}</span>
+                {prod.originalPrice > prod.basePrice && (
+                  <span className="original-price">฿{(prod.originalPrice * qty).toLocaleString()}</span>
+                )}
+                {prod.badgeText && prod.id !== 'polo' && (
+                  <span className="discount-badge">{prod.badgeText}</span>
+                )}
               </div>
             </div>
 
