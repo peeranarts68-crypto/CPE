@@ -1245,19 +1245,30 @@ function AuthModal({ isOpen, onClose }) {
     e.preventDefault();
     if (isSubmitting) return;
 
-    if (!regName.trim()) {
+    const name = regName.trim();
+    const studentId = regStudentId.trim();
+    const phone = regPhone.trim();
+    const email = regEmail.trim() || `${studentId}@psru.ac.th`;
+    const pass = regPass.trim();
+    const confirmPass = regConfirmPass.trim();
+
+    if (!name) {
       showToast('กรุณากรอกชื่อ-นามสกุล', 'error');
       return;
     }
-    if (regStudentId.length !== 10) {
+    if (studentId.length !== 10) {
       showToast('กรุณากรอกรหัสนักศึกษาให้ครบ 10 หลัก (เช่น 6812345678)', 'error');
       return;
     }
-    if (regPass.length < 6) {
+    if (!phone) {
+      showToast('กรุณากรอกเบอร์โทรศัพท์สำหรับติดต่อ', 'error');
+      return;
+    }
+    if (pass.length < 6) {
       showToast('รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร', 'error');
       return;
     }
-    if (regPass !== regConfirmPass) {
+    if (pass !== confirmPass) {
       showToast('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน', 'error');
       return;
     }
@@ -1265,59 +1276,62 @@ function AuthModal({ isOpen, onClose }) {
     const fb = window.CPEFirebase;
     setIsSubmitting(true);
 
-    let finalUid = 'user-' + Date.now();
+    try {
+      let finalUid = 'user-' + Date.now();
 
-    if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
-      try {
-        const authEmail = `${regStudentId.trim()}@psru.ac.th`;
-        const res = await fb.createUserWithEmailAndPassword(fb.auth, authEmail, regPass);
-        finalUid = res.user.uid;
-      } catch (err) {
-        console.log("Firebase Register Error:", err);
-        if (err.code === 'auth/email-already-in-use') {
-           setIsSubmitting(false);
-           showToast('รหัสนักศึกษานี้มีอยู่ในระบบแล้ว กรุณาไปที่แท็บ "เข้าสู่ระบบ"', 'error');
-           return;
-        } else if (err.code === 'auth/weak-password') {
-           setIsSubmitting(false);
-           showToast('รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)', 'error');
-           return;
-        } else if (err.code === 'auth/operation-not-allowed') {
-           console.warn("Firebase Auth is disabled! Falling back to Local Auth Mode.");
-        } else {
-           setIsSubmitting(false);
-           showToast(`เกิดข้อผิดพลาด: ${err.message}`, 'error');
-           return;
+      if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
+        try {
+          const authEmail = `${studentId}@psru.ac.th`;
+          const res = await fb.createUserWithEmailAndPassword(fb.auth, authEmail, pass);
+          finalUid = res.user.uid;
+        } catch (err) {
+          console.log("Firebase Register Error:", err);
+          if (err.code === 'auth/email-already-in-use') {
+             showToast('รหัสนักศึกษานี้มีอยู่ในระบบแล้ว กรุณาไปที่แท็บ "เข้าสู่ระบบ"', 'error');
+             return;
+          } else if (err.code === 'auth/weak-password') {
+             showToast('รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)', 'error');
+             return;
+          } else if (err.code === 'auth/operation-not-allowed') {
+             console.warn("Firebase Auth is disabled! Falling back to Local Auth Mode.");
+          } else {
+             showToast(`เกิดข้อผิดพลาด: ${err.message}`, 'error');
+             return;
+          }
         }
       }
-    }
 
-    // Prepare User Data
-    const userData = {
-      uid: finalUid,
-      studentId: regStudentId.trim(),
-      name: regName.trim(),
-      nickname: regNickname.trim() || regName.trim(),
-      year: regYear,
-      phone: regPhone.trim(),
-      email: regEmail.trim() || `${regStudentId.trim()}@psru.ac.th`,
-      createdAt: new Date().toISOString()
-    };
-    
-    // Always write to Firestore Database, even if Auth fallback was used
-    if (fb && fb.db && fb.setDoc && fb.doc) {
-      try {
-        await fb.setDoc(fb.doc(fb.db, 'users', finalUid), userData);
-      } catch (docErr) {
-        console.log("Firestore Doc Write Error:", docErr);
+      // Prepare User Data
+      const userData = {
+        uid: finalUid,
+        studentId: studentId,
+        name: name,
+        nickname: regNickname.trim() || name,
+        year: regYear,
+        phone: phone,
+        email: email,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Always write to Firestore Database, even if Auth fallback was used
+      if (fb && fb.db && fb.setDoc && fb.doc) {
+        try {
+          await fb.setDoc(fb.doc(fb.db, 'users', finalUid), userData);
+        } catch (docErr) {
+          console.log("Firestore Doc Write Error:", docErr);
+        }
       }
+      
+      setCurrentUser(userData);
+      localStorage.setItem('cpe_current_user', JSON.stringify(userData));
+      showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
+      onClose();
+    } catch (unexpectedErr) {
+      console.log("Unexpected Register Error:", unexpectedErr);
+      showToast('เกิดข้อผิดพลาดไม่คาดคิด กรุณาลองใหม่อีกครั้ง', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    setCurrentUser(userData);
-    localStorage.setItem('cpe_current_user', JSON.stringify(userData));
-    showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
-    setIsSubmitting(false);
-    onClose();
   };
 
   return (
@@ -1351,7 +1365,7 @@ function AuthModal({ isOpen, onClose }) {
 
           {/* LOGIN FORM */}
           {activeTab === 'login' && (
-            <form onSubmit={handleLoginSubmit} className="auth-form active">
+            <form onSubmit={handleLoginSubmit} className="auth-form active" noValidate>
 
 
               <div className="form-group">
@@ -1391,7 +1405,7 @@ function AuthModal({ isOpen, onClose }) {
 
           {/* REGISTER FORM */}
           {activeTab === 'register' && (
-            <form onSubmit={handleRegisterSubmit} className="auth-form active">
+            <form onSubmit={handleRegisterSubmit} className="auth-form active" noValidate>
               <div className="form-group">
                 <label>ชื่อ-นามสกุล <span style={{ color: '#ef4444' }}>*</span></label>
                 <input 
@@ -1456,14 +1470,13 @@ function AuthModal({ isOpen, onClose }) {
               </div>
 
               <div className="form-group">
-                <label>อีเมล <span style={{ color: '#ef4444' }}>*</span></label>
+                <label>อีเมล (ระบุหรือไม่ก็ได้)</label>
                 <input 
-                  type="email" 
+                  type="text" 
                   className="form-input" 
-                  placeholder="student@psru.ac.th"
+                  placeholder="เช่น student@psru.ac.th (ว่างไว้ได้)"
                   value={regEmail}
                   onChange={e => setRegEmail(e.target.value)}
-                  required 
                 />
               </div>
 
