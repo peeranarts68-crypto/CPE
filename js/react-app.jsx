@@ -1945,6 +1945,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [productFilter, setProductFilter] = useState('all');
   const [previewSlipOrder, setPreviewSlipOrder] = useState(null);
   const [editingTracking, setEditingTracking] = useState({});
 
@@ -2010,7 +2011,18 @@ function AdminDashboardModal({ isOpen, onClose }) {
                         (o.studentId || '').includes(searchTerm) || 
                         (o.name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = statusFilter === 'all' || o.status === statusFilter;
-    return matchSearch && matchStatus;
+    
+    let matchProduct = true;
+    if (productFilter !== 'all') {
+      matchProduct = o.items && o.items.some(it => {
+        if (productFilter === 'polo_68') return it.productKey === 'polo' || (it.title && (it.title.includes('รุ่น 68') || it.title.includes('CPE Polo Shirt')));
+        if (productFilter === 'polo_maroon') return it.productKey === 'polo_maroon' || (it.title && it.title.includes('Maroon'));
+        if (productFilter === 'jacket') return it.productKey === 'jacket' || (it.title && (it.title.includes('เสื้อคลุม') || it.title.includes('CPE 69')));
+        return true;
+      });
+    }
+
+    return matchSearch && matchStatus && matchProduct;
   });
 
   const totalRev = orders.reduce((sum, o) => sum + (o.total || 0), 0);
@@ -2054,6 +2066,56 @@ function AdminDashboardModal({ isOpen, onClose }) {
             </div>
           </div>
 
+          {/* Shirt Category Sub-pages Tabs */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-gold)', paddingBottom: '12px' }}>
+            {[
+              { id: 'all', label: '📦 ทั้งหมดทุกสินค้า', badgeBg: '#3b82f6' },
+              { id: 'polo_68', label: '👕 เสื้อโปโล CPE 68', badgeBg: '#eab308' },
+              { id: 'polo_maroon', label: '👕 เสื้อโปโล (สีเลือดหมู Maroon)', badgeBg: '#8b0c1a' },
+              { id: 'jacket', label: '🧥 เสื้อคลุม CPE 69 (Jacket)', badgeBg: '#10b981' }
+            ].map(tab => {
+              const count = tab.id === 'all' ? orders.length : orders.filter(o => o.items && o.items.some(it => {
+                if (tab.id === 'polo_68') return it.productKey === 'polo' || (it.title && (it.title.includes('รุ่น 68') || it.title.includes('CPE Polo Shirt')));
+                if (tab.id === 'polo_maroon') return it.productKey === 'polo_maroon' || (it.title && it.title.includes('Maroon'));
+                if (tab.id === 'jacket') return it.productKey === 'jacket' || (it.title && (it.title.includes('เสื้อคลุม') || it.title.includes('CPE 69')));
+                return true;
+              })).length;
+
+              const isActive = productFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setProductFilter(tab.id)}
+                  style={{
+                    background: isActive ? tab.badgeBg : '#0a0b10',
+                    color: isActive ? '#fff' : 'var(--text-sub)',
+                    border: `1px solid ${isActive ? tab.badgeBg : 'var(--border-gold)'}`,
+                    borderRadius: '8px',
+                    padding: '8px 14px',
+                    fontSize: '0.85rem',
+                    fontWeight: isActive ? 700 : 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: isActive ? `0 4px 12px ${tab.badgeBg}66` : 'none',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span>{tab.label}</span>
+                  <span style={{
+                    background: isActive ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.1)',
+                    padding: '2px 7px',
+                    borderRadius: '10px',
+                    fontSize: '0.75rem'
+                  }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Size Summary */}
           {(() => {
             const sizeSummary = {};
@@ -2064,6 +2126,11 @@ function AdminDashboardModal({ isOpen, onClose }) {
                   const product = it.title || 'ไม่ระบุ';
                   const size = it.size || 'ไม่ระบุ';
                   const qty = it.qty || 1;
+
+                  if (productFilter === 'polo_68' && !(it.productKey === 'polo' || product.includes('รุ่น 68') || product.includes('CPE Polo Shirt'))) return;
+                  if (productFilter === 'polo_maroon' && !(it.productKey === 'polo_maroon' || product.includes('Maroon'))) return;
+                  if (productFilter === 'jacket' && !(it.productKey === 'jacket' || product.includes('เสื้อคลุม') || product.includes('CPE 69'))) return;
+
                   if (!sizeSummary[product]) sizeSummary[product] = {};
                   sizeSummary[product][size] = (sizeSummary[product][size] || 0) + qty;
                 });
