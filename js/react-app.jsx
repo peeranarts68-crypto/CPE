@@ -203,11 +203,11 @@ function App() {
   };
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (e) { console.log("Signout:", e); }
     localStorage.removeItem('cpe_current_user');
     setCurrentUser(null);
+    try {
+      if (auth) await signOut(auth);
+    } catch (e) { console.log("Signout error:", e); }
     showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
   };
 
@@ -1286,6 +1286,10 @@ function AuthModal({ isOpen, onClose }) {
     setIsSubmitting(true);
 
     try {
+      // Clear previous local session to prevent race conditions during sign-out
+      localStorage.removeItem('cpe_current_user');
+      setCurrentUser(null);
+
       let finalUid = 'user-' + Date.now();
 
       if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
