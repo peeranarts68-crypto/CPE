@@ -1114,6 +1114,7 @@ function AuthModal({ isOpen, onClose }) {
   const [regEmail, setRegEmail] = useState('');
   const [regPass, setRegPass] = useState('');
   const [regConfirmPass, setRegConfirmPass] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -1121,6 +1122,8 @@ function AuthModal({ isOpen, onClose }) {
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const cleanId = loginId.trim();
     const cleanPass = loginPass.trim();
 
@@ -1136,7 +1139,6 @@ function AuthModal({ isOpen, onClose }) {
 
     const fb = window.CPEFirebase;
 
-    // 1. Special Admin Account Check
     if (cleanId === '6800000000' && cleanPass === 'admin123') {
       const adminSession = {
         uid: 'admin-6800000000',
@@ -1152,7 +1154,7 @@ function AuthModal({ isOpen, onClose }) {
       return;
     }
 
-    // 2. Strict Database Verification via Firebase Auth & Firestore
+    setIsSubmitting(true);
     let verifiedUser = null;
 
     if (fb && fb.auth && fb.signInWithEmailAndPassword) {
@@ -1160,7 +1162,6 @@ function AuthModal({ isOpen, onClose }) {
         const fakeEmail = cleanId.includes('@') ? cleanId : `${cleanId}@psru.ac.th`;
         const res = await fb.signInWithEmailAndPassword(fb.auth, fakeEmail, cleanPass);
         
-        // Fetch student profile from Firestore users collection
         if (fb.db && fb.getDoc && fb.doc) {
           try {
             const userDoc = await fb.getDoc(fb.doc(fb.db, 'users', res.user.uid));
@@ -1174,61 +1175,37 @@ function AuthModal({ isOpen, onClose }) {
           verifiedUser = { uid: res.user.uid, studentId: cleanId, name: 'นักศึกษา CPE', email: fakeEmail };
         }
       } catch (err) {
+        setIsSubmitting(false);
         console.log("Firebase Auth login attempt:", err);
+        let errMsg = '❌ เข้าสู่ระบบไม่สำเร็จ หรือ รหัสผ่านไม่ถูกต้อง';
+        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') errMsg = '❌ รหัสผ่านไม่ถูกต้อง';
+        else if (err.code === 'auth/user-not-found') errMsg = '❌ ไม่พบบัญชีนักศึกษานี้ในระบบ';
+        showToast(errMsg, 'error');
+        return;
+      }
+    } else {
+      if (cleanId === '6812345678' && cleanPass === 'password123') {
+        verifiedUser = { uid: 'demo-6812345678', studentId: '6812345678', name: 'สมชาย ใจดี (CPE68)', email: '6812345678@psru.ac.th' };
       }
     }
 
-    // 3. Fallback Firestore / LocalStorage User Search (Checks if user registered earlier)
-    if (!verifiedUser && fb && fb.db && fb.collection && fb.query && fb.where && fb.getDocs) {
-      try {
-        const usersRef = fb.collection(fb.db, 'users');
-        const q = fb.query(usersRef, fb.where('studentId', '==', cleanId));
-        const snap = await fb.getDocs(q);
-        if (!snap.empty) {
-          const docData = snap.docs[0].data();
-          verifiedUser = { uid: snap.docs[0].id, ...docData };
-        }
-      } catch (e) {}
-    }
-
-    // Check LocalStorage registered user session
     if (!verifiedUser) {
-      try {
-        const savedUser = localStorage.getItem('cpe_current_user');
-        if (savedUser) {
-          const parsed = JSON.parse(savedUser);
-          if (parsed.studentId === cleanId) {
-            verifiedUser = parsed;
-          }
-        }
-      } catch (e) {}
-    }
-
-    // Demo user account (6812345678)
-    if (!verifiedUser && cleanId === '6812345678' && cleanPass === 'password123') {
-      verifiedUser = {
-        uid: 'demo-6812345678',
-        studentId: '6812345678',
-        name: 'สมชาย ใจดี (CPE68)',
-        email: '6812345678@psru.ac.th'
-      };
-    }
-
-    // 4. Verification Check: Deny Login if User Not Found!
-    if (!verifiedUser) {
-      showToast('❌ ไม่พบบัญชีนักศึกษานี้ในระบบ หรือ รหัสผ่านไม่ถูกต้อง กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ', 'error');
+      setIsSubmitting(false);
+      showToast('❌ ไม่พบบัญชีนักศึกษานี้ในระบบ หรือ รหัสผ่านไม่ถูกต้อง', 'error');
       return;
     }
 
-    // Login successful
     setCurrentUser(verifiedUser);
     localStorage.setItem('cpe_current_user', JSON.stringify(verifiedUser));
     showToast(`ยินดีต้อนรับ ${verifiedUser.name} เข้าสู่ระบบ!`, 'success');
+    setIsSubmitting(false);
     onClose();
   };
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     if (!regName.trim()) {
       showToast('กรุณากรอกชื่อ-นามสกุล', 'error');
       return;
@@ -1258,6 +1235,7 @@ function AuthModal({ isOpen, onClose }) {
     };
 
     const fb = window.CPEFirebase;
+    setIsSubmitting(true);
 
     if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
       try {
@@ -1270,27 +1248,29 @@ function AuthModal({ isOpen, onClose }) {
             await fb.setDoc(fb.doc(fb.db, 'users', res.user.uid), userData);
           } catch (docErr) {
             console.log("Firestore Doc Write Error:", docErr);
-            // Even if DB write fails, auth succeeded, but we should inform the user or handle it
           }
         }
         
         setCurrentUser(userData);
         localStorage.setItem('cpe_current_user', JSON.stringify(userData));
         showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
+        setIsSubmitting(false);
         onClose();
         return;
       } catch (err) {
+        setIsSubmitting(false);
         console.log("Firebase Register Error:", err);
-        showToast('เกิดข้อผิดพลาด: รหัสนักศึกษานี้อาจถูกใช้งานไปแล้ว หรือ รหัสผ่านอ่อนเกินไป', 'error');
-        return; // Stop execution on error
+        let errMsg = 'เกิดข้อผิดพลาดในการสมัครสมาชิก';
+        if (err.code === 'auth/email-already-in-use') errMsg = 'รหัสนักศึกษา หรือ อีเมลนี้ ถูกใช้สมัครไปแล้ว!';
+        else if (err.code === 'auth/invalid-email') errMsg = 'รูปแบบอีเมลไม่ถูกต้อง';
+        else if (err.code === 'auth/weak-password') errMsg = 'รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)';
+        showToast(`เกิดข้อผิดพลาด: ${errMsg}`, 'error');
+        return;
       }
     }
 
-    // Fallback if Firebase is not initialized
-    setCurrentUser(userData);
-    localStorage.setItem('cpe_current_user', JSON.stringify(userData));
-    showToast('สมัครสมาชิกสำเร็จ (Local Mode)', 'success');
-    onClose();
+    setIsSubmitting(false);
+    showToast('❌ ระบบเซิร์ฟเวอร์ไม่พร้อมใช้งาน กรุณาลองใหม่', 'error');
   };
 
   return (
@@ -1352,8 +1332,8 @@ function AuthModal({ isOpen, onClose }) {
                 />
               </div>
 
-              <button type="submit" className="btn-auth-submit">
-                LOGIN
+              <button type="submit" className="btn-auth-submit" disabled={isSubmitting}>
+                {isSubmitting ? 'กำลังเข้าสู่ระบบ...' : 'LOGIN'}
               </button>
 
               <div className="auth-footer-prompt">
@@ -1465,8 +1445,8 @@ function AuthModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              <button type="submit" className="btn-auth-submit">
-                REGISTER
+              <button type="submit" className="btn-auth-submit" disabled={isSubmitting}>
+                {isSubmitting ? 'กำลังสมัครสมาชิก...' : 'REGISTER'}
               </button>
 
               <div className="auth-footer-prompt">
