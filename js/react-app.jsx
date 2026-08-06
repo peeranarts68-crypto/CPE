@@ -525,6 +525,12 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
     if (currentUser?.studentId) setStudentIdInput(currentUser.studentId);
   }, [currentUser]);
 
+  useEffect(() => {
+    if (selectedProductKey === 'polo' && currentView === 'sleeve') {
+      setCurrentView('front');
+    }
+  }, [selectedProductKey]);
+
   const prod = PRODUCTS[selectedProductKey] || PRODUCTS.polo;
 
   // Calculate Unit Price
@@ -611,12 +617,14 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                 >
                   ด้านหลัง (Back)
                 </button>
-                <button 
-                  className={`view-btn ${currentView === 'sleeve' ? 'active' : ''}`}
-                  onClick={() => setCurrentView('sleeve')}
-                >
-                  รายละเอียด (Detail)
-                </button>
+                {selectedProductKey !== 'polo' && (
+                  <button 
+                    className={`view-btn ${currentView === 'sleeve' ? 'active' : ''}`}
+                    onClick={() => setCurrentView('sleeve')}
+                  >
+                    รายละเอียด (Detail)
+                  </button>
+                )}
               </div>
 
               <div className="product-svg-display">
