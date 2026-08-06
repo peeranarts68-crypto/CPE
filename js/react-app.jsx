@@ -1260,7 +1260,7 @@ function AuthModal({ isOpen, onClose }) {
 
     const name = regName.trim();
     const studentId = regStudentId.trim();
-    const phone = regPhone.trim();
+    const phone = regPhone.trim() || '-';
     const email = regEmail.trim() || `${studentId}@psru.ac.th`;
     const pass = regPass.trim();
     const confirmPass = regConfirmPass.trim();
@@ -1271,10 +1271,6 @@ function AuthModal({ isOpen, onClose }) {
     }
     if (studentId.length !== 10) {
       showToast('กรุณากรอกรหัสนักศึกษาให้ครบ 10 หลัก (เช่น 6812345678)', 'error');
-      return;
-    }
-    if (!phone) {
-      showToast('กรุณากรอกเบอร์โทรศัพท์สำหรับติดต่อ', 'error');
       return;
     }
     if (pass.length < 6) {
@@ -1415,7 +1411,7 @@ function AuthModal({ isOpen, onClose }) {
                 />
               </div>
 
-              <button type="submit" className="btn-auth-submit" disabled={isSubmitting}>
+              <button type="submit" onClick={handleLoginSubmit} className="btn-auth-submit" disabled={isSubmitting}>
                 {isSubmitting ? 'กำลังเข้าสู่ระบบ...' : 'LOGIN'}
               </button>
 
@@ -1479,14 +1475,13 @@ function AuthModal({ isOpen, onClose }) {
                   />
                 </div>
                 <div className="form-group">
-                  <label>เบอร์โทรศัพท์ <span style={{ color: '#ef4444' }}>*</span></label>
+                  <label>เบอร์โทรศัพท์ (ระบุหรือไม่ก็ได้)</label>
                   <input 
                     type="tel" 
                     className="form-input" 
-                    placeholder="0812345678"
+                    placeholder="0812345678 (ว่างไว้ได้)"
                     value={regPhone}
                     onChange={e => setRegPhone(e.target.value)}
-                    required 
                   />
                 </div>
               </div>
@@ -1527,7 +1522,7 @@ function AuthModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              <button type="submit" className="btn-auth-submit" disabled={isSubmitting}>
+              <button type="submit" onClick={handleRegisterSubmit} className="btn-auth-submit" disabled={isSubmitting}>
                 {isSubmitting ? 'กำลังสมัครสมาชิก...' : 'REGISTER'}
               </button>
 
