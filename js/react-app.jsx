@@ -1286,42 +1286,30 @@ function AuthModal({ isOpen, onClose }) {
     setIsSubmitting(true);
 
     try {
-      // Clear previous local session to prevent race conditions during sign-out
-      localStorage.removeItem('cpe_current_user');
-      setCurrentUser(null);
-
       let finalUid = 'user-' + Date.now();
+      const authEmail = `${studentId}@psru.ac.th`;
 
       if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
         try {
-          if (fb.auth.currentUser && fb.signOut) {
-            try { await fb.signOut(fb.auth); } catch (e) {}
-          }
-          const authEmail = `${studentId}@psru.ac.th`;
           const res = await withTimeout(fb.createUserWithEmailAndPassword(fb.auth, authEmail, pass), 5000);
           if (res && res.user) {
             finalUid = res.user.uid;
           }
         } catch (err) {
           console.log("Firebase Register Error:", err);
-          let msg = 'เกิดข้อผิดพลาดในการสมัครสมาชิก';
+          let msg = '';
           if (err.code === 'auth/email-already-in-use') {
-             msg = 'รหัสนักศึกษานี้มีอยู่ในระบบแล้ว กรุณาไปที่แท็บ "เข้าสู่ระบบ"';
+            msg = 'รหัสนักศึกษานี้มีอยู่ในระบบแล้ว กรุณาไปที่แท็บ "เข้าสู่ระบบ"';
           } else if (err.code === 'auth/weak-password') {
-             msg = 'รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)';
+            msg = 'รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)';
           } else if (err.code === 'auth/invalid-email') {
-             msg = 'รูปแบบรหัสนักศึกษาไม่ถูกต้อง';
-          } else if (err.code === 'auth/operation-not-allowed') {
-             console.warn("Firebase Auth is disabled! Falling back to Local Auth Mode.");
-          } else if (err.message && err.message.includes('timeout')) {
-             console.warn("Firebase Auth timed out, falling back to Local Mode.");
-          } else {
-             msg = `เกิดข้อผิดพลาด: ${err.message || 'ไม่สามารถสร้างบัญชีได้'}`;
+            msg = 'รูปแบบรหัสนักศึกษาไม่ถูกต้อง';
           }
 
-          if (['auth/email-already-in-use', 'auth/weak-password', 'auth/invalid-email'].includes(err.code)) {
-             showToast(msg, 'error');
-             return;
+          if (msg) {
+            showToast(msg, 'error');
+            setIsSubmitting(false);
+            return;
           }
         }
       }
@@ -1338,17 +1326,15 @@ function AuthModal({ isOpen, onClose }) {
         createdAt: new Date().toISOString()
       };
       
-      // Save user profile to Firestore
+      // Save user profile to Firestore in background
       if (fb && fb.db && fb.setDoc && fb.doc) {
-        try {
-          await withTimeout(fb.setDoc(fb.doc(fb.db, 'users', finalUid), userData), 4000);
-        } catch (docErr) {
+        fb.setDoc(fb.doc(fb.db, 'users', finalUid), userData).catch(docErr => {
           console.log("Firestore Doc Write Error:", docErr);
-        }
+        });
       }
       
-      setCurrentUser(userData);
       localStorage.setItem('cpe_current_user', JSON.stringify(userData));
+      setCurrentUser(userData);
       showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
       onClose();
     } catch (unexpectedErr) {
