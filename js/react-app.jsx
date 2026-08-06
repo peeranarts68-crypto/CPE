@@ -530,9 +530,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
   if (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(selectedSize)) {
     unitPrice += prod.largeFee;
   }
-  if (customName.trim()) {
-    unitPrice += 30; // +30 Baht for custom name embroidery
-  }
+  // Custom name embroidery is now free
 
   const totalPrice = unitPrice * qty;
 
@@ -705,7 +703,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
             <div className="config-group">
               <div className="config-label">
                 <span>ปักชื่อ-นามสกุล / ชื่อเล่นบนอกเสื้อ (Optional):</span>
-                <span style={{ fontSize: '0.8rem', color: 'var(--accent-gold)' }}>+฿30</span>
+                <span style={{ fontSize: '0.8rem', color: '#22c55e' }}>ฟรี ไม่คิดราคาเพิ่ม</span>
               </div>
               <input 
                 type="text" 
@@ -1797,7 +1795,7 @@ function SizeGuideModal({ isOpen, onClose }) {
           </table>
 
           <div style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid var(--border-gold)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--accent-gold-bright)', marginTop: '15px' }}>
-            💡 คำแนะนำ: เสื้อโปโล 3XL+ เพิ่ม 10฿ / เสื้อคลุม Jacket 3XL+ เพิ่ม 100฿ | บริการปักชื่อ +30฿
+            💡 คำแนะนำ: เสื้อโปโล 3XL+ เพิ่ม 10฿ / เสื้อคลุม Jacket 3XL+ เพิ่ม 100฿ | บริการปักชื่อฟรี
           </div>
         </div>
       </div>
