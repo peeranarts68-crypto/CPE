@@ -16,6 +16,7 @@ const {
   getDoc, 
   getDocs, 
   setDoc, 
+  deleteDoc,
   query, 
   where, 
   onSnapshot, 
@@ -806,7 +807,13 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
           ],
           total: 270,
           status: 'shipping',
-          date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().replace('T', ' ').substring(0, 16),
+          date: (() => {
+            try {
+              return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+            } catch (e) {
+              return new Date(Date.now() + 25200000).toISOString().replace('T', ' ').substring(0, 16);
+            }
+          })(),
           trackingNumber: 'TH6800192837'
         };
         setTrackedOrder(demoOrder);
@@ -1529,7 +1536,13 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       deposit: depositAmount,
       remaining: totalAmount - depositAmount,
       status: 'paid', // paid -> preparing -> shipping -> completed
-      date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().replace('T', ' ').substring(0, 16),
+      date: (() => {
+        try {
+          return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+        } catch (e) {
+          return new Date(Date.now() + 25200000).toISOString().replace('T', ' ').substring(0, 16);
+        }
+      })(),
       trackingNumber: 'TH' + Math.floor(1000000000 + Math.random() * 9000000000),
       slipUrl: slipDataUrl || null
     };
