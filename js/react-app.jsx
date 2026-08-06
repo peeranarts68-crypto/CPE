@@ -1290,6 +1290,9 @@ function AuthModal({ isOpen, onClose }) {
 
       if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
         try {
+          if (fb.auth.currentUser && fb.signOut) {
+            try { await fb.signOut(fb.auth); } catch (e) {}
+          }
           const authEmail = `${studentId}@psru.ac.th`;
           const res = await withTimeout(fb.createUserWithEmailAndPassword(fb.auth, authEmail, pass), 5000);
           if (res && res.user) {
