@@ -26,6 +26,14 @@ const {
 
 const { useState, useEffect, useContext, createContext } = React;
 
+// Helper to prevent async network requests from hanging indefinitely
+const withTimeout = (promise, ms = 4000) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Network operation timeout')), ms))
+  ]);
+};
+
 // Create Auth Context
 const AuthContext = createContext();
 
@@ -1167,78 +1175,83 @@ function AuthModal({ isOpen, onClose }) {
     let verifiedUser = null;
     const authEmail = cleanId.includes('@') ? cleanId : `${cleanId}@psru.ac.th`;
 
-    // 2. Strict Database Verification via Firebase Auth
-    if (fb && fb.auth && fb.signInWithEmailAndPassword) {
-      try {
-        const res = await fb.signInWithEmailAndPassword(fb.auth, authEmail, cleanPass);
-        
-        if (fb.db && fb.getDoc && fb.doc) {
-          try {
-            const userDoc = await fb.getDoc(fb.doc(fb.db, 'users', res.user.uid));
-            if (userDoc.exists()) {
-              verifiedUser = { uid: res.user.uid, ...userDoc.data() };
-            }
-          } catch (e) {}
-        }
-
-        if (!verifiedUser) {
-          verifiedUser = { uid: res.user.uid, studentId: cleanId, name: 'นักศึกษา CPE', email: authEmail };
-        }
-      } catch (err) {
-        console.log("Firebase Auth login attempt error:", err);
-      }
-    }
-
-    // 3. Fallback: Search Firestore `users` collection by studentId
-    if (!verifiedUser && fb && fb.db && fb.collection && fb.query && fb.where && fb.getDocs) {
-      try {
-        const usersRef = fb.collection(fb.db, 'users');
-        const q = fb.query(usersRef, fb.where('studentId', '==', cleanId));
-        const snap = await fb.getDocs(q);
-        if (!snap.empty) {
-          const docData = snap.docs[0].data();
-          verifiedUser = { uid: snap.docs[0].id, ...docData };
-        }
-      } catch (e) {
-        console.log("Firestore search fallback error:", e);
-      }
-    }
-
-    // 4. Fallback: Search localStorage saved user session
-    if (!verifiedUser) {
-      try {
-        const savedUser = localStorage.getItem('cpe_current_user');
-        if (savedUser) {
-          const parsed = JSON.parse(savedUser);
-          if (parsed.studentId === cleanId) {
-            verifiedUser = parsed;
+    try {
+      // 2. Strict Database Verification via Firebase Auth (max 4s timeout)
+      if (fb && fb.auth && fb.signInWithEmailAndPassword) {
+        try {
+          const res = await withTimeout(fb.signInWithEmailAndPassword(fb.auth, authEmail, cleanPass), 4000);
+          
+          if (res && res.user && fb.db && fb.getDoc && fb.doc) {
+            try {
+              const userDoc = await withTimeout(fb.getDoc(fb.doc(fb.db, 'users', res.user.uid)), 3000);
+              if (userDoc && userDoc.exists()) {
+                verifiedUser = { uid: res.user.uid, ...userDoc.data() };
+              }
+            } catch (e) {}
           }
+
+          if (!verifiedUser && res && res.user) {
+            verifiedUser = { uid: res.user.uid, studentId: cleanId, name: 'นักศึกษา CPE', email: authEmail };
+          }
+        } catch (err) {
+          console.log("Firebase Auth login attempt error:", err);
         }
-      } catch (e) {}
-    }
+      }
 
-    // 5. Fallback: Demo user account
-    if (!verifiedUser && cleanId === '6812345678' && cleanPass === 'password123') {
-      verifiedUser = {
-        uid: 'demo-6812345678',
-        studentId: '6812345678',
-        name: 'สมชาย ใจดี (CPE68)',
-        email: '6812345678@psru.ac.th'
-      };
-    }
+      // 3. Fallback: Search Firestore `users` collection by studentId (max 3s timeout)
+      if (!verifiedUser && fb && fb.db && fb.collection && fb.query && fb.where && fb.getDocs) {
+        try {
+          const usersRef = fb.collection(fb.db, 'users');
+          const q = fb.query(usersRef, fb.where('studentId', '==', cleanId));
+          const snap = await withTimeout(fb.getDocs(q), 3000);
+          if (snap && !snap.empty) {
+            const docData = snap.docs[0].data();
+            verifiedUser = { uid: snap.docs[0].id, ...docData };
+          }
+        } catch (e) {
+          console.log("Firestore search fallback error:", e);
+        }
+      }
 
-    // 6. Verification Check: Deny Login if User Not Found!
-    if (!verifiedUser) {
+      // 4. Fallback: Search localStorage saved user session
+      if (!verifiedUser) {
+        try {
+          const savedUser = localStorage.getItem('cpe_current_user');
+          if (savedUser) {
+            const parsed = JSON.parse(savedUser);
+            if (parsed.studentId === cleanId) {
+              verifiedUser = parsed;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 5. Fallback: Demo user account
+      if (!verifiedUser && cleanId === '6812345678' && cleanPass === 'password123') {
+        verifiedUser = {
+          uid: 'demo-6812345678',
+          studentId: '6812345678',
+          name: 'สมชาย ใจดี (CPE68)',
+          email: '6812345678@psru.ac.th'
+        };
+      }
+
+      // 6. Verification Check: Deny Login if User Not Found!
+      if (!verifiedUser) {
+        showToast('❌ ไม่พบบัญชีนักศึกษานี้ในระบบ กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ', 'error');
+        return;
+      }
+
+      setCurrentUser(verifiedUser);
+      localStorage.setItem('cpe_current_user', JSON.stringify(verifiedUser));
+      showToast(`ยินดีต้อนรับ ${verifiedUser.name} เข้าสู่ระบบ!`, 'success');
+      onClose();
+    } catch (err) {
+      console.log("Unexpected login error:", err);
+      showToast('เกิดข้อผิดพลาดไม่คาดคิดในการเข้าสู่ระบบ', 'error');
+    } finally {
       setIsSubmitting(false);
-      showToast('❌ ไม่พบบัญชีนักศึกษานี้ในระบบ กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ', 'error');
-      return;
     }
-
-    setCurrentUser(verifiedUser);
-    localStorage.setItem('cpe_current_user', JSON.stringify(verifiedUser));
-    showToast(`ยินดีต้อนรับ ${verifiedUser.name} เข้าสู่ระบบ!`, 'success');
-    setIsSubmitting(false);
-    onClose();
   };
 
   const handleRegisterSubmit = async (e) => {
@@ -1282,8 +1295,10 @@ function AuthModal({ isOpen, onClose }) {
       if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
         try {
           const authEmail = `${studentId}@psru.ac.th`;
-          const res = await fb.createUserWithEmailAndPassword(fb.auth, authEmail, pass);
-          finalUid = res.user.uid;
+          const res = await withTimeout(fb.createUserWithEmailAndPassword(fb.auth, authEmail, pass), 4000);
+          if (res && res.user) {
+            finalUid = res.user.uid;
+          }
         } catch (err) {
           console.log("Firebase Register Error:", err);
           if (err.code === 'auth/email-already-in-use') {
@@ -1294,9 +1309,6 @@ function AuthModal({ isOpen, onClose }) {
              return;
           } else if (err.code === 'auth/operation-not-allowed') {
              console.warn("Firebase Auth is disabled! Falling back to Local Auth Mode.");
-          } else {
-             showToast(`เกิดข้อผิดพลาด: ${err.message}`, 'error');
-             return;
           }
         }
       }
@@ -1313,10 +1325,10 @@ function AuthModal({ isOpen, onClose }) {
         createdAt: new Date().toISOString()
       };
       
-      // Always write to Firestore Database, even if Auth fallback was used
+      // Always write to Firestore Database (max 3s timeout)
       if (fb && fb.db && fb.setDoc && fb.doc) {
         try {
-          await fb.setDoc(fb.doc(fb.db, 'users', finalUid), userData);
+          await withTimeout(fb.setDoc(fb.doc(fb.db, 'users', finalUid), userData), 3000);
         } catch (docErr) {
           console.log("Firestore Doc Write Error:", docErr);
         }
