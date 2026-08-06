@@ -1053,9 +1053,16 @@ function CartDrawer({ isOpen, onClose, cart, setCart, onCheckout }) {
             <span>ค่าจัดส่ง</span>
             <span style={{ color: '#22c55e' }}>ฟรี (รับที่สาขา)</span>
           </div>
+          <div className="summary-row" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '8px', marginTop: '8px' }}>
+            <span>ยอดรวมทั้งหมด</span>
+            <span style={{ color: 'var(--text-sub)' }}>฿{subtotal.toLocaleString()}</span>
+          </div>
           <div className="summary-row total">
-            <span>ยอดชำระสุทธิ</span>
-            <span style={{ color: 'var(--accent-gold-bright)', fontSize: '1.2rem' }}>฿{subtotal.toLocaleString()}</span>
+            <span>💰 ค่ามัดจำ (ชำระตอนนี้)</span>
+            <span style={{ color: '#22c55e', fontSize: '1.3rem', fontWeight: 'bold' }}>฿50</span>
+          </div>
+          <div style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: '8px', padding: '8px 10px', marginTop: '6px', fontSize: '0.78rem', color: '#eab308' }}>
+            ⚠️ ชำระค่ามัดจำ 50 บาท/ออเดอร์ • ส่วนที่เหลือชำระตอนรับเสื้อ
           </div>
 
           <button 
@@ -1064,7 +1071,7 @@ function CartDrawer({ isOpen, onClose, cart, setCart, onCheckout }) {
             disabled={cart.length === 0}
             onClick={onCheckout}
           >
-            ดำเนินการชำระเงิน (PromptPay)
+            ดำเนินการชำระค่ามัดจำ ฿50
           </button>
         </div>
       </aside>
@@ -1497,6 +1504,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
 
     setIsSubmitting(true);
 
+    const depositAmount = 50;
     const newOrder = {
       id: orderId,
       studentId: checkoutStudentId,
@@ -1504,6 +1512,8 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       phone: checkoutPhone,
       items: cart,
       total: totalAmount,
+      deposit: depositAmount,
+      remaining: totalAmount - depositAmount,
       status: 'paid', // paid -> preparing -> shipping -> completed
       date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().replace('T', ' ').substring(0, 16),
       trackingNumber: 'TH' + Math.floor(1000000000 + Math.random() * 9000000000),
@@ -1585,7 +1595,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
         }}
       >
         <div className="modal-header" style={{ borderBottom: '1px solid var(--border-color)', padding: '16px 20px' }}>
-          <h3 className="modal-title" style={{ color: 'var(--accent-gold-bright)', fontSize: '1.2rem' }}>💳 ชำระเงินสแกน QR Code PromptPay</h3>
+          <h3 className="modal-title" style={{ color: 'var(--accent-gold-bright)', fontSize: '1.2rem' }}>💰 ชำระค่ามัดจำ 50 บาท (สแกน QR Code)</h3>
           <button className="close-btn" onClick={onClose} style={{ color: '#fff', fontSize: '1.8rem' }}>&times;</button>
         </div>
 
@@ -1595,19 +1605,19 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
               
               {/* Left: PromptPay QR Code */}
               <div style={{ flex: '1 1 300px' }}>
-                <h4 style={{ color: '#fff', fontSize: '0.95rem', marginBottom: '10px' }}>1. สแกน QR Code ชำระเงิน (PromptPay)</h4>
+                <h4 style={{ color: '#fff', fontSize: '0.95rem', marginBottom: '10px' }}>1. สแกน QR Code ชำระค่ามัดจำ</h4>
                 <div style={{ background: '#fff', padding: '14px', borderRadius: '12px', textAlign: 'center', boxShadow: '0 8px 25px rgba(0,0,0,0.5)' }}>
                   <img 
-                    src="assets/promptpay_qr.png" 
-                    alt="PromptPay Thai QR Payment - ด.ช. ธีรเดช ไพฑูรย์"
+                    src="assets/deposit_qr.png" 
+                    alt="QR Code ชำระค่ามัดจำ 50 บาท"
                     style={{ width: '100%', maxWidth: '260px', height: 'auto', margin: '0 auto', display: 'block', borderRadius: '8px' }}
                   />
-                  <div style={{ background: '#0f1017', border: '1px solid var(--accent-gold)', borderRadius: '8px', padding: '8px', marginTop: '12px' }}>
-                    <p style={{ color: 'var(--accent-gold-bright)', fontWeight: '700', fontSize: '1.2rem', margin: 0 }}>
-                      ยอดชำระสุทธิ: ฿{totalAmount.toLocaleString()}
+                  <div style={{ background: '#0f1017', border: '1px solid #22c55e', borderRadius: '8px', padding: '10px', marginTop: '12px' }}>
+                    <p style={{ color: '#22c55e', fontWeight: '700', fontSize: '1.4rem', margin: 0 }}>
+                      💰 ค่ามัดจำ: ฿50
                     </p>
-                    <p style={{ color: '#94A3B8', fontSize: '0.8rem', marginTop: '2px', margin: 0 }}>
-                      ชื่อบัญชี: ด.ช. ธีรเดช ไพฑูรย์
+                    <p style={{ color: '#94A3B8', fontSize: '0.8rem', marginTop: '4px', margin: 0 }}>
+                      ยอดรวมทั้งหมด: ฿{totalAmount.toLocaleString()} (ส่วนที่เหลือ ฿{(totalAmount - 50).toLocaleString()} ชำระตอนรับเสื้อ)
                     </p>
                   </div>
                 </div>
@@ -1652,7 +1662,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '15px' }}>
-                  <label style={{ color: '#fff' }}>แนบสลิปการโอนเงิน (Slip Attachment)</label>
+                  <label style={{ color: '#fff' }}>แนบสลิปค่ามัดจำ 50 บาท (Slip Attachment)</label>
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -1668,7 +1678,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
                 </div>
 
                 <button type="submit" className="btn btn-gold" style={{ width: '100%', padding: '12px', fontWeight: 'bold' }} disabled={isSubmitting}>
-                  {isSubmitting ? 'กำลังบันทึกลง Firebase...' : 'ยืนยันการแจ้งชำระเงิน'}
+                  {isSubmitting ? 'กำลังบันทึกลง Firebase...' : 'ยืนยันการชำระค่ามัดจำ ฿50'}
                 </button>
               </div>
 
