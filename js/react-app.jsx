@@ -535,11 +535,12 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
   const totalPrice = unitPrice * qty;
 
   const handleAddToCart = () => {
-    if (!studentIdInput.trim() && !currentUser) {
-      showToast('กรุณากรอกรหัสนักศึกษา 10 หลัก หรือ เข้าสู่ระบบก่อนสั่งซื้อ', 'error');
+    if (!currentUser) {
+      showToast('กรุณาเข้าสู่ระบบ (Login) ก่อนสั่งซื้อสินค้า', 'error');
+      if (setIsAuthModalOpen) setIsAuthModalOpen(true);
       return;
     }
-    if (studentIdInput.trim() && studentIdInput.trim().length !== 10) {
+    if (!studentIdInput.trim() || studentIdInput.trim().length !== 10) {
       showToast('กรุณากรอกรหัสนักศึกษาให้ครบ 10 หลัก (เช่น 6812345678)', 'error');
       return;
     }
@@ -741,10 +742,16 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                   <button className="qty-btn" onClick={() => setQty(prev => Math.min(50, prev + 1))}>+</button>
                 </div>
 
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleAddToCart}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-                  เพิ่มลงในตะกร้าสั่งซื้อ
-                </button>
+                {!currentUser ? (
+                  <button className="btn btn-outline" style={{ flex: 1, borderColor: '#38bdf8', color: '#38bdf8' }} onClick={() => setIsAuthModalOpen(true)}>
+                    🔒 เข้าสู่ระบบเพื่อสั่งซื้อ
+                  </button>
+                ) : (
+                  <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleAddToCart}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                    เพิ่มลงในตะกร้าสั่งซื้อ
+                  </button>
+                )}
               </div>
             </div>
 
