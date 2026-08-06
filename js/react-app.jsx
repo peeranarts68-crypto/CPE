@@ -854,16 +854,12 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
 
   const getProgressWidth = (currentStatus) => {
     switch (currentStatus) {
-      case 'paid':
-        return '0%';
-      case 'preparing':
-        return '33.33%';
-      case 'shipping':
-        return '66.67%';
-      case 'completed':
-        return '100%';
-      default:
-        return '0%';
+      case 'pending': return '0%';
+      case 'paid': return '25%';
+      case 'preparing': return '50%';
+      case 'shipping': return '75%';
+      case 'completed': return '100%';
+      default: return '0%';
     }
   };
 
@@ -912,20 +908,24 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
               {/* Stepper Timeline */}
               <div className="stepper" style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', marginTop: '24px' }}>
                 <div className="stepper-progress" style={{ width: getProgressWidth(trackedOrder.status), background: 'var(--primary-red-light)' }}></div>
-                <div className={`step-item ${getStepStatus('paid', trackedOrder.status)}`}>
+                <div className={`step-item ${getStepStatus('pending', trackedOrder.status)}`}>
                   <div className="step-node">1</div>
+                  <div className="step-label">รอตรวจสอบสลิป</div>
+                </div>
+                <div className={`step-item ${getStepStatus('paid', trackedOrder.status)}`}>
+                  <div className="step-node">2</div>
                   <div className="step-label">ชำระเงินแล้ว</div>
                 </div>
                 <div className={`step-item ${getStepStatus('preparing', trackedOrder.status)}`}>
-                  <div className="step-node">2</div>
+                  <div className="step-node">3</div>
                   <div className="step-label">กำลังผลิต/ปักลาย</div>
                 </div>
                 <div className={`step-item ${getStepStatus('shipping', trackedOrder.status)}`}>
-                  <div className="step-node">3</div>
-                  <div className="step-label">เตรียมจัดส่ง/รับที่สาขา</div>
+                  <div className="step-node">4</div>
+                  <div className="step-label">เตรียมจัดส่ง</div>
                 </div>
                 <div className={`step-item ${getStepStatus('completed', trackedOrder.status)}`}>
-                  <div className="step-node">4</div>
+                  <div className="step-node">5</div>
                   <div className="step-label">รับสินค้าเรียบร้อย</div>
                 </div>
               </div>
@@ -1539,7 +1539,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       total: totalAmount,
       deposit: depositAmount,
       remaining: totalAmount - depositAmount,
-      status: 'paid', // paid -> preparing -> shipping -> completed
+      status: 'pending', // pending -> paid -> preparing -> shipping -> completed
       date: (() => {
         try {
           return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
@@ -2009,6 +2009,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {[
                 { id: 'all', label: 'ทั้งหมด' },
+                { id: 'pending', label: 'รอสลิป' },
                 { id: 'paid', label: 'ชำระเงินแล้ว' },
                 { id: 'preparing', label: 'กำลังผลิต' },
                 { id: 'shipping', label: 'จัดส่งแล้ว' },
@@ -2091,11 +2092,11 @@ function AdminDashboardModal({ isOpen, onClose }) {
 
                       <td style={{ padding: '10px' }}>
                         <select 
-                          value={o.status || 'paid'}
+                          value={o.status || 'pending'}
                           onChange={(e) => handleStatusChange(o.id, e.target.value)}
                           style={{ 
                             background: '#090a0f', 
-                            color: o.status === 'completed' ? '#22c55e' : o.status === 'shipping' ? '#38bdf8' : '#eab308',
+                            color: o.status === 'completed' ? '#22c55e' : o.status === 'shipping' ? '#38bdf8' : o.status === 'pending' ? '#f87171' : '#eab308',
                             border: '1px solid var(--border-gold)',
                             borderRadius: '6px',
                             padding: '4px 8px',
@@ -2103,6 +2104,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
                             fontSize: '0.82rem'
                           }}
                         >
+                          <option value="pending">0. รอตรวจสอบสลิป (Pending)</option>
                           <option value="paid">1. ชำระเงินแล้ว (Paid)</option>
                           <option value="preparing">2. กำลังผลิต/ปักลาย (Preparing)</option>
                           <option value="shipping">3. จัดส่งแล้ว (Shipping)</option>
