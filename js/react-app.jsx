@@ -559,6 +559,33 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
   const [customName, setCustomName] = useState('');
   const [studentIdInput, setStudentIdInput] = useState(currentUser?.studentId || '');
   const [qty, setQty] = useState(1);
+  const [itemsConfig, setItemsConfig] = useState([
+    { size: 'M', customName: '' }
+  ]);
+
+  const handleQtyChange = (newQty) => {
+    const validQty = Math.max(1, Math.min(50, newQty));
+    setQty(validQty);
+    setItemsConfig(prev => {
+      if (validQty > prev.length) {
+        const added = Array.from({ length: validQty - prev.length }, () => ({
+          size: prev[prev.length - 1]?.size || 'M',
+          customName: ''
+        }));
+        return [...prev, ...added];
+      } else {
+        return prev.slice(0, validQty);
+      }
+    });
+  };
+
+  const updateItemConfig = (index, field, value) => {
+    setItemsConfig(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
 
   // Determine admin status – include fallback from localStorage in case auth state hasn't loaded yet
   const storedUser = typeof localStorage !== 'undefined' ? localStorage.getItem('cpe_current_user') : null;
@@ -582,14 +609,14 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
 
   const prod = PRODUCTS[selectedProductKey] || PRODUCTS.polo;
 
-  // Calculate Unit Price
-  let unitPrice = prod.basePrice;
-  if (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(selectedSize)) {
-    unitPrice += prod.largeFee;
-  }
-  // Custom name embroidery is now free
-
-  const totalPrice = unitPrice * qty;
+  // Calculate Total Price dynamically across all items
+  const totalPrice = itemsConfig.reduce((sum, item) => {
+    let itemPrice = prod.basePrice;
+    if (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size)) {
+      itemPrice += prod.largeFee;
+    }
+    return sum + itemPrice;
+  }, 0);
 
   const handleAddToCart = () => {
     if (!currentUser) {
@@ -602,20 +629,26 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
       return;
     }
 
-    const item = {
-      id: Date.now(),
-      productKey: selectedProductKey,
-      title: prod.title,
-      size: selectedSize,
-      qty: qty,
-      customName: customName.trim(),
-      studentId: studentIdInput.trim() || currentUser?.studentId || '6812345678',
-      price: unitPrice,
-      totalPrice: totalPrice
-    };
+    const newCartItems = itemsConfig.map((itemCfg, idx) => {
+      let itemPrice = prod.basePrice;
+      if (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(itemCfg.size)) {
+        itemPrice += prod.largeFee;
+      }
+      return {
+        id: Date.now() + idx,
+        productKey: selectedProductKey,
+        title: prod.title,
+        size: itemCfg.size,
+        qty: 1,
+        customName: itemCfg.customName.trim(),
+        studentId: studentIdInput.trim() || currentUser?.studentId || '6812345678',
+        price: itemPrice,
+        totalPrice: itemPrice
+      };
+    });
 
-    setCart(prev => [...prev, item]);
-    showToast(`เพิ่ม ${prod.title} ลงในตะกร้าเรียบร้อยแล้ว!`, 'success');
+    setCart(prev => [...prev, ...newCartItems]);
+    showToast(`เพิ่ม ${prod.title} (${qty} ตัว) ลงในตะกร้าเรียบร้อยแล้ว!`, 'success');
     setIsCartOpen(true);
   };
 
@@ -742,45 +775,103 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
               </div>
             </div>
 
-            {/* Size Selector Grid */}
-            <div className="config-group">
-              <div className="config-label">
-                <span>เลือกขนาดเสื้อ (Size): <strong style={{ color: 'var(--accent-gold)' }}>{selectedSize}</strong></span>
-                <a href="javascript:void(0)" onClick={() => setIsSizeGuideOpen(true)} className="link-btn">ดูตารางขนาดเสื้อ</a>
-              </div>
-
-              <div className="size-grid">
-                {SIZES.map(s => (
-                  <div 
-                    key={s.id}
-                    className={`size-pill ${selectedSize === s.id ? 'active' : ''}`}
-                    onClick={() => setSelectedSize(s.id)}
-                  >
-                    {s.id} ({s.chest})
-                    {s.isLarge && (
-                      <span style={{ fontSize: '0.72rem', color: '#F5D061', display: 'block' }}>
-                        +{prod.largeFee}฿
-                      </span>
-                    )}
+            {/* Single Item Configuration for Qty === 1 */}
+            {qty === 1 && (
+              <>
+                {/* Size Selector Grid */}
+                <div className="config-group">
+                  <div className="config-label">
+                    <span>เลือกขนาดเสื้อ (Size): <strong style={{ color: 'var(--accent-gold)' }}>{itemsConfig[0]?.size || 'M'}</strong></span>
+                    <a href="javascript:void(0)" onClick={() => setIsSizeGuideOpen(true)} className="link-btn">ดูตารางขนาดเสื้อ</a>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Custom Embroidery Option */}
-            <div className="config-group">
-              <div className="config-label">
-                <span>ปักชื่อ-นามสกุล / ชื่อเล่นบนอกเสื้อ (Optional):</span>
-                <span style={{ fontSize: '0.8rem', color: '#22c55e' }}>ฟรี ไม่คิดราคาเพิ่ม</span>
+                  <div className="size-grid">
+                    {SIZES.map(s => (
+                      <div 
+                        key={s.id}
+                        className={`size-pill ${(itemsConfig[0]?.size || 'M') === s.id ? 'active' : ''}`}
+                        onClick={() => updateItemConfig(0, 'size', s.id)}
+                      >
+                        {s.id} ({s.chest})
+                        {s.isLarge && (
+                          <span style={{ fontSize: '0.72rem', color: '#F5D061', display: 'block' }}>
+                            +{prod.largeFee}฿
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Embroidery Option */}
+                <div className="config-group">
+                  <div className="config-label">
+                    <span>ปักชื่อ-นามสกุล / ชื่อเล่นบนอกเสื้อ (Optional):</span>
+                    <span style={{ fontSize: '0.8rem', color: '#22c55e' }}>ฟรี ไม่คิดราคาเพิ่ม</span>
+                  </div>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="ตัวอย่าง: ต้อม CPE68 (หากไม่ปักปล่อยว่างไว้)"
+                    value={itemsConfig[0]?.customName || ''}
+                    onChange={e => updateItemConfig(0, 'customName', e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Multi-Item Configuration for Qty > 1 */}
+            {qty > 1 && (
+              <div className="config-group" style={{ background: '#090a0f', border: '1px solid var(--border-gold)', borderRadius: '12px', padding: '16px' }}>
+                <div style={{ color: 'var(--accent-gold-bright)', fontWeight: 'bold', marginBottom: '12px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>👕 กำหนดขนาดและชื่อปักของเสื้อแต่ละตัว (รวม {qty} ตัว):</span>
+                  <a href="javascript:void(0)" onClick={() => setIsSizeGuideOpen(true)} className="link-btn" style={{ marginLeft: 'auto', fontSize: '0.8rem' }}>ตารางไซส์</a>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {itemsConfig.map((item, idx) => (
+                    <div key={idx} style={{ background: '#10121a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '12px 14px' }}>
+                      <div style={{ fontWeight: 'bold', color: 'var(--accent-gold)', marginBottom: '8px', fontSize: '0.88rem', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>ตัวที่ {idx + 1}:</span>
+                        <span style={{ color: ['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) ? '#F5D061' : '#22c55e' }}>
+                          ฿{prod.basePrice + (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) ? prod.largeFee : 0)}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.78rem', color: 'var(--text-sub)', display: 'block', marginBottom: '4px' }}>ขนาดเสื้อ (Size):</label>
+                          <select 
+                            className="form-input" 
+                            style={{ height: '38px', fontSize: '0.85rem' }}
+                            value={item.size}
+                            onChange={e => updateItemConfig(idx, 'size', e.target.value)}
+                          >
+                            {SIZES.map(s => (
+                              <option key={s.id} value={s.id}>
+                                {s.id} (รอบอก {s.chest}) {s.isLarge ? `(+${prod.largeFee}฿)` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.78rem', color: 'var(--text-sub)', display: 'block', marginBottom: '4px' }}>ปักชื่อบนอกเสื้อ (ฟรี):</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            style={{ height: '38px', fontSize: '0.85rem' }}
+                            placeholder={`ตัวอย่าง: ต้อม ตัวที่ ${idx + 1}`}
+                            value={item.customName}
+                            onChange={e => updateItemConfig(idx, 'customName', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="ตัวอย่าง: ต้อม CPE68 (หากไม่ปักปล่อยว่างไว้)"
-                value={customName}
-                onChange={e => setCustomName(e.target.value)}
-              />
-            </div>
+            )}
 
             {/* Student ID Input */}
             <div className="config-group">
@@ -804,9 +895,9 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
               </div>
               <div style={{ display: 'flex', gap: '16px' }}>
                 <div className="qty-control">
-                  <button className="qty-btn" onClick={() => setQty(prev => Math.max(1, prev - 1))}>-</button>
+                  <button className="qty-btn" onClick={() => handleQtyChange(qty - 1)}>-</button>
                   <input type="number" className="qty-input" value={qty} readOnly />
-                  <button className="qty-btn" onClick={() => setQty(prev => Math.min(50, prev + 1))}>+</button>
+                  <button className="qty-btn" onClick={() => handleQtyChange(qty + 1)}>+</button>
                 </div>
 
                 {!currentUser ? (
