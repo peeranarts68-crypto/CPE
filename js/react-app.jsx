@@ -1853,6 +1853,78 @@ function AdminDashboardModal({ isOpen, onClose }) {
             </div>
           </div>
 
+          {/* Size Summary */}
+          {(() => {
+            const sizeSummary = {};
+            const sizeOrder = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+            orders.forEach(o => {
+              if (o.items) {
+                o.items.forEach(it => {
+                  const product = it.title || 'ไม่ระบุ';
+                  const size = it.size || 'ไม่ระบุ';
+                  const qty = it.qty || 1;
+                  if (!sizeSummary[product]) sizeSummary[product] = {};
+                  sizeSummary[product][size] = (sizeSummary[product][size] || 0) + qty;
+                });
+              }
+            });
+            const products = Object.keys(sizeSummary);
+            const allSizes = [...new Set(products.flatMap(p => Object.keys(sizeSummary[p])))];
+            allSizes.sort((a, b) => {
+              const ia = sizeOrder.indexOf(a);
+              const ib = sizeOrder.indexOf(b);
+              return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+            });
+            return (
+              <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+                <h4 style={{ color: 'var(--accent-gold-bright)', marginBottom: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  📊 สรุปจำนวนสั่งแยกตามไซส์
+                </h4>
+                {products.length === 0 ? (
+                  <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '10px' }}>ยังไม่มีข้อมูลออเดอร์</div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', color: '#fff', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ background: '#090a0f', borderBottom: '1px solid var(--border-gold)' }}>
+                          <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--accent-gold-bright)' }}>สินค้า</th>
+                          {allSizes.map(s => (
+                            <th key={s} style={{ padding: '8px 10px', color: '#38bdf8', fontWeight: 'bold' }}>{s}</th>
+                          ))}
+                          <th style={{ padding: '8px 10px', color: '#22c55e', fontWeight: 'bold' }}>รวม</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {products.map(product => {
+                          const rowTotal = allSizes.reduce((sum, s) => sum + (sizeSummary[product][s] || 0), 0);
+                          return (
+                            <tr key={product} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                              <td style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 'bold', color: '#fff' }}>{product}</td>
+                              {allSizes.map(s => (
+                                <td key={s} style={{ padding: '8px 10px', color: sizeSummary[product][s] ? '#eab308' : 'var(--text-muted)', fontWeight: sizeSummary[product][s] ? 'bold' : 'normal' }}>
+                                  {sizeSummary[product][s] || 0}
+                                </td>
+                              ))}
+                              <td style={{ padding: '8px 10px', color: '#22c55e', fontWeight: 'bold', fontSize: '1rem' }}>{rowTotal}</td>
+                            </tr>
+                          );
+                        })}
+                        <tr style={{ background: 'rgba(234,179,8,0.08)', borderTop: '2px solid var(--accent-gold)' }}>
+                          <td style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 'bold', color: 'var(--accent-gold-bright)' }}>รวมทั้งหมด</td>
+                          {allSizes.map(s => {
+                            const colTotal = products.reduce((sum, p) => sum + (sizeSummary[p][s] || 0), 0);
+                            return <td key={s} style={{ padding: '8px 10px', color: 'var(--accent-gold-bright)', fontWeight: 'bold', fontSize: '1rem' }}>{colTotal}</td>;
+                          })}
+                          <td style={{ padding: '8px 10px', color: '#22c55e', fontWeight: 'bold', fontSize: '1.1rem' }}>{totalItemsCount}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Search and Filters */}
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '12px', marginBottom: '16px', alignItems: 'center' }}>
             <div style={{ flex: 1, minWidth: '240px' }}>
