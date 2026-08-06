@@ -1897,8 +1897,9 @@ function AdminDashboardModal({ isOpen, onClose }) {
           {/* Stats Bar */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
             <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
-              <span style={{ color: 'var(--text-sub)', fontSize: '0.8rem' }}>ยอดขายรวมทั้งหมด</span>
-              <h3 style={{ color: 'var(--accent-gold-bright)', fontSize: '1.5rem', marginTop: '4px' }}>฿{totalRev.toLocaleString()}</h3>
+              <span style={{ color: 'var(--text-sub)', fontSize: '0.8rem' }}>ยอดมัดจำสะสมที่ได้รับ</span>
+              <h3 style={{ color: '#22c55e', fontSize: '1.5rem', marginTop: '4px' }}>฿{(orders.reduce((sum, o) => sum + (o.deposit || 50), 0)).toLocaleString()}</h3>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>ยอดขายรวมทั้งหมด: ฿{totalRev.toLocaleString()}</span>
             </div>
             <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
               <span style={{ color: 'var(--text-sub)', fontSize: '0.8rem' }}>จำนวนออเดอร์ทั้งหมด</span>
@@ -2062,8 +2063,10 @@ function AdminDashboardModal({ isOpen, onClose }) {
                         ))}
                       </td>
 
-                      <td style={{ padding: '10px', fontWeight: 'bold', color: 'var(--accent-gold-bright)', fontSize: '0.95rem' }}>
-                        ฿{o.total ? o.total.toLocaleString() : '0'}
+                      <td style={{ padding: '10px', fontSize: '0.85rem', lineHeight: '1.4' }}>
+                        <div style={{ color: '#22c55e', fontWeight: 'bold' }}>มัดจำ: ฿{(o.deposit || 50).toLocaleString()}</div>
+                        <div style={{ color: 'var(--text-sub)' }}>ยอดเต็ม: ฿{(o.total || 0).toLocaleString()}</div>
+                        <div style={{ color: '#eab308' }}>ค้าง: ฿{((o.total || 0) - (o.deposit || 50)).toLocaleString()}</div>
                       </td>
 
                       <td style={{ padding: '10px' }}>
