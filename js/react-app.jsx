@@ -1262,21 +1262,32 @@ function AuthModal({ isOpen, onClose }) {
         const fakeEmail = regEmail.trim() || `${regStudentId.trim()}@psru.ac.th`;
         const res = await fb.createUserWithEmailAndPassword(fb.auth, fakeEmail, regPass);
         userData.uid = res.user.uid;
+        
         if (fb.db && fb.setDoc && fb.doc) {
           try {
             await fb.setDoc(fb.doc(fb.db, 'users', res.user.uid), userData);
           } catch (docErr) {
             console.log("Firestore Doc Write Error:", docErr);
+            // Even if DB write fails, auth succeeded, but we should inform the user or handle it
           }
         }
+        
+        setCurrentUser(userData);
+        localStorage.setItem('cpe_current_user', JSON.stringify(userData));
+        showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
+        onClose();
+        return;
       } catch (err) {
-        console.log("Firebase Register Fallback:", err);
+        console.log("Firebase Register Error:", err);
+        showToast('เกิดข้อผิดพลาด: รหัสนักศึกษานี้อาจถูกใช้งานไปแล้ว หรือ รหัสผ่านอ่อนเกินไป', 'error');
+        return; // Stop execution on error
       }
     }
 
+    // Fallback if Firebase is not initialized
     setCurrentUser(userData);
     localStorage.setItem('cpe_current_user', JSON.stringify(userData));
-    showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
+    showToast('สมัครสมาชิกสำเร็จ (Local Mode)', 'success');
     onClose();
   };
 
