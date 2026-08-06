@@ -1295,20 +1295,30 @@ function AuthModal({ isOpen, onClose }) {
       if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
         try {
           const authEmail = `${studentId}@psru.ac.th`;
-          const res = await withTimeout(fb.createUserWithEmailAndPassword(fb.auth, authEmail, pass), 4000);
+          const res = await withTimeout(fb.createUserWithEmailAndPassword(fb.auth, authEmail, pass), 5000);
           if (res && res.user) {
             finalUid = res.user.uid;
           }
         } catch (err) {
           console.log("Firebase Register Error:", err);
+          let msg = 'เกิดข้อผิดพลาดในการสมัครสมาชิก';
           if (err.code === 'auth/email-already-in-use') {
-             showToast('รหัสนักศึกษานี้มีอยู่ในระบบแล้ว กรุณาไปที่แท็บ "เข้าสู่ระบบ"', 'error');
-             return;
+             msg = 'รหัสนักศึกษานี้มีอยู่ในระบบแล้ว กรุณาไปที่แท็บ "เข้าสู่ระบบ"';
           } else if (err.code === 'auth/weak-password') {
-             showToast('รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)', 'error');
-             return;
+             msg = 'รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)';
+          } else if (err.code === 'auth/invalid-email') {
+             msg = 'รูปแบบรหัสนักศึกษาไม่ถูกต้อง';
           } else if (err.code === 'auth/operation-not-allowed') {
              console.warn("Firebase Auth is disabled! Falling back to Local Auth Mode.");
+          } else if (err.message && err.message.includes('timeout')) {
+             console.warn("Firebase Auth timed out, falling back to Local Mode.");
+          } else {
+             msg = `เกิดข้อผิดพลาด: ${err.message || 'ไม่สามารถสร้างบัญชีได้'}`;
+          }
+
+          if (['auth/email-already-in-use', 'auth/weak-password', 'auth/invalid-email'].includes(err.code)) {
+             showToast(msg, 'error');
+             return;
           }
         }
       }
@@ -1325,10 +1335,10 @@ function AuthModal({ isOpen, onClose }) {
         createdAt: new Date().toISOString()
       };
       
-      // Always write to Firestore Database (max 3s timeout)
+      // Save user profile to Firestore
       if (fb && fb.db && fb.setDoc && fb.doc) {
         try {
-          await withTimeout(fb.setDoc(fb.doc(fb.db, 'users', finalUid), userData), 3000);
+          await withTimeout(fb.setDoc(fb.doc(fb.db, 'users', finalUid), userData), 4000);
         } catch (docErr) {
           console.log("Firestore Doc Write Error:", docErr);
         }
