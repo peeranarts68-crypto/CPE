@@ -40,9 +40,30 @@ const AuthContext = createContext();
 // App Toast Notification Component
 function Toast({ toast }) {
   if (!toast.visible) return null;
+  const isError = toast.type === 'error';
+  const isSuccess = toast.type === 'success';
+
   return (
-    <div className={`toast-notification ${toast.type}`}>
-      {toast.message}
+    <div className="toast-container" style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 999999, pointerEvents: 'none' }}>
+      <div 
+        className={`toast ${toast.type}`}
+        style={{
+          background: '#10121a',
+          border: `1px solid ${isError ? '#ef4444' : isSuccess ? '#22c55e' : 'var(--border-gold)'}`,
+          color: isError ? '#fca5a5' : isSuccess ? '#86efac' : '#fff',
+          padding: '14px 20px',
+          borderRadius: '12px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.85)',
+          fontWeight: 500,
+          fontSize: '0.95rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}
+      >
+        <span>{isError ? '⚠️' : isSuccess ? '✅' : 'ℹ️'}</span>
+        <span>{toast.message}</span>
+      </div>
     </div>
   );
 }
@@ -1131,6 +1152,12 @@ function AuthModal({ isOpen, onClose }) {
   const [regPass, setRegPass] = useState('');
   const [regConfirmPass, setRegConfirmPass] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authErr, setAuthErr] = useState('');
+
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+    setAuthErr('');
+  };
 
   if (!isOpen) return null;
 
@@ -1255,7 +1282,8 @@ function AuthModal({ isOpen, onClose }) {
   };
 
   const handleRegisterSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    setAuthErr('');
     if (isSubmitting) return;
 
     const name = regName.trim();
@@ -1266,19 +1294,27 @@ function AuthModal({ isOpen, onClose }) {
     const confirmPass = regConfirmPass.trim();
 
     if (!name) {
-      showToast('กรุณากรอกชื่อ-นามสกุล', 'error');
+      const msg = 'กรุณากรอกชื่อ-นามสกุล';
+      setAuthErr(msg);
+      showToast(msg, 'error');
       return;
     }
     if (studentId.length !== 10) {
-      showToast('กรุณากรอกรหัสนักศึกษาให้ครบ 10 หลัก (เช่น 6812345678)', 'error');
+      const msg = 'กรุณากรอกรหัสนักศึกษาให้ครบ 10 หลัก (เช่น 6812345678)';
+      setAuthErr(msg);
+      showToast(msg, 'error');
       return;
     }
     if (pass.length < 6) {
-      showToast('รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร', 'error');
+      const msg = 'รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร';
+      setAuthErr(msg);
+      showToast(msg, 'error');
       return;
     }
     if (pass !== confirmPass) {
-      showToast('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน', 'error');
+      const msg = 'รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน';
+      setAuthErr(msg);
+      showToast(msg, 'error');
       return;
     }
 
@@ -1307,6 +1343,7 @@ function AuthModal({ isOpen, onClose }) {
           }
 
           if (msg) {
+            setAuthErr(msg);
             showToast(msg, 'error');
             setIsSubmitting(false);
             return;
@@ -1362,13 +1399,13 @@ function AuthModal({ isOpen, onClose }) {
           <div className="auth-tab-bar">
             <button 
               className={`auth-tab-item ${activeTab === 'login' ? 'active' : ''}`}
-              onClick={() => setActiveTab('login')}
+              onClick={() => switchTab('login')}
             >
               เข้าสู่ระบบ
             </button>
             <button 
               className={`auth-tab-item ${activeTab === 'register' ? 'active' : ''}`}
-              onClick={() => setActiveTab('register')}
+              onClick={() => switchTab('register')}
             >
               สมัครสมาชิก
             </button>
@@ -1514,6 +1551,12 @@ function AuthModal({ isOpen, onClose }) {
                   />
                 </div>
               </div>
+
+              {authErr && (
+                <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.88rem' }}>
+                  ⚠️ {authErr}
+                </div>
+              )}
 
               <button type="submit" onClick={handleRegisterSubmit} className="btn-auth-submit" disabled={isSubmitting}>
                 {isSubmitting ? 'กำลังสมัครสมาชิก...' : 'REGISTER'}
