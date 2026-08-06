@@ -89,6 +89,26 @@ const PRODUCTS = {
       'แขนเสื้อ: <strong>ปักเลขโรมัน LXVIII</strong>'
     ]
   },
+  polo_maroon: {
+    id: 'polo_maroon',
+    title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (สีเลือดหมู Maroon)',
+    batch: 'คณะเทคโนโลยีอุตสาหกรรม CPE',
+    basePrice: 350,
+    largeFee: 10,
+    originalPrice: 350,
+    badgeText: 'ราคา ฿350',
+    images: {
+      front: 'assets/polo_maroon_design.jpg',
+      back: 'assets/polo_maroon_design.jpg',
+      sleeve: 'assets/polo_maroon_design.jpg'
+    },
+    specs: [
+      'สีเสื้อ: <strong>สีเลือดหมู (Maroon) ปกขาว-ส้ม</strong>',
+      'เนื้อผ้า: <strong>ผ้าไมโครไฟเบอร์ นุ่ม ใส่สบาย ไม่ร้อน</strong>',
+      'อกซ้าย: <strong>ปักโลโก้ CPE Computer Engineering</strong>',
+      'ด้านหลัง: <strong>สกรีนลาย Computer Engineering & Circuit</strong>'
+    ]
+  },
   jacket: {
     id: 'jacket',
     title: 'เสื้อคลุมสาขาวิศวกรรมคอมพิวเตอร์ (CPE 69 Jacket)',
@@ -555,7 +575,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
   }, [currentUser]);
 
   useEffect(() => {
-    if (selectedProductKey === 'polo' && currentView === 'sleeve') {
+    if ((selectedProductKey === 'polo' || selectedProductKey === 'polo_maroon') && currentView === 'sleeve') {
       setCurrentView('front');
     }
   }, [selectedProductKey]);
@@ -618,6 +638,14 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
               <span>👕 เสื้อโปโลสาขา CPE (LXVIII) - ฿350</span>
             </button>
           )}
+          {showPolo && (
+            <button
+              className={`product-tab-btn ${selectedProductKey === 'polo_maroon' ? 'active' : ''}`}
+              onClick={() => setSelectedProductKey('polo_maroon')}
+            >
+              <span>👕 เสื้อโปโลสาขา (สีเลือดหมู Maroon) - ฿350</span>
+            </button>
+          )}
           {showJacket && (
             <button
               className={`product-tab-btn ${selectedProductKey === 'jacket' ? 'active' : ''}`}
@@ -646,7 +674,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                 >
                   ด้านหลัง (Back)
                 </button>
-                {selectedProductKey !== 'polo' && (
+                {selectedProductKey !== 'polo' && selectedProductKey !== 'polo_maroon' && (
                   <button 
                     className={`view-btn ${currentView === 'sleeve' ? 'active' : ''}`}
                     onClick={() => setCurrentView('sleeve')}
@@ -665,8 +693,8 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                     style={{
                       width: '100%',
                       height: '100%',
-                      objectFit: selectedProductKey === 'jacket' ? 'contain' : 'cover',
-                      objectPosition: selectedProductKey === 'jacket' ? 'center center' : (currentView === 'sleeve' ? 'center 35%' : 'center 10%'),
+                      objectFit: selectedProductKey === 'jacket' || selectedProductKey === 'polo_maroon' ? 'contain' : 'cover',
+                      objectPosition: selectedProductKey === 'jacket' || selectedProductKey === 'polo_maroon' ? 'center center' : (currentView === 'sleeve' ? 'center 35%' : 'center 10%'),
                       borderRadius: '10px',
                       transition: 'all 0.4s ease'
                     }}
