@@ -1223,8 +1223,39 @@ function AuthModal({ isOpen, onClose }) {
       return;
     }
 
+    const fb = window.CPEFirebase;
+    setIsSubmitting(true);
+
+    let finalUid = 'user-' + Date.now();
+
+    if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
+      try {
+        const fakeEmail = regEmail.trim() || `${regStudentId.trim()}@psru.ac.th`;
+        const res = await fb.createUserWithEmailAndPassword(fb.auth, fakeEmail, regPass);
+        finalUid = res.user.uid;
+      } catch (err) {
+        console.log("Firebase Register Error:", err);
+        if (err.code === 'auth/email-already-in-use') {
+           setIsSubmitting(false);
+           showToast('รหัสนักศึกษานี้มีอยู่ในระบบแล้ว กรุณาไปที่แท็บ "เข้าสู่ระบบ"', 'error');
+           return;
+        } else if (err.code === 'auth/weak-password') {
+           setIsSubmitting(false);
+           showToast('รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)', 'error');
+           return;
+        } else if (err.code === 'auth/operation-not-allowed') {
+           console.warn("Firebase Auth is disabled! Falling back to Local Auth Mode.");
+        } else {
+           setIsSubmitting(false);
+           showToast(`เกิดข้อผิดพลาด: ${err.message}`, 'error');
+           return;
+        }
+      }
+    }
+
+    // Prepare User Data
     const userData = {
-      uid: 'user-' + Date.now(),
+      uid: finalUid,
       studentId: regStudentId.trim(),
       name: regName.trim(),
       nickname: regNickname.trim() || regName.trim(),
@@ -1233,44 +1264,21 @@ function AuthModal({ isOpen, onClose }) {
       email: regEmail.trim() || `${regStudentId.trim()}@psru.ac.th`,
       createdAt: new Date().toISOString()
     };
-
-    const fb = window.CPEFirebase;
-    setIsSubmitting(true);
-
-    if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
+    
+    // Always write to Firestore Database, even if Auth fallback was used
+    if (fb && fb.db && fb.setDoc && fb.doc) {
       try {
-        const fakeEmail = regEmail.trim() || `${regStudentId.trim()}@psru.ac.th`;
-        const res = await fb.createUserWithEmailAndPassword(fb.auth, fakeEmail, regPass);
-        userData.uid = res.user.uid;
-        
-        if (fb.db && fb.setDoc && fb.doc) {
-          try {
-            await fb.setDoc(fb.doc(fb.db, 'users', res.user.uid), userData);
-          } catch (docErr) {
-            console.log("Firestore Doc Write Error:", docErr);
-          }
-        }
-        
-        setCurrentUser(userData);
-        localStorage.setItem('cpe_current_user', JSON.stringify(userData));
-        showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
-        setIsSubmitting(false);
-        onClose();
-        return;
-      } catch (err) {
-        setIsSubmitting(false);
-        console.log("Firebase Register Error:", err);
-        let errMsg = 'เกิดข้อผิดพลาดในการสมัครสมาชิก';
-        if (err.code === 'auth/email-already-in-use') errMsg = 'รหัสนักศึกษา หรือ อีเมลนี้ ถูกใช้สมัครไปแล้ว!';
-        else if (err.code === 'auth/invalid-email') errMsg = 'รูปแบบอีเมลไม่ถูกต้อง';
-        else if (err.code === 'auth/weak-password') errMsg = 'รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)';
-        showToast(`เกิดข้อผิดพลาด: ${errMsg}`, 'error');
-        return;
+        await fb.setDoc(fb.doc(fb.db, 'users', finalUid), userData);
+      } catch (docErr) {
+        console.log("Firestore Doc Write Error:", docErr);
       }
     }
-
+    
+    setCurrentUser(userData);
+    localStorage.setItem('cpe_current_user', JSON.stringify(userData));
+    showToast('สมัครสมาชิกสำเร็จ! เข้าสู่ระบบอัตโนมัติ', 'success');
     setIsSubmitting(false);
-    showToast('❌ ระบบเซิร์ฟเวอร์ไม่พร้อมใช้งาน กรุณาลองใหม่', 'error');
+    onClose();
   };
 
   return (
