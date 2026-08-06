@@ -1001,7 +1001,7 @@ function CartDrawer({ isOpen, onClose, cart, setCart, onCheckout }) {
   return (
     <>
       <div className="drawer-backdrop show" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', zIndex: 9998, opacity: 1, pointerEvents: 'auto' }}></div>
-      <aside className="cart-drawer show open" style={{ position: 'fixed', top: 0, right: 0, width: '100%', maxWidth: '450px', height: '100vh', background: '#10121a', borderLeft: '1px solid var(--border-gold)', zIndex: 9999, display: 'flex', flexDirection: 'column', boxShadow: '-10px 0 40px rgba(0,0,0,0.8)' }}>
+      <aside className="cart-drawer show open" style={{ position: 'fixed', top: 0, bottom: 0, right: 0, width: '100%', maxWidth: '450px', background: '#10121a', borderLeft: '1px solid var(--border-gold)', zIndex: 9999, display: 'flex', flexDirection: 'column', boxShadow: '-10px 0 40px rgba(0,0,0,0.8)' }}>
         <div className="drawer-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
@@ -1274,7 +1274,7 @@ function AuthModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="modal-backdrop show" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto', padding: '16px' }}>
+    <div className="modal-backdrop show" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto', padding: '16px' }}>
       <div className="modal-card auth-modal-card" onClick={e => e.stopPropagation()} style={{ position: 'relative', zIndex: 10000, background: '#10121a', border: '1px solid var(--border-gold)', borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', opacity: 1, visibility: 'visible' }}>
         <button className="close-btn auth-close-btn" onClick={onClose}>&times;</button>
         
@@ -1588,11 +1588,9 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       style={{ 
         position: 'fixed', 
         top: 0, 
+        bottom: 0, 
         left: 0, 
         right: 0, 
-        bottom: 0, 
-        width: '100vw', 
-        height: '100vh', 
         background: 'rgba(0,0,0,0.85)', 
         backdropFilter: 'blur(8px)', 
         zIndex: 99999, 
@@ -1882,7 +1880,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const totalItemsCount = orders.reduce((sum, o) => sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0);
 
   return (
-    <div className="modal-backdrop show" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto', padding: '16px' }}>
+    <div className="modal-backdrop show" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto', padding: '16px' }}>
       <div className="modal-card xl admin-modal-card" onClick={e => e.stopPropagation()} style={{ position: 'relative', zIndex: 10000, background: '#10121a', border: '1px solid var(--border-gold)', borderRadius: '16px', maxWidth: '1100px', width: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', opacity: 1, visibility: 'visible' }}>
         
         {/* Header */}
@@ -2151,7 +2149,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
 
       {/* Slip Preview Sub-Modal */}
       {previewSlipOrder && (
-        <div className="modal-backdrop show" onClick={() => setPreviewSlipOrder(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', zIndex: 200000, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto', padding: '16px' }}>
+        <div className="modal-backdrop show" onClick={() => setPreviewSlipOrder(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200000, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 1, pointerEvents: 'auto', padding: '16px' }}>
           <div className="modal-card" onClick={e => e.stopPropagation()} style={{ position: 'relative', zIndex: 200001, maxWidth: '440px', width: '100%', padding: '18px', background: '#0a0b10', border: '1px solid var(--accent-gold)', borderRadius: '16px', textAlign: 'center', opacity: 1, visibility: 'visible', boxShadow: '0 25px 70px rgba(0,0,0,0.95)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h4 style={{ color: 'var(--accent-gold-bright)', fontSize: '1.05rem' }}>📸 สลิปหลักฐานการโอนเงิน (Payment Slip)</h4>
