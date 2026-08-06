@@ -1332,34 +1332,17 @@ function AuthModal({ isOpen, onClose }) {
             finalUid = res.user.uid;
           }
         } catch (err) {
-          console.log("Firebase Register Error:", err);
-          if (err.code === 'auth/email-already-in-use') {
-            // Account exists in Firebase Auth! Try logging in to repair & write missing Firestore user record!
+          console.log("Firebase Register Auth attempt:", err);
+          if (err.code === 'auth/email-already-in-use' && fb.signInWithEmailAndPassword) {
             try {
               const authEmail = `${studentId}@psru.ac.th`;
-              const loginRes = await withTimeout(fb.signInWithEmailAndPassword(fb.auth, authEmail, pass), 4000);
+              const loginRes = await withTimeout(fb.signInWithEmailAndPassword(fb.auth, authEmail, pass), 3000);
               if (loginRes && loginRes.user) {
                 finalUid = loginRes.user.uid;
               }
             } catch (loginErr) {
-              const msg = 'รหัสนักศึกษานี้มีในระบบแล้ว กรุณาไปที่แท็บ "เข้าสู่ระบบ"';
-              setAuthErr(msg);
-              showToast(msg, 'error');
-              setIsSubmitting(false);
-              return;
+              console.log("Firebase Auth login fallback error:", loginErr);
             }
-          } else if (err.code === 'auth/weak-password') {
-            const msg = 'รหัสผ่านอ่อนเกินไป (ต้อง 6 ตัวอักษรขึ้นไป)';
-            setAuthErr(msg);
-            showToast(msg, 'error');
-            setIsSubmitting(false);
-            return;
-          } else if (err.code === 'auth/invalid-email') {
-            const msg = 'รูปแบบรหัสนักศึกษาไม่ถูกต้อง';
-            setAuthErr(msg);
-            showToast(msg, 'error');
-            setIsSubmitting(false);
-            return;
           }
         }
       }
