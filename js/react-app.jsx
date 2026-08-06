@@ -587,6 +587,17 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
     });
   };
 
+  const handleRemoveShirt = (index) => {
+    if (itemsConfig.length <= 1) return;
+    const next = itemsConfig.filter((_, i) => i !== index);
+    setItemsConfig(next);
+    setQty(next.length);
+  };
+
+  const handleAddShirt = () => {
+    handleQtyChange(qty + 1);
+  };
+
   // Determine admin status – include fallback from localStorage in case auth state hasn't loaded yet
   const storedUser = typeof localStorage !== 'undefined' ? localStorage.getItem('cpe_current_user') : null;
   const parsedStored = storedUser ? JSON.parse(storedUser) : null;
@@ -775,103 +786,106 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
               </div>
             </div>
 
-            {/* Single Item Configuration for Qty === 1 */}
-            {qty === 1 && (
-              <>
-                {/* Size Selector Grid */}
-                <div className="config-group">
-                  <div className="config-label">
-                    <span>เลือกขนาดเสื้อ (Size): <strong style={{ color: 'var(--accent-gold)' }}>{itemsConfig[0]?.size || 'M'}</strong></span>
-                    <a href="javascript:void(0)" onClick={() => setIsSizeGuideOpen(true)} className="link-btn">ดูตารางขนาดเสื้อ</a>
-                  </div>
-
-                  <div className="size-grid">
-                    {SIZES.map(s => (
-                      <div 
-                        key={s.id}
-                        className={`size-pill ${(itemsConfig[0]?.size || 'M') === s.id ? 'active' : ''}`}
-                        onClick={() => updateItemConfig(0, 'size', s.id)}
-                      >
-                        {s.id} ({s.chest})
-                        {s.isLarge && (
-                          <span style={{ fontSize: '0.72rem', color: '#F5D061', display: 'block' }}>
-                            +{prod.largeFee}฿
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Custom Embroidery Option */}
-                <div className="config-group">
-                  <div className="config-label">
-                    <span>ปักชื่อ-นามสกุล / ชื่อเล่นบนอกเสื้อ (Optional):</span>
-                    <span style={{ fontSize: '0.8rem', color: '#22c55e' }}>ฟรี ไม่คิดราคาเพิ่ม</span>
-                  </div>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="ตัวอย่าง: ต้อม CPE68 (หากไม่ปักปล่อยว่างไว้)"
-                    value={itemsConfig[0]?.customName || ''}
-                    onChange={e => updateItemConfig(0, 'customName', e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Multi-Item Configuration for Qty > 1 */}
-            {qty > 1 && (
-              <div className="config-group" style={{ background: '#090a0f', border: '1px solid var(--border-gold)', borderRadius: '12px', padding: '16px' }}>
-                <div style={{ color: 'var(--accent-gold-bright)', fontWeight: 'bold', marginBottom: '12px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>👕 กำหนดขนาดและชื่อปักของเสื้อแต่ละตัว (รวม {qty} ตัว):</span>
-                  <a href="javascript:void(0)" onClick={() => setIsSizeGuideOpen(true)} className="link-btn" style={{ marginLeft: 'auto', fontSize: '0.8rem' }}>ตารางไซส์</a>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {itemsConfig.map((item, idx) => (
-                    <div key={idx} style={{ background: '#10121a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '12px 14px' }}>
-                      <div style={{ fontWeight: 'bold', color: 'var(--accent-gold)', marginBottom: '8px', fontSize: '0.88rem', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>ตัวที่ {idx + 1}:</span>
-                        <span style={{ color: ['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) ? '#F5D061' : '#22c55e' }}>
-                          ฿{prod.basePrice + (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) ? prod.largeFee : 0)}
-                        </span>
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
-                        <div>
-                          <label style={{ fontSize: '0.78rem', color: 'var(--text-sub)', display: 'block', marginBottom: '4px' }}>ขนาดเสื้อ (Size):</label>
-                          <select 
-                            className="form-input" 
-                            style={{ height: '38px', fontSize: '0.85rem' }}
-                            value={item.size}
-                            onChange={e => updateItemConfig(idx, 'size', e.target.value)}
-                          >
-                            {SIZES.map(s => (
-                              <option key={s.id} value={s.id}>
-                                {s.id} (รอบอก {s.chest}) {s.isLarge ? `(+${prod.largeFee}฿)` : ''}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.78rem', color: 'var(--text-sub)', display: 'block', marginBottom: '4px' }}>ปักชื่อบนอกเสื้อ (ฟรี):</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            style={{ height: '38px', fontSize: '0.85rem' }}
-                            placeholder={`ตัวอย่าง: ต้อม ตัวที่ ${idx + 1}`}
-                            value={item.customName}
-                            onChange={e => updateItemConfig(idx, 'customName', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {/* Per-Shirt Configuration List with Visual Size Pills */}
+            <div className="config-group" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="config-label">
+                <span style={{ fontSize: '0.95rem' }}>รายการเสื้อที่สั่ง ({qty} ตัว):</span>
+                <a href="javascript:void(0)" onClick={() => setIsSizeGuideOpen(true)} className="link-btn">ดูตารางขนาดเสื้อ</a>
               </div>
-            )}
+
+              {itemsConfig.map((item, idx) => (
+                <div 
+                  key={idx} 
+                  style={{ 
+                    background: '#090a0f', 
+                    border: '1px solid var(--border-gold)', 
+                    borderRadius: '14px', 
+                    padding: '16px',
+                    position: 'relative'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
+                    <span style={{ fontWeight: 'bold', color: 'var(--accent-gold-bright)', fontSize: '0.95rem' }}>
+                      👕 {qty > 1 ? `เสื้อตัวที่ ${idx + 1}` : 'เลือกขนาดเสื้อ'} {item.size ? `(ไซส์ ${item.size})` : ''}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: ['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) ? '#F5D061' : '#22c55e' }}>
+                        ฿{prod.basePrice + (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) ? prod.largeFee : 0)}
+                      </span>
+                      {itemsConfig.length > 1 && (
+                        <button 
+                          onClick={() => handleRemoveShirt(idx)}
+                          style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                        >
+                          🗑️ ลบตัวนี้
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Size Pills Grid */}
+                  <div style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginBottom: '8px' }}>
+                      เลือกไซส์: <strong style={{ color: 'var(--accent-gold)' }}>{item.size}</strong>
+                    </div>
+                    <div className="size-grid">
+                      {SIZES.map(s => (
+                        <div 
+                          key={s.id}
+                          className={`size-pill ${item.size === s.id ? 'active' : ''}`}
+                          onClick={() => updateItemConfig(idx, 'size', s.id)}
+                        >
+                          {s.id} ({s.chest})
+                          {s.isLarge && (
+                            <span style={{ fontSize: '0.72rem', color: '#F5D061', display: 'block' }}>
+                              +{prod.largeFee}฿
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Embroidery Input */}
+                  <div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>ปักชื่ออกเสื้อ {qty > 1 ? `(ตัวที่ ${idx + 1})` : ''}:</span>
+                      <span style={{ color: '#22c55e' }}>ฟรี</span>
+                    </div>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      style={{ height: '38px', fontSize: '0.85rem' }}
+                      placeholder={`ตัวอย่าง: ต้อม CPE68 ${qty > 1 ? `(ตัวที่ ${idx + 1})` : '(ปล่อยว่างถ้าไม่ปัก)'}`}
+                      value={item.customName}
+                      onChange={e => updateItemConfig(idx, 'customName', e.target.value)}
+                    />
+                  </div>
+                </div>
+              ))}
+
+              {/* Add Another Shirt Button */}
+              <button 
+                type="button"
+                className="btn btn-outline"
+                onClick={handleAddShirt}
+                style={{ 
+                  borderColor: 'var(--accent-gold)', 
+                  color: 'var(--accent-gold-bright)', 
+                  background: 'rgba(212,175,55,0.06)',
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span>➕ เพิ่มเสื้ออีก 1 ตัว (เลือกคนละไซส์ / ปักคนละชื่อได้)</span>
+              </button>
+            </div>
 
             {/* Student ID Input */}
             <div className="config-group">
@@ -2040,28 +2054,32 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const [previewSlipOrder, setPreviewSlipOrder] = useState(null);
   const [editingTracking, setEditingTracking] = useState({});
 
-  const fetchAllOrders = async () => {
+  useEffect(() => {
+    if (!isOpen) return;
+
     setLoading(true);
-    let firestoreList = [];
+    let unsub = () => {};
+
     try {
       const ordersRef = collection(db, 'orders');
       const q = query(ordersRef, orderBy('date', 'desc'));
-      const querySnapshot = await getDocs(q);
-      querySnapshot.forEach((docSnap) => {
-        firestoreList.push({ firestoreId: docSnap.id, ...docSnap.data() });
+      unsub = onSnapshot(q, (querySnapshot) => {
+        let firestoreList = [];
+        querySnapshot.forEach((docSnap) => {
+          firestoreList.push({ firestoreId: docSnap.id, ...docSnap.data() });
+        });
+        setOrders(firestoreList);
+        setLoading(false);
+      }, (err) => {
+        console.log("Realtime orders snapshot error:", err);
+        setLoading(false);
       });
     } catch (e) {
-      console.log("Firestore fetch error:", e);
+      console.log("Firestore real-time listener setup error:", e);
+      setLoading(false);
     }
 
-    setOrders(firestoreList);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchAllOrders();
-    }
+    return () => unsub();
   }, [isOpen]);
 
   if (!isOpen) return null;
