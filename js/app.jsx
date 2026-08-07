@@ -26,22 +26,19 @@ const {
 
 const { useState, useEffect, useContext, createContext } = React;
 
-// Helper to calculate countdown timer to target deadline (Tomorrow 12:00 PM)
-const getTomorrowNoonDeadline = () => {
-  const now = new Date();
-  const tomorrowNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0, 0);
-  return tomorrowNoon.getTime();
-};
+// Fixed Universal Order Deadline (Target: Saturday 8 August 2026 at 12:00:00 PM Bangkok Time)
+const FIXED_ORDER_DEADLINE = new Date('2026-08-08T12:00:00+07:00').getTime();
 
-const calculateTimeLeft = (targetTime) => {
+const calculateTimeLeft = (targetTime = FIXED_ORDER_DEADLINE) => {
   const diff = targetTime - Date.now();
   if (diff <= 0) {
-    return { total: 0, hours: 0, minutes: 0, seconds: 0 };
+    return { total: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
   }
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-  return { total: diff, hours, minutes, seconds };
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const seconds = Math.floor((diff / 1000) % 60);
+  return { total: diff, days, hours, minutes, seconds };
 };
 
 // Helper to prevent async network requests from hanging indefinitely
@@ -180,9 +177,9 @@ function App() {
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
-  // Countdown timer deadline (Target: Tomorrow 12:00 PM)
-  const [deadline] = useState(() => getTomorrowNoonDeadline());
-  const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(deadline));
+  // Countdown timer deadline (Fixed Universal Timestamp: Saturday 8 August 2026 at 12:00 PM)
+  const [deadline] = useState(FIXED_ORDER_DEADLINE);
+  const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(FIXED_ORDER_DEADLINE));
   const isExpired = timeLeft.total <= 0;
 
   useEffect(() => {
@@ -564,7 +561,7 @@ function CountdownBanner({ isExpired, timeLeft }) {
               letterSpacing: '0.3px',
               textShadow: isExpired ? 'none' : '0 0 12px rgba(245,208,97,0.4)'
             }}>
-              {isExpired ? 'ปิดรับการสั่งซื้อเสื้อแล้ว (หมดระยะเวลาสั่งจอง)' : 'นับถอยหลังปิดรับออเดอร์สั่งจองเสื้อ (กำหนดพรุ่งนี้ 12:00 น.)'}
+              {isExpired ? 'ปิดรับการสั่งซื้อเสื้อแล้ว (หมดระยะเวลาสั่งจอง)' : 'นับถอยหลังปิดรับออเดอร์สั่งจองเสื้อ (กำหนดปิด เสาร์ที่ 8 ส.ค. เวลา 12:00 น.)'}
             </h4>
             <p style={{ color: 'var(--text-sub)', margin: 0, fontSize: '0.83rem', marginTop: '3px' }}>
               {isExpired 
@@ -577,6 +574,50 @@ function CountdownBanner({ isExpired, timeLeft }) {
         {/* Right Digital Cyber Clock */}
         {!isExpired ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+            {timeLeft.days > 0 && (
+              <>
+                <div style={{
+                  background: 'linear-gradient(180deg, #1d2133 0%, #0a0c14 100%)',
+                  border: '1px solid rgba(245, 208, 97, 0.6)',
+                  borderRadius: '14px',
+                  padding: '10px 18px',
+                  textAlign: 'center',
+                  minWidth: '85px',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)'
+                }}>
+                  <span style={{
+                    fontFamily: "'Chakra Petch', 'Kanit', sans-serif",
+                    fontSize: '2rem',
+                    fontWeight: 800,
+                    color: '#ffffff',
+                    textShadow: '0 0 16px rgba(245, 208, 97, 0.85)',
+                    display: 'block',
+                    lineHeight: 1
+                  }}>
+                    {String(timeLeft.days).padStart(2, '0')}
+                  </span>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    color: '#F5D061',
+                    fontWeight: 700,
+                    letterSpacing: '1px',
+                    marginTop: '4px',
+                    display: 'block'
+                  }}>
+                    DAYS
+                  </span>
+                </div>
+
+                <span style={{
+                  fontFamily: "'Chakra Petch', sans-serif",
+                  fontSize: '2rem',
+                  fontWeight: 800,
+                  color: '#F5D061',
+                  textShadow: '0 0 12px #F5D061'
+                }}>:</span>
+              </>
+            )}
+
             <div style={{
               background: 'linear-gradient(180deg, #1d2133 0%, #0a0c14 100%)',
               border: '1px solid rgba(245, 208, 97, 0.6)',
