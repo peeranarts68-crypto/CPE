@@ -26,6 +26,24 @@ const {
 
 const { useState, useEffect, useContext, createContext } = React;
 
+// Helper to calculate countdown timer to target deadline (Tomorrow 12:00 PM)
+const getTomorrowNoonDeadline = () => {
+  const now = new Date();
+  const tomorrowNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0, 0);
+  return tomorrowNoon.getTime();
+};
+
+const calculateTimeLeft = (targetTime) => {
+  const diff = targetTime - Date.now();
+  if (diff <= 0) {
+    return { total: 0, hours: 0, minutes: 0, seconds: 0 };
+  }
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  return { total: diff, hours, minutes, seconds };
+};
+
 // Helper to prevent async network requests from hanging indefinitely
 const withTimeout = (promise, ms = 4000) => {
   return Promise.race([
@@ -161,6 +179,18 @@ function App() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+
+  // Countdown timer deadline (Target: Tomorrow 12:00 PM)
+  const [deadline] = useState(() => getTomorrowNoonDeadline());
+  const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(deadline));
+  const isExpired = timeLeft.total <= 0;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft(deadline));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [deadline]);
 
   // Determine admin status – include fallback from localStorage in case auth state hasn't loaded yet
   const storedUser = typeof localStorage !== 'undefined' ? localStorage.getItem('cpe_current_user') : null;
@@ -373,7 +403,10 @@ function App() {
         </header>
 
         {/* HERO BANNER AUTO ROTATING SLIDER */}
-        <HeroSlider onSelectProduct={selectProductFromBanner} />
+        <HeroSlider onSelectProduct={selectProductFromBanner} isExpired={isExpired} showToast={showToast} />
+
+        {/* COUNTDOWN TIMER BANNER (BELOW HERO BANNER) */}
+        <CountdownBanner isExpired={isExpired} timeLeft={timeLeft} />
 
         {/* FEATURES GRID */}
         <Features />
@@ -386,6 +419,7 @@ function App() {
           setCart={setCart}
           setIsSizeGuideOpen={setIsSizeGuideOpen}
           setIsCartOpen={setIsCartOpen}
+          isExpired={isExpired}
         />
 
         {/* ORDER TRACKING LOOKUP SECTION */}
@@ -403,9 +437,15 @@ function App() {
           cart={cart}
           setCart={setCart}
           onCheckout={() => {
+            if (isExpired) {
+              showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 12:00 น.)', 'error');
+              return;
+            }
             setIsCartOpen(false);
             setIsCheckoutOpen(true);
           }}
+          isExpired={isExpired}
+          showToast={showToast}
         />
 
         {/* AUTH MODAL (CPE PORTAL) */}
@@ -423,6 +463,7 @@ function App() {
           setTrackedOrder={setTrackedOrder}
           setMyOrdersHistory={setMyOrdersHistory}
           setSearchTrackingQuery={setSearchTrackingQuery}
+          isExpired={isExpired}
         />
 
         {/* SIZE GUIDE MODAL */}
@@ -445,8 +486,233 @@ function App() {
   );
 }
 
+// COUNTDOWN BANNER COMPONENT
+function CountdownBanner({ isExpired, timeLeft }) {
+  return (
+    <div className="container" style={{ marginTop: '24px', marginBottom: '16px' }}>
+      <div style={{
+        background: isExpired 
+          ? 'linear-gradient(135deg, rgba(35, 10, 15, 0.95), rgba(15, 6, 8, 0.98))'
+          : 'linear-gradient(135deg, rgba(20, 22, 34, 0.95), rgba(10, 11, 17, 0.98))',
+        border: `1px solid ${isExpired ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 208, 97, 0.5)'}`,
+        borderRadius: '20px',
+        padding: '20px 28px',
+        boxShadow: isExpired 
+          ? '0 12px 40px rgba(0,0,0,0.8), 0 0 30px rgba(239,68,68,0.25)' 
+          : '0 12px 40px rgba(0,0,0,0.8), 0 0 35px rgba(245,208,97,0.2), inset 0 0 25px rgba(139,12,26,0.3)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '20px',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        
+        {/* Left Info HUD */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flex: '1 1 300px' }}>
+          <div style={{
+            width: '58px',
+            height: '58px',
+            borderRadius: '16px',
+            background: isExpired 
+              ? 'radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(153,27,27,0.5) 100%)' 
+              : 'radial-gradient(circle, rgba(245,208,97,0.3) 0%, rgba(139,12,26,0.6) 100%)',
+            border: `2px solid ${isExpired ? '#ef4444' : '#F5D061'}`,
+            boxShadow: isExpired ? '0 0 20px rgba(239,68,68,0.5)' : '0 0 20px rgba(245,208,97,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '2rem',
+            flexShrink: 0
+          }}>
+            {isExpired ? '🚫' : '⚡'}
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+              <span style={{
+                background: isExpired ? 'rgba(239,68,68,0.2)' : 'rgba(245,208,97,0.18)',
+                border: `1px solid ${isExpired ? '#ef4444' : '#F5D061'}`,
+                color: isExpired ? '#fca5a5' : '#F5D061',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                padding: '3px 12px',
+                borderRadius: '20px',
+                letterSpacing: '1px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <span style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: isExpired ? '#ef4444' : '#22c55e',
+                  boxShadow: isExpired ? '0 0 10px #ef4444' : '0 0 10px #22c55e'
+                }}></span>
+                {isExpired ? 'SYSTEM LOCKED' : 'LIVE COUNTDOWN'}
+              </span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>| CPE PORTAL SYSTEM</span>
+            </div>
+
+            <h4 style={{ 
+              color: isExpired ? '#fca5a5' : '#F5D061', 
+              margin: 0, 
+              fontSize: '1.2rem', 
+              fontWeight: 800,
+              letterSpacing: '0.3px',
+              textShadow: isExpired ? 'none' : '0 0 12px rgba(245,208,97,0.4)'
+            }}>
+              {isExpired ? 'ปิดรับการสั่งซื้อเสื้อแล้ว (หมดระยะเวลาสั่งจอง)' : 'นับถอยหลังปิดรับออเดอร์สั่งจองเสื้อ (กำหนดพรุ่งนี้ 12:00 น.)'}
+            </h4>
+            <p style={{ color: 'var(--text-sub)', margin: 0, fontSize: '0.83rem', marginTop: '3px' }}>
+              {isExpired 
+                ? 'ระบบปิดรับคำสั่งซื้อเสื้อทุกรุ่นแล้ว เนื่องจากถึงกำหนดหมดระยะเวลาที่ตั้งไว้' 
+                : 'กรุณาส่งออเดอร์และโอนเงินมัดจำก่อนหมดเวลาถอยหลังเพื่อรักษาสิทธิ์สั่งผลิต'}
+            </p>
+          </div>
+        </div>
+
+        {/* Right Digital Cyber Clock */}
+        {!isExpired ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+            <div style={{
+              background: 'linear-gradient(180deg, #1d2133 0%, #0a0c14 100%)',
+              border: '1px solid rgba(245, 208, 97, 0.6)',
+              borderRadius: '14px',
+              padding: '10px 18px',
+              textAlign: 'center',
+              minWidth: '85px',
+              boxShadow: '0 8px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)'
+            }}>
+              <span style={{
+                fontFamily: "'Chakra Petch', 'Kanit', sans-serif",
+                fontSize: '2rem',
+                fontWeight: 800,
+                color: '#ffffff',
+                textShadow: '0 0 16px rgba(245, 208, 97, 0.85)',
+                display: 'block',
+                lineHeight: 1
+              }}>
+                {String(timeLeft.hours).padStart(2, '0')}
+              </span>
+              <span style={{
+                fontSize: '0.7rem',
+                color: '#F5D061',
+                fontWeight: 700,
+                letterSpacing: '1px',
+                marginTop: '4px',
+                display: 'block'
+              }}>
+                HOURS
+              </span>
+            </div>
+
+            <span style={{
+              fontFamily: "'Chakra Petch', sans-serif",
+              fontSize: '2rem',
+              fontWeight: 800,
+              color: '#F5D061',
+              textShadow: '0 0 12px #F5D061'
+            }}>:</span>
+
+            <div style={{
+              background: 'linear-gradient(180deg, #1d2133 0%, #0a0c14 100%)',
+              border: '1px solid rgba(245, 208, 97, 0.6)',
+              borderRadius: '14px',
+              padding: '10px 18px',
+              textAlign: 'center',
+              minWidth: '85px',
+              boxShadow: '0 8px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)'
+            }}>
+              <span style={{
+                fontFamily: "'Chakra Petch', 'Kanit', sans-serif",
+                fontSize: '2rem',
+                fontWeight: 800,
+                color: '#ffffff',
+                textShadow: '0 0 16px rgba(245, 208, 97, 0.85)',
+                display: 'block',
+                lineHeight: 1
+              }}>
+                {String(timeLeft.minutes).padStart(2, '0')}
+              </span>
+              <span style={{
+                fontSize: '0.7rem',
+                color: '#F5D061',
+                fontWeight: 700,
+                letterSpacing: '1px',
+                marginTop: '4px',
+                display: 'block'
+              }}>
+                MINS
+              </span>
+            </div>
+
+            <span style={{
+              fontFamily: "'Chakra Petch', sans-serif",
+              fontSize: '2rem',
+              fontWeight: 800,
+              color: '#F5D061',
+              textShadow: '0 0 12px #F5D061'
+            }}>:</span>
+
+            <div style={{
+              background: 'linear-gradient(180deg, #1d2133 0%, #0a0c14 100%)',
+              border: '1px solid rgba(245, 208, 97, 0.6)',
+              borderRadius: '14px',
+              padding: '10px 18px',
+              textAlign: 'center',
+              minWidth: '85px',
+              boxShadow: '0 8px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)'
+            }}>
+              <span style={{
+                fontFamily: "'Chakra Petch', 'Kanit', sans-serif",
+                fontSize: '2rem',
+                fontWeight: 800,
+                color: '#ffffff',
+                textShadow: '0 0 16px rgba(245, 208, 97, 0.85)',
+                display: 'block',
+                lineHeight: 1
+              }}>
+                {String(timeLeft.seconds).padStart(2, '0')}
+              </span>
+              <span style={{
+                fontSize: '0.7rem',
+                color: '#F5D061',
+                fontWeight: 700,
+                letterSpacing: '1px',
+                marginTop: '4px',
+                display: 'block'
+              }}>
+                SECS
+              </span>
+            </div>
+          </div>
+        ) : (
+          <span style={{
+            background: 'linear-gradient(135deg, #ef4444, #991b1b)',
+            color: '#ffffff',
+            fontWeight: 700,
+            padding: '10px 24px',
+            borderRadius: '14px',
+            fontSize: '0.9rem',
+            letterSpacing: '1px',
+            boxShadow: '0 6px 20px rgba(239,68,68,0.4)',
+            border: '1px solid #fca5a5',
+            flexShrink: 0
+          }}>
+            🔒 REGISTRATION CLOSED
+          </span>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
 // 1. HERO SLIDER COMPONENT
-function HeroSlider({ onSelectProduct }) {
+function HeroSlider({ onSelectProduct, isExpired, showToast }) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -473,7 +739,19 @@ function HeroSlider({ onSelectProduct }) {
                   </div>
                 </div>
                 <div className="banner-cta-group">
-                  <button onClick={() => onSelectProduct('polo')} className="btn btn-gold">สั่งซื้อเสื้อโปโลสาขา</button>
+                  <button 
+                    onClick={() => {
+                      if (isExpired) {
+                        if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 12:00 น.)', 'error');
+                        return;
+                      }
+                      onSelectProduct('polo');
+                    }} 
+                    className="btn btn-gold"
+                    style={{ opacity: isExpired ? 0.6 : 1 }}
+                  >
+                    {isExpired ? '⛔ ปิดรับการสั่งซื้อแล้ว' : 'สั่งซื้อเสื้อโปโลสาขา'}
+                  </button>
                   <a href="#tracking" className="btn btn-outline">เช็คสถานะออเดอร์</a>
                 </div>
               </div>
@@ -490,7 +768,19 @@ function HeroSlider({ onSelectProduct }) {
                   </div>
                 </div>
                 <div className="banner-cta-group">
-                  <button onClick={() => onSelectProduct('polo_navy')} className="btn btn-gold">สั่งซื้อเสื้อโปโลสีกรมท่า</button>
+                  <button 
+                    onClick={() => {
+                      if (isExpired) {
+                        if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 12:00 น.)', 'error');
+                        return;
+                      }
+                      onSelectProduct('polo_navy');
+                    }} 
+                    className="btn btn-gold"
+                    style={{ opacity: isExpired ? 0.6 : 1 }}
+                  >
+                    {isExpired ? '⛔ ปิดรับการสั่งซื้อแล้ว' : 'สั่งซื้อเสื้อโปโลสีกรมท่า'}
+                  </button>
                   <a href="#tracking" className="btn btn-outline">เช็คสถานะออเดอร์</a>
                 </div>
               </div>
@@ -563,7 +853,7 @@ function Features() {
 }
 
 // 3. PRODUCT CONFIGURATOR COMPONENT
-function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, setCart, setIsSizeGuideOpen, setIsCartOpen }) {
+function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, setCart, setIsSizeGuideOpen, setIsCartOpen, isExpired }) {
   const { currentUser, showToast, setIsAuthModalOpen } = useContext(AuthContext);
   const [selectedSize, setSelectedSize] = useState('M');
   const [currentView, setCurrentView] = useState('front');
@@ -644,6 +934,10 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
   }, 0);
 
   const handleAddToCart = () => {
+    if (isExpired) {
+      showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 12:00 น.)', 'error');
+      return;
+    }
     if (!currentUser) {
       showToast('กรุณาเข้าสู่ระบบ (Login) ก่อนสั่งซื้อสินค้า', 'error');
       if (setIsAuthModalOpen) setIsAuthModalOpen(true);
@@ -929,7 +1223,11 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                   <button className="qty-btn" onClick={() => handleQtyChange(qty + 1)}>+</button>
                 </div>
 
-                {!currentUser ? (
+                {isExpired ? (
+                  <button className="btn btn-outline" style={{ flex: 1, borderColor: '#ef4444', color: '#fca5a5', cursor: 'not-allowed', opacity: 0.7 }} disabled>
+                    🚫 ปิดรับการสั่งซื้อแล้ว (หมดเวลาสั่งจอง)
+                  </button>
+                ) : !currentUser ? (
                   <button className="btn btn-outline" style={{ flex: 1, borderColor: '#38bdf8', color: '#38bdf8' }} onClick={() => setIsAuthModalOpen(true)}>
                     🔒 เข้าสู่ระบบเพื่อสั่งซื้อ
                   </button>
@@ -1724,7 +2022,7 @@ function AuthModal({ isOpen, onClose }) {
 }
 
 // 7. CHECKOUT MODAL COMPONENT (Firestore Submission & Local Persistence)
-function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyOrdersHistory, setSearchTrackingQuery }) {
+function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyOrdersHistory, setSearchTrackingQuery, isExpired }) {
   const { currentUser, showToast } = useContext(AuthContext);
   const [checkoutName, setCheckoutName] = useState(currentUser?.name || '');
   const [checkoutStudentId, setCheckoutStudentId] = useState(currentUser?.studentId || '');
@@ -1774,6 +2072,10 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
 
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
+    if (isExpired) {
+      showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 12:00 น.)', 'error');
+      return;
+    }
     if (!checkoutName || !checkoutStudentId || checkoutStudentId.length !== 10 || !checkoutPhone) {
       showToast('กรุณากรอกข้อมูลและรหัสนักศึกษา 10 หลักให้ครบถ้วน', 'error');
       return;
