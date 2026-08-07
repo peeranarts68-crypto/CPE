@@ -89,24 +89,24 @@ const PRODUCTS = {
       'แขนเสื้อ: <strong>ปักเลขโรมัน LXVIII</strong>'
     ]
   },
-  polo_maroon: {
-    id: 'polo_maroon',
-    title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (สีเลือดหมู Maroon)',
+  polo_navy: {
+    id: 'polo_navy',
+    title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (สีกรมท่า Navy Blue)',
     batch: 'คณะเทคโนโลยีอุตสาหกรรม CPE',
     basePrice: 350,
     largeFee: 10,
     originalPrice: 350,
     badgeText: 'ราคา ฿350',
     images: {
-      front: 'assets/polo_maroon_design.jpg',
-      back: 'assets/polo_maroon_design.jpg',
-      sleeve: 'assets/polo_maroon_design.jpg'
+      front: 'assets/polo_navy_front.jpg',
+      back: 'assets/polo_navy_back.jpg',
+      sleeve: 'assets/polo_navy_front.jpg'
     },
     specs: [
-      'สีเสื้อ: <strong>สีเลือดหมู (Maroon) ปกขาว-ส้ม</strong>',
+      'สีเสื้อ: <strong>สีกรมท่า (Navy Blue) ปกขอบขาว</strong>',
       'เนื้อผ้า: <strong>ผ้าไมโครไฟเบอร์ นุ่ม ใส่สบาย ไม่ร้อน</strong>',
-      'อกซ้าย: <strong>ปักโลโก้ CPE Computer Engineering</strong>',
-      'ด้านหลัง: <strong>สกรีนลาย Computer Engineering & Circuit</strong>'
+      'อกซ้าย: <strong>ปักโลโก้ตรา CPE Computer Engineering</strong>',
+      'ด้านหลัง: <strong>สกรีน Computer Engineering & Circuit สีขาว</strong>'
     ]
   },
   jacket: {
@@ -208,19 +208,30 @@ function App() {
 
   // Firebase Auth Listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const fb = window.CPEFirebase || {};
+    if (!fb.auth || !fb.onAuthStateChanged) {
+      const savedUser = localStorage.getItem('cpe_current_user');
+      if (savedUser) {
+        try { setCurrentUser(JSON.parse(savedUser)); } catch { setCurrentUser(null); }
+      }
+      return;
+    }
+
+    const unsubscribe = fb.onAuthStateChanged(fb.auth, async (user) => {
       if (user) {
         try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            setCurrentUser({ uid: user.uid, ...userDoc.data() });
-          } else {
-            setCurrentUser({
-              uid: user.uid,
-              email: user.email,
-              name: user.displayName || 'นักศึกษา CPE',
-              studentId: '6812345678'
-            });
+          if (fb.getDoc && fb.doc && fb.db) {
+            const userDoc = await fb.getDoc(fb.doc(fb.db, 'users', user.uid));
+            if (userDoc.exists()) {
+              setCurrentUser({ uid: user.uid, ...userDoc.data() });
+            } else {
+              setCurrentUser({
+                uid: user.uid,
+                email: user.email,
+                name: user.displayName || 'นักศึกษา CPE',
+                studentId: '6812345678'
+              });
+            }
           }
         } catch (e) {
           console.log("Firestore user fetch error:", e);
@@ -468,18 +479,18 @@ function HeroSlider({ onSelectProduct }) {
               </div>
             </div>
 
-            {/* Slide 1: CPE 69 Jacket */}
+            {/* Slide 1: CPE Navy Polo Poster */}
             <div className={`banner-slide ${currentSlide === 1 ? 'active' : ''}`}>
-              <img src="assets/jacket_banner.png" alt="CPE 69 Jacket Banner" className="banner-img" />
+              <img src="assets/polo_navy_banner.jpg" alt="CPE Polo Navy Banner" className="banner-img" />
               <div className="banner-overlay-bar">
                 <div className="banner-tagline">
-                  <span className="tech-pill">CPE 69 LXIX JACKET</span>
+                  <span className="tech-pill">CPE POLO SHIRT (NAVY BLUE)</span>
                   <div className="banner-text-content">
-                    <h2>เสื้อคลุมสาขารุ่นใหม่ 69 สำหรับน้องวิศวกรรมคอมพิวเตอร์ (เสื้อคลุม ฿920)</h2>
+                    <h2>เสื้อโปโลสาขารุ่นใหม่ สีกรมท่า ดีไซน์เรียบหรู ใส่สบาย (ราคา ฿350)</h2>
                   </div>
                 </div>
                 <div className="banner-cta-group">
-                  <button onClick={() => onSelectProduct('jacket')} className="btn btn-gold">สั่งซื้อเสื้อคลุม CPE 69</button>
+                  <button onClick={() => onSelectProduct('polo_navy')} className="btn btn-gold">สั่งซื้อเสื้อโปโลสีกรมท่า</button>
                   <a href="#tracking" className="btn btn-outline">เช็คสถานะออเดอร์</a>
                 </div>
               </div>
@@ -613,7 +624,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
   }, [currentUser]);
 
   useEffect(() => {
-    if ((selectedProductKey === 'polo' || selectedProductKey === 'polo_maroon') && currentView === 'sleeve') {
+    if ((selectedProductKey === 'polo' || selectedProductKey === 'polo_navy') && currentView === 'sleeve') {
       setCurrentView('front');
     }
   }, [selectedProductKey]);
@@ -684,10 +695,10 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
           )}
           {showPolo && (
             <button
-              className={`product-tab-btn ${selectedProductKey === 'polo_maroon' ? 'active' : ''}`}
-              onClick={() => setSelectedProductKey('polo_maroon')}
+              className={`product-tab-btn ${selectedProductKey === 'polo_navy' ? 'active' : ''}`}
+              onClick={() => setSelectedProductKey('polo_navy')}
             >
-              <span>👕 เสื้อโปโลสาขา (สีเลือดหมู Maroon) - ฿350</span>
+              <span>👕 เสื้อโปโลสาขา (สีกรมท่า Navy Blue) - ฿350</span>
             </button>
           )}
           {showJacket && (
@@ -718,7 +729,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                 >
                   ด้านหลัง (Back)
                 </button>
-                {selectedProductKey !== 'polo' && selectedProductKey !== 'polo_maroon' && (
+                {selectedProductKey !== 'polo' && selectedProductKey !== 'polo_navy' && (
                   <button 
                     className={`view-btn ${currentView === 'sleeve' ? 'active' : ''}`}
                     onClick={() => setCurrentView('sleeve')}
@@ -737,8 +748,8 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                     style={{
                       width: '100%',
                       height: '100%',
-                      objectFit: selectedProductKey === 'jacket' || selectedProductKey === 'polo_maroon' ? 'contain' : 'cover',
-                      objectPosition: selectedProductKey === 'jacket' || selectedProductKey === 'polo_maroon' ? 'center center' : (currentView === 'sleeve' ? 'center 35%' : 'center 10%'),
+                      objectFit: selectedProductKey === 'jacket' ? 'contain' : 'cover',
+                      objectPosition: 'center top',
                       borderRadius: '10px',
                       transition: 'all 0.4s ease'
                     }}
