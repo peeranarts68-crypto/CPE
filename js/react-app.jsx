@@ -637,6 +637,9 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
     if (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size)) {
       itemPrice += prod.largeFee;
     }
+    if (item.customName && item.customName.trim() !== '') {
+      itemPrice += 20;
+    }
     return sum + itemPrice;
   }, 0);
 
@@ -655,6 +658,9 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
       let itemPrice = prod.basePrice;
       if (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(itemCfg.size)) {
         itemPrice += prod.largeFee;
+      }
+      if (itemCfg.customName && itemCfg.customName.trim() !== '') {
+        itemPrice += 20;
       }
       return {
         id: Date.now() + idx,
@@ -816,8 +822,8 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                       👕 {qty > 1 ? `เสื้อตัวที่ ${idx + 1}` : 'เลือกขนาดเสื้อ'} {item.size ? `(ไซส์ ${item.size})` : ''}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: ['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) ? '#F5D061' : '#22c55e' }}>
-                        ฿{prod.basePrice + (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) ? prod.largeFee : 0)}
+                      <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) || (item.customName && item.customName.trim() !== '')) ? '#F5D061' : '#22c55e' }}>
+                        ฿{prod.basePrice + (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) ? prod.largeFee : 0) + (item.customName && item.customName.trim() !== '' ? 20 : 0)}
                       </span>
                       {itemsConfig.length > 1 && (
                         <button 
@@ -857,7 +863,9 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                   <div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
                       <span>ปักชื่ออกเสื้อ {qty > 1 ? `(ตัวที่ ${idx + 1})` : ''}:</span>
-                      <span style={{ color: '#22c55e' }}>ฟรี</span>
+                      <span style={{ color: item.customName && item.customName.trim() !== '' ? '#F5D061' : 'var(--text-sub)', fontWeight: item.customName && item.customName.trim() !== '' ? 600 : 400 }}>
+                        {item.customName && item.customName.trim() !== '' ? '+฿20' : 'คิดเพิ่ม +฿20'}
+                      </span>
                     </div>
                     <input 
                       type="text" 
