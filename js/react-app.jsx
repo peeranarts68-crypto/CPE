@@ -2390,8 +2390,12 @@ function AdminDashboardModal({ isOpen, onClose }) {
                       <td style={{ padding: '10px' }}>
                         {o.items && o.items.map((it, idx) => (
                           <div key={idx} style={{ marginBottom: '4px', fontSize: '0.82rem' }}>
-                            • {it.title} <span style={{ color: 'var(--accent-gold)' }}>(ไซส์ {it.size} x {it.qty} ตัว)</span>
-                            {it.customName && <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--accent-gold-bright)', paddingLeft: '8px' }}>ปักชื่อ: {it.customName}</span>}
+                            • {it.title} <span style={{ color: 'var(--accent-gold)' }}>(ไซส์ {it.size} x {it.qty || 1} ตัว)</span>
+                            {it.customName && (
+                              <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--accent-gold-bright)', paddingLeft: '8px' }}>
+                                ปักชื่อ: {it.customName} <span style={{ color: '#F5D061', fontWeight: 'bold' }}>(+฿20)</span>
+                              </span>
+                            )}
                           </div>
                         ))}
                       </td>
