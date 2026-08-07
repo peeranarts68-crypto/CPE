@@ -170,10 +170,10 @@ function App() {
   
   const [selectedProductKey, setSelectedProductKey] = useState('polo');
 
-  // Adjust default product based on student ID (68 → polo only, 69 → jacket only)
+  // Adjust default product based on student ID (67/68 → polo only, 69 → jacket only)
   useEffect(() => {
     if (!isAdmin && currentUser?.studentId) {
-      if (currentUser.studentId.startsWith('68')) setSelectedProductKey('polo');
+      if (currentUser.studentId.startsWith('68') || currentUser.studentId.startsWith('67')) setSelectedProductKey('polo');
       else if (currentUser.studentId.startsWith('69')) setSelectedProductKey('jacket');
     }
   }, [currentUser, isAdmin]);
@@ -616,8 +616,8 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                   parsedStored?.studentId === '6800000000' || parsedStored?.role === 'admin';
 
   const userStudentId = currentUser?.studentId;
-  const showPolo = isAdmin || !userStudentId || userStudentId.startsWith('68') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69'));
-  const showJacket = isAdmin || !userStudentId || userStudentId.startsWith('69') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69'));
+  const showPolo = isAdmin || !userStudentId || userStudentId.startsWith('68') || userStudentId.startsWith('67') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69') && !userStudentId.startsWith('67'));
+  const showJacket = isAdmin || !userStudentId || userStudentId.startsWith('69') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69') && !userStudentId.startsWith('67'));
 
   useEffect(() => {
     if (currentUser?.studentId) setStudentIdInput(currentUser.studentId);
@@ -1633,6 +1633,7 @@ function AuthModal({ isOpen, onClose }) {
                   >
                     <option value="1">ปี 1 (CPE69)</option>
                     <option value="2">ปี 2 (CPE68)</option>
+                    <option value="3">ปี 3 (CPE67)</option>
                   </select>
                 </div>
               </div>
@@ -2194,16 +2195,18 @@ function AdminDashboardModal({ isOpen, onClose }) {
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-gold)', paddingBottom: '12px' }}>
             {[
               { id: 'all', label: '📦 ทั้งหมดทุกสินค้า', badgeBg: '#3b82f6' },
-              { id: 'polo_68', label: '👕 เสื้อโปโล CPE 68', badgeBg: '#eab308' },
-              { id: 'polo_maroon', label: '👕 เสื้อโปโล (สีเลือดหมู Maroon)', badgeBg: '#8b0c1a' },
-              { id: 'jacket', label: '🧥 เสื้อคลุม CPE 69 (Jacket)', badgeBg: '#10b981' }
+              { id: 'polo_67', label: '🎓 ออเดอร์ CPE 67 (ปี 3)', badgeBg: '#a855f7' },
+              { id: 'polo_68', label: '👕 เสื้อโปโล CPE 68 (ปี 2)', badgeBg: '#eab308' },
+              { id: 'polo_navy', label: '👕 เสื้อโปโล (สีกรมท่า Navy)', badgeBg: '#1e3a8a' },
+              { id: 'jacket', label: '🧥 เสื้อคลุม CPE 69 (ปี 1)', badgeBg: '#10b981' }
             ].map(tab => {
-              const count = tab.id === 'all' ? orders.length : orders.filter(o => o.items && o.items.some(it => {
-                if (tab.id === 'polo_68') return it.productKey === 'polo' || (it.title && (it.title.includes('รุ่น 68') || it.title.includes('CPE Polo Shirt')));
-                if (tab.id === 'polo_maroon') return it.productKey === 'polo_maroon' || (it.title && it.title.includes('Maroon'));
-                if (tab.id === 'jacket') return it.productKey === 'jacket' || (it.title && (it.title.includes('เสื้อคลุม') || it.title.includes('CPE 69')));
+              const count = tab.id === 'all' ? orders.length : orders.filter(o => {
+                if (tab.id === 'polo_67') return (o.studentId && o.studentId.startsWith('67')) || o.year === '3' || (o.items && o.items.some(it => it.studentId && it.studentId.startsWith('67')));
+                if (tab.id === 'polo_68') return (o.studentId && o.studentId.startsWith('68')) || o.year === '2' || (o.items && o.items.some(it => it.productKey === 'polo' || (it.title && (it.title.includes('รุ่น 68') || it.title.includes('CPE Polo Shirt')))));
+                if (tab.id === 'polo_navy') return o.items && o.items.some(it => it.productKey === 'polo_navy' || (it.title && (it.title.includes('Navy') || it.title.includes('สีกรมท่า'))));
+                if (tab.id === 'jacket') return (o.studentId && o.studentId.startsWith('69')) || o.year === '1' || (o.items && o.items.some(it => it.productKey === 'jacket' || (it.title && (it.title.includes('เสื้อคลุม') || it.title.includes('CPE 69')))));
                 return true;
-              })).length;
+              }).length;
 
               const isActive = productFilter === tab.id;
               return (
@@ -2251,9 +2254,10 @@ function AdminDashboardModal({ isOpen, onClose }) {
                   const size = it.size || 'ไม่ระบุ';
                   const qty = it.qty || 1;
 
-                  if (productFilter === 'polo_68' && !(it.productKey === 'polo' || product.includes('รุ่น 68') || product.includes('CPE Polo Shirt'))) return;
-                  if (productFilter === 'polo_maroon' && !(it.productKey === 'polo_maroon' || product.includes('Maroon'))) return;
-                  if (productFilter === 'jacket' && !(it.productKey === 'jacket' || product.includes('เสื้อคลุม') || product.includes('CPE 69'))) return;
+                  if (productFilter === 'polo_67' && !((o.studentId && o.studentId.startsWith('67')) || (it.studentId && it.studentId.startsWith('67')) || o.year === '3')) return;
+                  if (productFilter === 'polo_68' && !((o.studentId && o.studentId.startsWith('68')) || it.productKey === 'polo' || product.includes('รุ่น 68') || product.includes('CPE Polo Shirt'))) return;
+                  if (productFilter === 'polo_navy' && !(it.productKey === 'polo_navy' || product.includes('Navy') || product.includes('สีกรมท่า'))) return;
+                  if (productFilter === 'jacket' && !((o.studentId && o.studentId.startsWith('69')) || it.productKey === 'jacket' || product.includes('เสื้อคลุม') || product.includes('CPE 69'))) return;
 
                   if (!sizeSummary[product]) sizeSummary[product] = {};
                   sizeSummary[product][size] = (sizeSummary[product][size] || 0) + qty;
