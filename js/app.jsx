@@ -2139,12 +2139,15 @@ function AdminDashboardModal({ isOpen, onClose }) {
     
     let matchProduct = true;
     if (productFilter !== 'all') {
-      matchProduct = o.items && o.items.some(it => {
-        if (productFilter === 'polo_68') return it.productKey === 'polo' || (it.title && (it.title.includes('รุ่น 68') || it.title.includes('CPE Polo Shirt')));
-        if (productFilter === 'polo_navy') return it.productKey === 'polo_navy' || (it.title && (it.title.includes('Navy') || it.title.includes('สีกรมท่า') || it.title.includes('Maroon')));
-        if (productFilter === 'jacket') return it.productKey === 'jacket' || (it.title && (it.title.includes('เสื้อคลุม') || it.title.includes('CPE 69')));
-        return true;
-      });
+      if (productFilter === 'polo_67') {
+        matchProduct = (o.studentId && o.studentId.startsWith('67')) || o.year === '3' || (o.items && o.items.some(it => (it.studentId && it.studentId.startsWith('67'))));
+      } else if (productFilter === 'polo_68') {
+        matchProduct = (o.studentId && o.studentId.startsWith('68')) || o.year === '2' || (o.items && o.items.some(it => it.productKey === 'polo' || (it.title && (it.title.includes('รุ่น 68') || it.title.includes('CPE Polo Shirt')))));
+      } else if (productFilter === 'polo_navy') {
+        matchProduct = o.items && o.items.some(it => it.productKey === 'polo_navy' || (it.title && (it.title.includes('Navy') || it.title.includes('สีกรมท่า'))));
+      } else if (productFilter === 'jacket') {
+        matchProduct = (o.studentId && o.studentId.startsWith('69')) || o.year === '1' || (o.items && o.items.some(it => it.productKey === 'jacket' || (it.title && (it.title.includes('เสื้อคลุม') || it.title.includes('CPE 69')))));
+      }
     }
 
     return matchSearch && matchStatus && matchProduct;
