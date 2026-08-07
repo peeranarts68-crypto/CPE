@@ -2153,7 +2153,18 @@ function AdminDashboardModal({ isOpen, onClose }) {
     return matchSearch && matchStatus && matchProduct;
   });
 
-  const totalRev = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const totalRev = orders.reduce((sum, o) => {
+    if (o.items && o.items.length > 0) {
+      return sum + o.items.reduce((s, it) => {
+        let p = it.totalPrice || it.price || 350;
+        if (it.customName && it.customName.trim() !== '') {
+          if (!it.totalPrice || it.totalPrice === 350 || it.totalPrice === 270) p = (p || 350) + 20;
+        }
+        return s + p;
+      }, 0);
+    }
+    return sum + (o.total || 350);
+  }, 0);
   const totalItemsCount = orders.reduce((sum, o) => sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0);
 
   return (
@@ -2404,9 +2415,26 @@ function AdminDashboardModal({ isOpen, onClose }) {
                       </td>
 
                       <td style={{ padding: '10px', fontSize: '0.85rem', lineHeight: '1.4' }}>
-                        <div style={{ color: '#22c55e', fontWeight: 'bold' }}>มัดจำ: ฿{(o.deposit || 50).toLocaleString()}</div>
-                        <div style={{ color: 'var(--text-sub)' }}>ยอดเต็ม: ฿{(o.total || 0).toLocaleString()}</div>
-                        <div style={{ color: '#eab308' }}>ค้าง: ฿{((o.total || 0) - (o.deposit || 50)).toLocaleString()}</div>
+                        {(() => {
+                          const deposit = o.deposit || 50;
+                          const calcTotal = (o.items && o.items.length > 0)
+                            ? o.items.reduce((sum, it) => {
+                                let itemP = it.totalPrice || it.price || 350;
+                                if (it.customName && it.customName.trim() !== '') {
+                                  if (!it.totalPrice || it.totalPrice === 350 || it.totalPrice === 270) itemP = (itemP || 350) + 20;
+                                }
+                                return sum + (itemP || 350);
+                              }, 0)
+                            : (o.total || 350);
+                          const remaining = Math.max(0, calcTotal - deposit);
+                          return (
+                            <>
+                              <div style={{ color: '#22c55e', fontWeight: 'bold' }}>มัดจำ: ฿{deposit.toLocaleString()}</div>
+                              <div style={{ color: 'var(--text-sub)' }}>ยอดเต็ม: ฿{calcTotal.toLocaleString()}</div>
+                              <div style={{ color: '#eab308' }}>ค้าง: ฿{remaining.toLocaleString()}</div>
+                            </>
+                          );
+                        })()}
                       </td>
 
                       <td style={{ padding: '10px' }}>
