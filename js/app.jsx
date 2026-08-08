@@ -107,7 +107,7 @@ const PRODUCTS = {
   polo_navy: {
     id: 'polo_navy',
     title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (สีกรมท่า Navy Blue)',
-    batch: 'คณะเทคโนโลยีอุตสาหกรรม CPE',
+    batch: 'คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม CPE',
     basePrice: 350,
     largeFee: 10,
     originalPrice: 350,
@@ -2579,6 +2579,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const [productFilter, setProductFilter] = useState('all');
   const [previewSlipOrder, setPreviewSlipOrder] = useState(null);
   const [editingTracking, setEditingTracking] = useState({});
+  const [activeBreakdownTab, setActiveBreakdownTab] = useState('summary');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -2587,9 +2588,15 @@ function AdminDashboardModal({ isOpen, onClose }) {
     let unsub = () => {};
 
     try {
-      const ordersRef = collection(db, 'orders');
-      const q = query(ordersRef, orderBy('date', 'desc'));
-      unsub = onSnapshot(q, (querySnapshot) => {
+      const fb = window.CPEFirebase || {};
+      if (!fb.db || !fb.collection || !fb.query || !fb.onSnapshot) {
+        setLoading(false);
+        return;
+      }
+
+      const ordersRef = fb.collection(fb.db, 'orders');
+      const q = fb.orderBy ? fb.query(ordersRef, fb.orderBy('date', 'desc')) : fb.query(ordersRef);
+      unsub = fb.onSnapshot(q, (querySnapshot) => {
         let firestoreList = [];
         querySnapshot.forEach((docSnap) => {
           firestoreList.push({ firestoreId: docSnap.id, ...docSnap.data() });
@@ -2615,9 +2622,10 @@ function AdminDashboardModal({ isOpen, onClose }) {
     setOrders(updated);
 
     const target = orders.find(o => o.id === orderId);
-    if (target && target.firestoreId) {
+    const fb = window.CPEFirebase || {};
+    if (target && target.firestoreId && fb.setDoc && fb.doc && fb.db) {
       try {
-        await setDoc(doc(db, 'orders', target.firestoreId), { ...target, status: newStatus }, { merge: true });
+        await fb.setDoc(fb.doc(fb.db, 'orders', target.firestoreId), { ...target, status: newStatus }, { merge: true });
       } catch (e) { console.log("Firestore update:", e); }
     }
 
@@ -2627,8 +2635,10 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const handleDelete = async (orderId) => {
     const target = orders.find(o => o.id === orderId);
     if (!target?.firestoreId) return;
+    const fb = window.CPEFirebase || {};
+    if (!fb.deleteDoc || !fb.doc || !fb.db) return;
     try {
-      await deleteDoc(doc(db, 'orders', target.firestoreId));
+      await fb.deleteDoc(fb.doc(fb.db, 'orders', target.firestoreId));
       const updated = orders.filter(o => o.id !== orderId);
       setOrders(updated);
       showToast(`ลบออเดอร์ ${orderId} สำเร็จ`, 'success');
@@ -2638,6 +2648,245 @@ function AdminDashboardModal({ isOpen, onClose }) {
     }
   };
 
+
+  const exportSizeSummaryCSV = () => {
+    if (!orders || orders.length === 0) {
+      showToast('ไม่มีข้อมูลออเดอร์ในการส่งออก', 'error');
+      return;
+    }
+
+    let csvContent = "\uFEFF"; // UTF-8 BOM for Thai encoding in Excel
+
+    csvContent += "=== ตารางสรุปจำนวนยอดสั่งซื้อแยกตามสินค้าและไซส์ (SIZE SUMMARY MATRIX) ===\n";
+    
+    const sizeSummary = {};
+    const sizeOrder = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+
+    orders.forEach(o => {
+      if (o.items) {
+        o.items.forEach(it => {
+          const product = it.title || 'ไม่ระบุ';
+          const size = it.size || 'ไม่ระบุ';
+          const qty = it.qty || 1;
+
+          if (!sizeSummary[product]) sizeSummary[product] = {};
+          sizeSummary[product][size] = (sizeSummary[product][size] || 0) + qty;
+        });
+      }
+    });
+
+    const products = Object.keys(sizeSummary);
+    const allSizes = [...new Set(products.flatMap(p => Object.keys(sizeSummary[p])))];
+    allSizes.sort((a, b) => {
+      const ia = sizeOrder.indexOf(a);
+      const ib = sizeOrder.indexOf(b);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+
+    csvContent += "รายการสินค้า," + allSizes.join(",") + ",รวมทั้งหมด(ตัว)\n";
+    products.forEach(p => {
+      const rowTotal = allSizes.reduce((sum, s) => sum + (sizeSummary[p][s] || 0), 0);
+      const rowValues = allSizes.map(s => sizeSummary[p][s] || 0);
+      csvContent += `"${p.replace(/"/g, '""')}",` + rowValues.join(",") + `,${rowTotal}\n`;
+    });
+
+    csvContent += "\n\n";
+    csvContent += "=== รายรายละเอียดผู้สั่งซื้อและข้อความปักชื่อแยกตามเสื้อและไซส์ (ITEMIZED EMBROIDERY REPORT) ===\n";
+    csvContent += "เลขที่ออเดอร์,รหัสนักศึกษา,ชื่อ-นามสกุล,เบอร์โทรศัพท์,รายการสินค้า/สี,ไซส์,จำนวน(ตัว),ข้อความปักชื่อ,ราคา(บาท),สถานะออเดอร์,วันที่สั่งซื้อ\n";
+
+    orders.forEach(o => {
+      if (o.items && o.items.length > 0) {
+        o.items.forEach(it => {
+          const row = [
+            `"${o.id || ''}"`,
+            `"${o.studentId || ''}"`,
+            `"${(o.name || '').replace(/"/g, '""')}"`,
+            `"${o.phone || ''}"`,
+            `"${(it.title || it.name || '').replace(/"/g, '""')}"`,
+            `"${it.size || 'L'}"`,
+            `"${it.qty || 1}"`,
+            `"${(it.customName || 'ไม่ปักชื่อ').replace(/"/g, '""')}"`,
+            `"${it.totalPrice || it.price || 350}"`,
+            `"${o.status || 'pending'}"`,
+            `"${o.date || ''}"`
+          ];
+          csvContent += row.join(",") + "\n";
+        });
+      }
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const dateTag = new Date().toISOString().slice(0, 10);
+    link.setAttribute('download', `รายงานสรุปไซส์เสื้อและข้อความปัก_CPE_${dateTag}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast('📥 ดาวน์โหลดรายงานสรุปไซส์ & ข้อความปัก (CSV/Excel) สำเร็จ!', 'success');
+  };
+
+  const exportSizeSummaryPDF = () => {
+    if (!orders || orders.length === 0) {
+      showToast('ไม่มีข้อมูลออเดอร์ในการส่งออก', 'error');
+      return;
+    }
+
+    const sizeSummary = {};
+    const itemizedList = [];
+    const sizeOrder = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+
+    orders.forEach(o => {
+      if (o.items) {
+        o.items.forEach(it => {
+          const product = it.title || 'ไม่ระบุ';
+          const size = it.size || 'ไม่ระบุ';
+          const qty = it.qty || 1;
+
+          if (productFilter === 'polo_67' && !((o.studentId && o.studentId.startsWith('67')) || (it.studentId && it.studentId.startsWith('67')) || o.year === '3')) return;
+          if (productFilter === 'polo_68' && !((o.studentId && o.studentId.startsWith('68')) || it.productKey === 'polo' || product.includes('รุ่น 68') || product.includes('CPE Polo Shirt'))) return;
+          if (productFilter === 'polo_navy' && !(it.productKey === 'polo_navy' || product.includes('Navy') || product.includes('สีกรมท่า'))) return;
+          if (productFilter === 'jacket' && !((o.studentId && o.studentId.startsWith('69')) || it.productKey === 'jacket' || product.includes('เสื้อคลุม') || product.includes('CPE 69'))) return;
+
+          if (!sizeSummary[product]) sizeSummary[product] = {};
+          sizeSummary[product][size] = (sizeSummary[product][size] || 0) + qty;
+
+          itemizedList.push({
+            product,
+            size,
+            qty,
+            name: o.name || 'นักศึกษา',
+            studentId: o.studentId || '',
+            customName: it.customName || 'ไม่ปักชื่อ'
+          });
+        });
+      }
+    });
+
+    const products = Object.keys(sizeSummary);
+    const allSizes = [...new Set(products.flatMap(p => Object.keys(sizeSummary[p])))];
+    allSizes.sort((a, b) => {
+      const ia = sizeOrder.indexOf(a);
+      const ib = sizeOrder.indexOf(b);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+
+    const todayStr = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showToast('กรุณาอนุญาต Pop-up ในเบราว์เซอร์เพื่อเปิด PDF', 'error');
+      return;
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="th">
+      <head>
+        <meta charset="UTF-8">
+        <title>ใบสรุปรายการสั่งผลิตเสื้อ & ข้อความปัก (ส่งร้าน)</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+          body { font-family: 'Sarabun', sans-serif; color: #000; background: #fff; padding: 24px; margin: 0; font-size: 13px; line-height: 1.5; }
+          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 16px; }
+          .header h2 { margin: 0 0 4px 0; font-size: 19px; color: #000; }
+          .header p { margin: 0; font-size: 12px; color: #444; }
+          .section-title { font-size: 15px; font-weight: bold; margin: 16px 0 8px 0; background: #f0f0f0; padding: 6px 10px; border-left: 4px solid #000; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+          th, td { border: 1px solid #333; padding: 6px 8px; text-align: center; font-size: 12px; }
+          th { background: #e8e8e8; font-weight: bold; }
+          td.left { text-align: left; }
+          .total-row { background: #f5f5f5; font-weight: bold; }
+          .custom-name-cell { font-weight: bold; color: #000; background: #fafafa; }
+          @media print { body { padding: 0; } .no-print { display: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="no-print" style="margin-bottom: 15px; text-align: right;">
+          <button onclick="window.print()" style="padding: 8px 18px; font-size: 13px; font-weight: bold; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer;">
+            🖨️ พิมพ์เอกสาร / บันทึกเป็น PDF (Save as PDF)
+          </button>
+        </div>
+
+        <div class="header">
+          <h2>ใบสรุปยอดสั่งผลิตเสื้อ & รายการปักชื่อ (สำหรับส่งโรงงาน/ร้านปัก)</h2>
+          <p>สาขาวิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม</p>
+          <p>วันที่ออกเอกสาร: ${todayStr}</p>
+        </div>
+
+        <div class="section-title">1. สรุปจำนวนยอดสั่งผลิตแยกตามประเภทสินค้าและไซส์ (Size Totals)</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align: left;">รายการสินค้า / สี</th>
+              ${allSizes.map(s => `<th>${s}</th>`).join('')}
+              <th>รวมทั้งหมด (ตัว)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${products.map(p => {
+              const rowTotal = allSizes.reduce((sum, s) => sum + (sizeSummary[p][s] || 0), 0);
+              return `
+                <tr>
+                  <td class="left" style="font-weight: bold;">${p}</td>
+                  ${allSizes.map(s => `<td>${sizeSummary[p][s] || 0}</td>`).join('')}
+                  <td style="font-weight: bold;">${rowTotal}</td>
+                </tr>
+              `;
+            }).join('')}
+            <tr class="total-row">
+              <td class="left">รวมทุกรายการสินค้า</td>
+              ${allSizes.map(s => {
+                const colTotal = products.reduce((sum, p) => sum + (sizeSummary[p][s] || 0), 0);
+                return `<td>${colTotal}</td>`;
+              }).join('')}
+              <td style="font-size: 14px;">${itemizedList.reduce((sum, i) => sum + (i.qty || 1), 0)} ตัว</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">2. รายการข้อความปักชื่อแยกตามเสื้อและไซส์ (Embroidery Job Sheet)</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px;">ลำดับ</th>
+              <th style="text-align: left;">สินค้า / สี</th>
+              <th style="width: 55px;">ไซส์</th>
+              <th style="text-align: left;">ชื่อผู้สั่ง (รหัสนักศึกษา)</th>
+              <th style="text-align: left;">ข้อความปักชื่อบนเสื้อ (ปักว่าอะไร)</th>
+              <th style="width: 55px;">จำนวน</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemizedList.map((it, idx) => `
+              <tr>
+                <td>${idx + 1}</td>
+                <td class="left">${it.product}</td>
+                <td><strong>${it.size}</strong></td>
+                <td class="left">${it.name} (${it.studentId})</td>
+                <td class="left custom-name-cell">${it.customName || '- ไม่ปักชื่อ -'}</td>
+                <td>${it.qty || 1} ตัว</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    showToast('📄 เปิดรายงาน PDF สำหรับส่งร้านเรียบร้อยแล้ว!', 'success');
+  };
 
   const filteredOrders = orders.filter(o => {
     const matchSearch = (o.id || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -2673,6 +2922,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
     }
     return sum + (o.total || 350);
   }, 0);
+
   const totalItemsCount = orders.reduce((sum, o) => sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0);
 
   return (
@@ -2765,10 +3015,12 @@ function AdminDashboardModal({ isOpen, onClose }) {
             })}
           </div>
 
-          {/* Size Summary */}
+          {/* Size Summary Card & Export Excel/CSV Action */}
           {(() => {
             const sizeSummary = {};
+            const itemizedList = [];
             const sizeOrder = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+
             orders.forEach(o => {
               if (o.items) {
                 o.items.forEach(it => {
@@ -2783,9 +3035,22 @@ function AdminDashboardModal({ isOpen, onClose }) {
 
                   if (!sizeSummary[product]) sizeSummary[product] = {};
                   sizeSummary[product][size] = (sizeSummary[product][size] || 0) + qty;
+
+                  itemizedList.push({
+                    orderId: o.id,
+                    studentId: o.studentId,
+                    name: o.name,
+                    phone: o.phone,
+                    status: o.status,
+                    product,
+                    size,
+                    qty,
+                    customName: it.customName || ''
+                  });
                 });
               }
             });
+
             const products = Object.keys(sizeSummary);
             const allSizes = [...new Set(products.flatMap(p => Object.keys(sizeSummary[p])))];
             allSizes.sort((a, b) => {
@@ -2793,51 +3058,133 @@ function AdminDashboardModal({ isOpen, onClose }) {
               const ib = sizeOrder.indexOf(b);
               return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
             });
+
             return (
               <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
-                <h4 style={{ color: 'var(--accent-gold-bright)', marginBottom: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  📊 สรุปจำนวนสั่งแยกตามไซส์
-                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                  <h4 style={{ color: 'var(--accent-gold-bright)', margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    📊 สรุปจำนวนสั่งแยกตามไซส์ & รายชื่อปักชื่อ
+                  </h4>
+
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button 
+                      onClick={exportSizeSummaryPDF}
+                      className="btn"
+                      style={{
+                        background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.83rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 14px rgba(239,68,68,0.3)',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <span>📄 พิมพ์ / โหลด PDF ส่งร้านปัก</span>
+                    </button>
+
+                    <button 
+                      onClick={exportSizeSummaryCSV}
+                      className="btn"
+                      style={{
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.83rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 14px rgba(16,185,129,0.3)',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <span>📊 ส่งออก Excel (.CSV)</span>
+                    </button>
+                  </div>
+                </div>
+
                 {products.length === 0 ? (
                   <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '10px' }}>ยังไม่มีข้อมูลออเดอร์</div>
                 ) : (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', color: '#fff', fontSize: '0.85rem' }}>
-                      <thead>
-                        <tr style={{ background: '#090a0f', borderBottom: '1px solid var(--border-gold)' }}>
-                          <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--accent-gold-bright)' }}>สินค้า</th>
-                          {allSizes.map(s => (
-                            <th key={s} style={{ padding: '8px 10px', color: '#38bdf8', fontWeight: 'bold' }}>{s}</th>
-                          ))}
-                          <th style={{ padding: '8px 10px', color: '#22c55e', fontWeight: 'bold' }}>รวม</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {products.map(product => {
-                          const rowTotal = allSizes.reduce((sum, s) => sum + (sizeSummary[product][s] || 0), 0);
-                          return (
-                            <tr key={product} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                              <td style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 'bold', color: '#fff' }}>{product}</td>
-                              {allSizes.map(s => (
-                                <td key={s} style={{ padding: '8px 10px', color: sizeSummary[product][s] ? '#eab308' : 'var(--text-muted)', fontWeight: sizeSummary[product][s] ? 'bold' : 'normal' }}>
-                                  {sizeSummary[product][s] || 0}
-                                </td>
-                              ))}
-                              <td style={{ padding: '8px 10px', color: '#22c55e', fontWeight: 'bold', fontSize: '1rem' }}>{rowTotal}</td>
-                            </tr>
-                          );
-                        })}
-                        <tr style={{ background: 'rgba(234,179,8,0.08)', borderTop: '2px solid var(--accent-gold)' }}>
-                          <td style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 'bold', color: 'var(--accent-gold-bright)' }}>รวมทั้งหมด</td>
-                          {allSizes.map(s => {
-                            const colTotal = products.reduce((sum, p) => sum + (sizeSummary[p][s] || 0), 0);
-                            return <td key={s} style={{ padding: '8px 10px', color: 'var(--accent-gold-bright)', fontWeight: 'bold', fontSize: '1rem' }}>{colTotal}</td>;
+                  <>
+                    <div style={{ overflowX: 'auto', marginBottom: '16px' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', color: '#fff', fontSize: '0.85rem' }}>
+                        <thead>
+                          <tr style={{ background: '#090a0f', borderBottom: '1px solid var(--border-gold)' }}>
+                            <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--accent-gold-bright)' }}>สินค้า</th>
+                            {allSizes.map(s => (
+                              <th key={s} style={{ padding: '8px 10px', color: '#38bdf8', fontWeight: 'bold' }}>{s}</th>
+                            ))}
+                            <th style={{ padding: '8px 10px', color: '#22c55e', fontWeight: 'bold' }}>รวม</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {products.map(product => {
+                            const rowTotal = allSizes.reduce((sum, s) => sum + (sizeSummary[product][s] || 0), 0);
+                            return (
+                              <tr key={product} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                <td style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 'bold', color: '#fff' }}>{product}</td>
+                                {allSizes.map(s => (
+                                  <td key={s} style={{ padding: '8px 10px', color: sizeSummary[product][s] ? '#eab308' : 'var(--text-muted)', fontWeight: sizeSummary[product][s] ? 'bold' : 'normal' }}>
+                                    {sizeSummary[product][s] || 0}
+                                  </td>
+                                ))}
+                                <td style={{ padding: '8px 10px', color: '#22c55e', fontWeight: 'bold', fontSize: '1rem' }}>{rowTotal}</td>
+                              </tr>
+                            );
                           })}
-                          <td style={{ padding: '8px 10px', color: '#22c55e', fontWeight: 'bold', fontSize: '1.1rem' }}>{totalItemsCount}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                          <tr style={{ background: 'rgba(234,179,8,0.08)', borderTop: '2px solid var(--accent-gold)' }}>
+                            <td style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 'bold', color: 'var(--accent-gold-bright)' }}>รวมทั้งหมด</td>
+                            {allSizes.map(s => {
+                              const colTotal = products.reduce((sum, p) => sum + (sizeSummary[p][s] || 0), 0);
+                              return <td key={s} style={{ padding: '8px 10px', color: 'var(--accent-gold-bright)', fontWeight: 'bold', fontSize: '1rem' }}>{colTotal}</td>;
+                            })}
+                            <td style={{ padding: '8px 10px', color: '#22c55e', fontWeight: 'bold', fontSize: '1.1rem' }}>{totalItemsCount}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Detailed Embroidery List Section */}
+                    <div style={{ marginTop: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', padding: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <h5 style={{ color: 'var(--accent-gold-bright)', margin: 0, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          🧵 รายชื่อผู้สั่งและข้อความปักชื่อแยกตามเสื้อ & ไซส์ ({itemizedList.length} รายการ)
+                        </h5>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
+                        {itemizedList.map((item, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.4)', padding: '8px 12px', borderRadius: '6px', fontSize: '0.82rem', flexWrap: 'wrap', gap: '8px' }}>
+                            <div>
+                              <span style={{ color: 'var(--accent-gold-bright)', fontWeight: 'bold', marginRight: '8px' }}>[{item.product}]</span>
+                              <span style={{ color: '#38bdf8', fontWeight: 'bold', marginRight: '10px' }}>ไซส์: {item.size}</span>
+                              <span style={{ color: '#fff', fontWeight: 'bold' }}>👤 {item.name} ({item.studentId})</span>
+                              {item.phone && <span style={{ color: 'var(--text-muted)', marginLeft: '8px' }}>📞 {item.phone}</span>}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span style={{ background: item.customName ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.05)', color: item.customName ? '#fde047' : 'var(--text-muted)', padding: '2px 8px', borderRadius: '4px', border: item.customName ? '1px solid rgba(234,179,8,0.4)' : '1px solid transparent' }}>
+                                🧵 {item.customName ? `ปักชื่อ: "${item.customName}"` : '(ไม่ปักชื่อ)'}
+                              </span>
+                              <span className={`status-badge status-${item.status}`} style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
+                                {item.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             );
