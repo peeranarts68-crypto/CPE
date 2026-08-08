@@ -26,8 +26,8 @@ const {
 
 const { useState, useEffect, useContext, createContext } = React;
 
-// Fixed Universal Order Deadline (Target: Saturday 8 August 2026 at 14:00:00 PM Bangkok Time)
-const FIXED_ORDER_DEADLINE = new Date('2026-08-08T14:00:00+07:00').getTime();
+// Fixed Universal Order Deadline (Target: Saturday 8 August 2026 at 14:40:00 PM Bangkok Time)
+const FIXED_ORDER_DEADLINE = new Date('2026-08-08T14:40:00+07:00').getTime();
 
 const calculateTimeLeft = (targetTime = FIXED_ORDER_DEADLINE) => {
   const diff = targetTime - Date.now();
@@ -521,7 +521,7 @@ function App() {
           setCart={setCart}
           onCheckout={() => {
             if (isExpired) {
-              showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:00 น.)', 'error');
+              showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:40 น.)', 'error');
               return;
             }
             setIsCartOpen(false);
@@ -647,7 +647,7 @@ function CountdownBanner({ isExpired, timeLeft }) {
               letterSpacing: '0.3px',
               textShadow: isExpired ? 'none' : '0 0 12px rgba(245,208,97,0.4)'
             }}>
-              {isExpired ? 'ปิดรับการสั่งซื้อเสื้อแล้ว (หมดระยะเวลาสั่งจอง)' : 'นับถอยหลังปิดรับออเดอร์สั่งจองเสื้อ (กำหนดปิด เสาร์ที่ 8 ส.ค. เวลา 14:00 น.)'}
+              {isExpired ? 'ปิดรับการสั่งซื้อเสื้อแล้ว (หมดระยะเวลาสั่งจอง)' : 'นับถอยหลังปิดรับออเดอร์สั่งจองเสื้อ (กำหนดปิด เสาร์ที่ 8 ส.ค. เวลา 14:40 น.)'}
             </h4>
             <p style={{ color: 'var(--text-sub)', margin: 0, fontSize: '0.83rem', marginTop: '3px' }}>
               {isExpired 
@@ -870,7 +870,7 @@ function HeroSlider({ onSelectProduct, isExpired, showToast }) {
                   <button 
                     onClick={() => {
                       if (isExpired) {
-                        if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:00 น.)', 'error');
+                        if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:40 น.)', 'error');
                         return;
                       }
                       onSelectProduct('polo');
@@ -899,7 +899,7 @@ function HeroSlider({ onSelectProduct, isExpired, showToast }) {
                   <button 
                     onClick={() => {
                       if (isExpired) {
-                        if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:00 น.)', 'error');
+                        if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:40 น.)', 'error');
                         return;
                       }
                       onSelectProduct('polo_navy');
@@ -1063,7 +1063,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
 
   const handleAddToCart = () => {
     if (isExpired) {
-      showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:00 น.)', 'error');
+      showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:40 น.)', 'error');
       return;
     }
     if (!currentUser) {
@@ -2280,7 +2280,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
     if (isExpired) {
-      showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:00 น.)', 'error');
+      showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:40 น.)', 'error');
       return;
     }
     if (!checkoutName || !checkoutStudentId || checkoutStudentId.length !== 10 || !checkoutPhone) {
