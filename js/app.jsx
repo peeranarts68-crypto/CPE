@@ -1467,6 +1467,8 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
     }
   }, [myOrdersHistory]);
 
+  const [pendingExtraDeposit, setPendingExtraDeposit] = useState(null);
+
   // Real-time order update listener
   useEffect(() => {
     if (!trackedOrder || !trackedOrder.firestoreId || !db) return;
@@ -1479,6 +1481,26 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
     });
     return () => unsub();
   }, [trackedOrder?.firestoreId]);
+
+  // Listen for unverified pending extra deposit for this tracked order
+  useEffect(() => {
+    if (!trackedOrder || !trackedOrder.id) { setPendingExtraDeposit(null); return; }
+    const fb = window.CPEFirebase || {};
+    if (!fb.db || !fb.collection || !fb.query || !fb.where || !fb.onSnapshot) return;
+    let unsub = () => {};
+    try {
+      const q = fb.query(fb.collection(fb.db, 'extra_deposits'), fb.where('orderRef', '==', trackedOrder.id));
+      unsub = fb.onSnapshot(q, (snap) => {
+        let pending = null;
+        snap.forEach(d => {
+          const data = d.data();
+          if (data.status === 'pending') pending = { id: d.id, ...data };
+        });
+        setPendingExtraDeposit(pending);
+      });
+    } catch (e) { console.log(e); }
+    return () => unsub();
+  }, [trackedOrder?.id]);
 
   const handleSearch = async (e) => {
     if (e) e.preventDefault();
@@ -1648,6 +1670,38 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>{trackedOrder.date}</p>
                 </div>
               </div>
+
+              {/* Pending Extra Deposit Notice */}
+              {pendingExtraDeposit && (
+                <div style={{ background: 'rgba(234,179,8,0.12)', border: '1px solid #eab308', borderRadius: '8px', padding: '10px 14px', marginBottom: '14px', fontSize: '0.85rem', color: '#fde047', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>⏳</span>
+                  <span>สลิปโอนมัดจำเพิ่ม 100 บาทของคุณส่งเข้าระบบแล้ว (กำลังรอแอดมินตรวจสอบสลิป เมื่อแอดมินกดอนุมัติ ยอดค้างชำระจะถูกหักออกให้อัตโนมัติทันที)</span>
+                </div>
+              )}
+
+              {/* Financial & Deposit Summary Card */}
+              {(() => {
+                const depositPaid = trackedOrder.deposit || 50;
+                const calcTotal = trackedOrder.total || 0;
+                const remainingAmt = trackedOrder.remaining != null ? trackedOrder.remaining : Math.max(0, calcTotal - depositPaid);
+
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', marginBottom: '16px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(245,208,97,0.2)' }}>
+                    <div style={{ background: '#0f1017', border: '1px solid #22c55e', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
+                      <span style={{ color: '#86efac', fontSize: '0.78rem', fontWeight: 600 }}>💰 ชำระมัดจำแล้ว</span>
+                      <h4 style={{ color: '#22c55e', fontSize: '1.25rem', margin: '2px 0 0', fontWeight: 800 }}>฿{depositPaid.toLocaleString()}</h4>
+                    </div>
+                    <div style={{ background: '#0f1017', border: '1px solid #eab308', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
+                      <span style={{ color: '#fde047', fontSize: '0.78rem', fontWeight: 600 }}>⚠️ ยอดค้างชำระ (วันรับเสื้อ)</span>
+                      <h4 style={{ color: '#eab308', fontSize: '1.25rem', margin: '2px 0 0', fontWeight: 800 }}>฿{remainingAmt.toLocaleString()}</h4>
+                    </div>
+                    <div style={{ background: '#0f1017', border: '1px solid var(--border-gold)', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
+                      <span style={{ color: 'var(--text-sub)', fontSize: '0.78rem', fontWeight: 600 }}>🏷️ ยอดเต็มออเดอร์</span>
+                      <h4 style={{ color: '#fff', fontSize: '1.25rem', margin: '2px 0 0', fontWeight: 800 }}>฿{calcTotal.toLocaleString()}</h4>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Order Items Detail Breakdown */}
               {trackedOrder.items && trackedOrder.items.length > 0 && (
@@ -2693,10 +2747,38 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    if (currentUser?.studentId) {
-      setStudentId(currentUser.studentId);
+  const handleSearchWithId = async (sid) => {
+    const searchTarget = sid || studentId;
+    if (!searchTarget || searchTarget.length < 8) {
+      showToast('กรุณากรอกรหัสนักศึกษา 8-10 หลัก', 'error');
+      return;
     }
-  }, [currentUser]);
+    setSearching(true);
+    setFoundOrders([]);
+    try {
+      const fb = window.CPEFirebase || {};
+      if (fb.db && fb.collection && fb.query && fb.where && fb.getDocs) {
+        const q = fb.query(fb.collection(fb.db, 'orders'), fb.where('studentId', '==', searchTarget));
+        const snap = await fb.getDocs(q);
+        const results = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
+        setFoundOrders(results);
+        if (results.length === 0) showToast('ไม่พบออเดอร์ในระบบ ตรวจสอบรหัสอีกครั้ง', 'error');
+        else {
+          setSelectedOrderId(results[0].id || results[0].firestoreId);
+        }
+      }
+    } catch (e) {
+      showToast('เกิดข้อผิดพลาดในการค้นหา', 'error');
+    }
+    setSearching(false);
+  };
+
+  useEffect(() => {
+    if (isOpen && currentUser?.studentId) {
+      setStudentId(currentUser.studentId);
+      handleSearchWithId(currentUser.studentId);
+    }
+  }, [isOpen, currentUser]);
 
   if (!isOpen) return null;
 
@@ -2728,28 +2810,7 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
     );
   }
 
-  const handleSearch = async () => {
-    if (!studentId || studentId.length < 8) {
-      showToast('กรุณากรอกรหัสนักศึกษา 8-10 หลัก', 'error');
-      return;
-    }
-    setSearching(true);
-    setFoundOrders([]);
-    try {
-      const fb = window.CPEFirebase || {};
-      if (fb.db && fb.collection && fb.query && fb.where && fb.getDocs) {
-        const q = fb.query(fb.collection(fb.db, 'orders'), fb.where('studentId', '==', studentId));
-        const snap = await fb.getDocs(q);
-        const results = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
-        setFoundOrders(results);
-        if (results.length === 0) showToast('ไม่พบออเดอร์ในระบบ ตรวจสอบรหัสอีกครั้ง', 'error');
-        else if (results.length === 1) setSelectedOrderId(results[0].id || results[0].firestoreId);
-      }
-    } catch (e) {
-      showToast('เกิดข้อผิดพลาดในการค้นหา', 'error');
-    }
-    setSearching(false);
-  };
+  const handleSearch = () => handleSearchWithId(studentId);
 
   const handleSlipChange = (e) => {
     const file = e.target.files[0];
@@ -2916,8 +2977,25 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
               )}
 
               {foundOrders.length > 0 && (
-                <button type="submit" disabled={isSubmitting || !slipDataUrl || !selectedOrderId} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #f5d061, #d4af37)', color: '#000', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 6px 20px rgba(245,208,97,0.4)' }}>
-                  {isSubmitting ? '⏳ กำลังส่ง...' : '💳 ยืนยันการจ่ายมัดจำเพิ่ม 100 บาท'}
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting} 
+                  style={{ 
+                    width: '100%', 
+                    padding: '16px', 
+                    background: (!slipDataUrl || !selectedOrderId) ? 'linear-gradient(135deg, #d4af37, #f5d061)' : 'linear-gradient(135deg, #22c55e, #16a34a)', 
+                    color: (!slipDataUrl || !selectedOrderId) ? '#000' : '#fff', 
+                    border: 'none', 
+                    borderRadius: '12px', 
+                    fontSize: '1rem', 
+                    fontWeight: 800, 
+                    cursor: 'pointer', 
+                    boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent'
+                  }}
+                >
+                  {isSubmitting ? '⏳ กำลังส่งหลักฐาน...' : '💳 ยืนยันการจ่ายมัดจำเพิ่ม 100 บาท'}
                 </button>
               )}
             </form>
