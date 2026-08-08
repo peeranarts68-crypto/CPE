@@ -41,6 +41,16 @@ const calculateTimeLeft = (targetTime = FIXED_ORDER_DEADLINE) => {
   return { total: diff, days, hours, minutes, seconds };
 };
 
+const formatDeadlineText = (ts) => {
+  if (!ts) return '14:40 น.';
+  try {
+    const d = new Date(ts);
+    const time = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+    const date = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', weekday: 'short' }).format(d);
+    return `${time} น. (${date})`;
+  } catch (e) { return '14:40 น.'; }
+};
+
 // Helper to prevent async network requests from hanging indefinitely
 const withTimeout = (promise, ms = 4000) => {
   return Promise.race([
@@ -172,6 +182,7 @@ function App() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isExtraDepositModalOpen, setIsExtraDepositModalOpen] = useState(false);
 
   // Real-time Dynamic Sales Settings State
   const [salesSettings, setSalesSettings] = useState({
@@ -422,6 +433,12 @@ function App() {
               <a href="#hero" className="nav-link active">หน้าแรก</a>
               <a href="#ordering" className="nav-link">สั่งซื้อเสื้อสาขา</a>
               {currentUser && <a href="#tracking" className="nav-link">ติดตามสถานะ</a>}
+              <button
+                onClick={() => setIsExtraDepositModalOpen(true)}
+                style={{ background: 'none', border: 'none', color: '#f5d061', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600, padding: '4px 8px', textDecoration: 'underline dotted' }}
+              >
+                💳 จ่ายมัดจำเพิ่ม
+              </button>
             </nav>
 
             <div className="nav-actions">
@@ -507,7 +524,8 @@ function App() {
         <HeroSlider onSelectProduct={selectProductFromBanner} isExpired={isExpired} showToast={showToast} />
 
         {/* COUNTDOWN TIMER BANNER (BELOW HERO BANNER) */}
-        <CountdownBanner isExpired={isExpired} timeLeft={timeLeft} />
+        {(() => { window._effectiveDeadline = effectiveDeadline; return null; })()}
+        <CountdownBanner isExpired={isExpired} timeLeft={timeLeft} salesMode={salesSettings.salesMode} effectiveDeadline={effectiveDeadline} />
 
         {/* FEATURES GRID */}
         <Features />
@@ -582,6 +600,13 @@ function App() {
           onClose={() => setIsAdminModalOpen(false)}
         />
 
+        {/* EXTRA DEPOSIT MODAL */}
+        <ExtraDepositModal
+          isOpen={isExtraDepositModalOpen}
+          onClose={() => setIsExtraDepositModalOpen(false)}
+          showToast={showToast}
+        />
+
         {/* FOOTER */}
         <Footer />
 
@@ -591,7 +616,7 @@ function App() {
 }
 
 // COUNTDOWN BANNER COMPONENT
-function CountdownBanner({ isExpired, timeLeft }) {
+function CountdownBanner({ isExpired, timeLeft, salesMode, effectiveDeadline }) {
   return (
     <div className="container" style={{ marginTop: '24px', marginBottom: '16px' }}>
       <div style={{
@@ -668,13 +693,25 @@ function CountdownBanner({ isExpired, timeLeft }) {
               letterSpacing: '0.3px',
               textShadow: isExpired ? 'none' : '0 0 12px rgba(245,208,97,0.4)'
             }}>
-              {isExpired ? 'ปิดรับการสั่งซื้อเสื้อแล้ว (หมดระยะเวลาสั่งจอง)' : 'นับถอยหลังปิดรับออเดอร์สั่งจองเสื้อ (กำหนดปิด เสาร์ที่ 8 ส.ค. เวลา 14:40 น.)'}
+              {isExpired
+                ? 'ปิดรับการสั่งซื้อเสื้อแล้ว (หมดระยะเวลาสั่งจอง)'
+                : `นับถอยหลังปิดรับออเดอร์สั่งจองเสื้อ (กำหนดปิด ${formatDeadlineText(effectiveDeadline)})`}
             </h4>
             <p style={{ color: 'var(--text-sub)', margin: 0, fontSize: '0.83rem', marginTop: '3px' }}>
               {isExpired 
                 ? 'ระบบปิดรับคำสั่งซื้อเสื้อทุกรุ่นแล้ว เนื่องจากถึงกำหนดหมดระยะเวลาที่ตั้งไว้' 
                 : 'กรุณาส่งออเดอร์และโอนเงินมัดจำก่อนหมดเวลาถอยหลังเพื่อรักษาสิทธิ์สั่งผลิต'}
             </p>
+            {salesMode === 'open' && (
+              <span style={{ display: 'inline-block', marginTop: '6px', background: '#16a34a', color: '#fff', fontSize: '0.72rem', fontWeight: 700, borderRadius: '6px', padding: '2px 10px' }}>
+                🟢 แอดมินเปิดรับออเดอร์แบบไม่จำกัดเวลา
+              </span>
+            )}
+            {salesMode === 'closed' && (
+              <span style={{ display: 'inline-block', marginTop: '6px', background: '#dc2626', color: '#fff', fontSize: '0.72rem', fontWeight: 700, borderRadius: '6px', padding: '2px 10px' }}>
+                🔴 แอดมินปิดรับออเดอร์ชั่วคราว
+              </span>
+            )}
           </div>
         </div>
 
@@ -2258,6 +2295,8 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
   const [slipFile, setSlipFile] = useState(null);
   const [slipDataUrl, setSlipDataUrl] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasExistingOrder, setHasExistingOrder] = useState(false);
+  const [checkingExisting, setCheckingExisting] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -2266,6 +2305,26 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       if (currentUser.phone) setCheckoutPhone(currentUser.phone);
     }
   }, [currentUser]);
+
+  // Check if studentId already has an existing order
+  const checkExistingOrder = async (sid) => {
+    if (!sid || sid.length < 8) { setHasExistingOrder(false); return; }
+    setCheckingExisting(true);
+    try {
+      const fb = window.CPEFirebase || {};
+      if (fb.db && fb.collection && fb.query && fb.where && fb.getDocs) {
+        const q = fb.query(fb.collection(fb.db, 'orders'), fb.where('studentId', '==', sid));
+        const snap = await fb.getDocs(q);
+        setHasExistingOrder(!snap.empty);
+      }
+    } catch (e) { console.log('Check existing order error:', e); }
+    setCheckingExisting(false);
+  };
+
+  useEffect(() => {
+    if (checkoutStudentId.length === 10) checkExistingOrder(checkoutStudentId);
+    else setHasExistingOrder(false);
+  }, [checkoutStudentId]);
 
   if (!isOpen) return null;
 
@@ -2315,7 +2374,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
 
     setIsSubmitting(true);
 
-    const depositAmount = 50;
+    const depositAmount = hasExistingOrder ? 150 : 50;
     const newOrder = {
       id: orderId,
       userUid: currentUser?.uid || null,
@@ -2411,7 +2470,9 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
         }}
       >
         <div className="modal-header" style={{ borderBottom: '1px solid var(--border-color)', padding: '16px 20px' }}>
-          <h3 className="modal-title" style={{ color: 'var(--accent-gold-bright)', fontSize: '1.2rem' }}>💰 ชำระค่ามัดจำ 50 บาท (สแกน QR Code)</h3>
+          <h3 className="modal-title" style={{ color: 'var(--accent-gold-bright)', fontSize: '1.2rem' }}>
+            {hasExistingOrder ? '💳 ชำระค่ามัดจำ 150 บาท (สแกน QR Code)' : '💰 ชำระค่ามัดจำ 50 บาท (สแกน QR Code)'}
+          </h3>
           <button className="close-btn" onClick={onClose} style={{ color: '#fff', fontSize: '1.8rem' }}>&times;</button>
         </div>
 
@@ -2423,19 +2484,30 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
               <div style={{ flex: '1 1 300px' }}>
                 <h4 style={{ color: '#fff', fontSize: '0.95rem', marginBottom: '10px' }}>1. สแกน QR Code ชำระค่ามัดจำ</h4>
                 <div style={{ background: '#fff', padding: '14px', borderRadius: '12px', textAlign: 'center', boxShadow: '0 8px 25px rgba(0,0,0,0.5)' }}>
-                  <img 
-                    src="assets/deposit_qr.png" 
-                    alt="QR Code ชำระค่ามัดจำ 50 บาท"
-                    style={{ width: '100%', maxWidth: '260px', height: 'auto', margin: '0 auto', display: 'block', borderRadius: '8px' }}
-                  />
-                  <div style={{ background: '#0f1017', border: '1px solid #22c55e', borderRadius: '8px', padding: '10px', marginTop: '12px' }}>
-                    <p style={{ color: '#22c55e', fontWeight: '700', fontSize: '1.4rem', margin: 0 }}>
-                      💰 ค่ามัดจำ: ฿50
+                  {checkingExisting ? (
+                    <div style={{ padding: '40px 0', color: '#888', fontSize: '0.9rem' }}>⏳ กำลังตรวจสอบออเดอร์เดิม...</div>
+                  ) : (
+                    <img 
+                      src={hasExistingOrder ? 'assets/extra_deposit_qr.png' : 'assets/deposit_qr.png'}
+                      alt={hasExistingOrder ? 'QR Code ชำระมัดจำ 150 บาท' : 'QR Code ชำระมัดจำ 50 บาท'}
+                      style={{ width: '100%', maxWidth: '260px', height: 'auto', margin: '0 auto', display: 'block', borderRadius: '8px' }}
+                    />
+                  )}
+                  <div style={{ background: '#0f1017', border: `1px solid ${hasExistingOrder ? '#f59e0b' : '#22c55e'}`, borderRadius: '8px', padding: '10px', marginTop: '12px' }}>
+                    <p style={{ color: hasExistingOrder ? '#f59e0b' : '#22c55e', fontWeight: '700', fontSize: '1.4rem', margin: 0 }}>
+                      {hasExistingOrder ? '💳 ค่ามัดจำ: ฿150 (รวม +฿100 สำหรับออเดอร์เพิ่ม)' : '💰 ค่ามัดจำ: ฿50'}
                     </p>
                     <p style={{ color: '#94A3B8', fontSize: '0.8rem', marginTop: '4px', margin: 0 }}>
-                      ยอดรวมทั้งหมด: ฿{totalAmount.toLocaleString()} (ส่วนที่เหลือ ฿{(totalAmount - 50).toLocaleString()} จะแจ้งอีกที)
+                      ยอดรวมทั้งหมด: ฿{totalAmount.toLocaleString()} (ส่วนที่เหลือ ฿{(totalAmount - (hasExistingOrder ? 150 : 50)).toLocaleString()} จะแจ้งอีกที)
                     </p>
                   </div>
+                  {hasExistingOrder && (
+                    <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid #f59e0b', borderRadius: '8px', padding: '10px', marginTop: '10px', textAlign: 'left' }}>
+                      <p style={{ color: '#fbbf24', fontSize: '0.8rem', margin: 0, fontWeight: 600 }}>
+                        ⚠️ คุณมีออเดอร์เดิมอยู่แล้ว จึงต้องชำระมัดจำเพิ่มอีก ฿100 รวมเป็น ฿150 ทั้งหมด — กรุณาสแกน QR ด้านบนและอัพโหลดสลิป
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2590,6 +2662,218 @@ function SizeGuideModal({ isOpen, onClose }) {
   );
 }
 
+// EXTRA DEPOSIT MODAL (ระบบจ่ายมัดจำเพิ่ม 100 บาท)
+function ExtraDepositModal({ isOpen, onClose, showToast }) {
+  const [studentId, setStudentId] = useState('');
+  const [foundOrders, setFoundOrders] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [slipDataUrl, setSlipDataUrl] = useState(null);
+  const [selectedOrderId, setSelectedOrderId] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSearch = async () => {
+    if (!studentId || studentId.length < 8) {
+      showToast('กรุณากรอกรหัสนักศึกษา 8-10 หลัก', 'error');
+      return;
+    }
+    setSearching(true);
+    setFoundOrders([]);
+    try {
+      const fb = window.CPEFirebase || {};
+      if (fb.db && fb.collection && fb.query && fb.where && fb.getDocs) {
+        const q = fb.query(fb.collection(fb.db, 'orders'), fb.where('studentId', '==', studentId));
+        const snap = await fb.getDocs(q);
+        const results = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
+        setFoundOrders(results);
+        if (results.length === 0) showToast('ไม่พบออเดอร์ในระบบ ตรวจสอบรหัสอีกครั้ง', 'error');
+        else if (results.length === 1) setSelectedOrderId(results[0].id || results[0].firestoreId);
+      }
+    } catch (e) {
+      showToast('เกิดข้อผิดพลาดในการค้นหา', 'error');
+    }
+    setSearching(false);
+  };
+
+  const handleSlipChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 800; let w = img.width, h = img.height;
+        if (w > h && w > MAX) { h = h * MAX / w; w = MAX; }
+        else if (h > MAX) { w = w * MAX / h; h = MAX; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        setSlipDataUrl(canvas.toDataURL('image/jpeg', 0.6));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedOrderId) {
+      showToast('กรุณาเลือกออเดอร์และอัพโหลดสลิปให้ครบถ้วนก่อน', 'error');
+      return;
+    }
+    if (!slipDataUrl) {
+      showToast('กรุณาอัพโหลดสลิปการโอนเงินก่อน', 'error');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const fb = window.CPEFirebase || {};
+      if (fb.db && fb.addDoc && fb.collection) {
+        await fb.addDoc(fb.collection(fb.db, 'extra_deposits'), {
+          studentId,
+          orderRef: selectedOrderId,
+          slipUrl: slipDataUrl,
+          amount: 100,
+          status: 'pending',
+          date: new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date())
+        });
+        setSubmitted(true);
+        showToast('✅ ส่งหลักฐานมัดจำเพิ่มเรียบร้อยแล้ว รอแอดมินยืนยัน!', 'success');
+      }
+    } catch (err) {
+      console.log('Extra deposit error:', err);
+      showToast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
+    }
+    setIsSubmitting(false);
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#10121a', border: '1px solid #d4af37', borderRadius: '20px', width: '100%', maxWidth: '600px', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 30px 80px rgba(0,0,0,0.95)' }}>
+        
+        {/* Header */}
+        <div style={{ background: 'linear-gradient(135deg, #1b0a0e, #0a0b10)', borderBottom: '1px solid #d4af37', padding: '18px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ color: '#f5d061', margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>💳 จ่ายมัดจำเพิ่ม 100 บาท</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: '3px 0 0' }}>สำหรับคนที่มีออเดอร์เดิมอยู่แล้ว (ไม่เกี่ยวกับการสั่งเสื้อใหม่)</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.8rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
+        </div>
+
+        <div style={{ padding: '24px' }}>
+          {submitted ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+              <div style={{ fontSize: '4rem', marginBottom: '16px' }}>✅</div>
+              <h3 style={{ color: '#22c55e', marginBottom: '8px' }}>ส่งหลักฐานเรียบร้อยแล้ว!</h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>รอแอดมินยืนยันสลิปของคุณ หากเรียบร้อยแล้วจะอัปเดตสถานะให้ทันที</p>
+              <button onClick={onClose} style={{ marginTop: '20px', padding: '10px 32px', background: 'linear-gradient(135deg, #f5d061, #d4af37)', color: '#000', border: 'none', borderRadius: '10px', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer' }}>ปิดหน้าต่าง</button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              {/* Step 1: Search */}
+              <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ color: '#f5d061', fontSize: '0.95rem', marginBottom: '10px' }}>1. ค้นหาออเดอร์ของคุณ</h4>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="รหัสนักศึกษา 10 หลัก"
+                    value={studentId}
+                    maxLength={10}
+                    onChange={e => setStudentId(e.target.value.replace(/\D/g, ''))}
+                    style={{ flex: 1, padding: '10px 14px', background: '#18181b', border: '1px solid #d4af37', borderRadius: '8px', color: '#fff', fontSize: '0.9rem' }}
+                  />
+                  <button type="button" onClick={handleSearch} disabled={searching} style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #f5d061, #d4af37)', color: '#000', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    {searching ? 'ค้นหา...' : '🔍 ค้นหา'}
+                  </button>
+                </div>
+                {foundOrders.length > 0 && (
+                  <div style={{ marginTop: '12px', background: '#0a0b10', border: '1px solid #1e293b', borderRadius: '10px', padding: '12px' }}>
+                    <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '8px' }}>พบ {foundOrders.length} ออเดอร์ — เลือกออเดอร์ที่ต้องการจ่ายมัดจำเพิ่ม:</p>
+                    {foundOrders.map(o => (
+                      <label key={o.firestoreId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderRadius: '6px', background: selectedOrderId === (o.id || o.firestoreId) ? 'rgba(245,208,97,0.1)' : 'transparent', cursor: 'pointer', marginBottom: '4px' }}>
+                        <input type="radio" name="orderSelect" value={o.id || o.firestoreId} checked={selectedOrderId === (o.id || o.firestoreId)} onChange={() => setSelectedOrderId(o.id || o.firestoreId)} />
+                        <span style={{ color: '#fff', fontSize: '0.85rem' }}>
+                          <strong style={{ color: '#f5d061' }}>{o.id || o.firestoreId}</strong>
+                          {' — '}{o.name} | ยอดรวม ฿{(o.total || 0).toLocaleString()} | สถานะ: {o.status}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2: QR Code */}
+              {foundOrders.length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ color: '#f5d061', fontSize: '0.95rem', marginBottom: '10px' }}>2. สแกน QR Code โอนมัดจำเพิ่ม 100 บาท</h4>
+                  <div style={{ background: '#fff', padding: '14px', borderRadius: '12px', textAlign: 'center', maxWidth: '240px', margin: '0 auto' }}>
+                    <img src="assets/extra_deposit_qr.png" alt="QR Code มัดจำเพิ่ม 100 บาท" style={{ width: '100%', borderRadius: '6px' }} />
+                    <p style={{ color: '#ef4444', fontWeight: 700, fontSize: '1.2rem', margin: '10px 0 0' }}>฿100 บาท เท่านั้น</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Upload Slip (Luxury Custom Dropzone) */}
+              {foundOrders.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h4 style={{ color: '#f5d061', fontSize: '0.95rem', marginBottom: '10px' }}>3. อัพโหลดสลิปการโอน 100 บาท</h4>
+                  <label 
+                    style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: slipDataUrl ? '16px' : '28px 16px', 
+                      border: slipDataUrl ? '2px solid #22c55e' : '2px dashed #f5d061', 
+                      borderRadius: '12px', 
+                      background: slipDataUrl ? 'rgba(34,197,94,0.08)' : 'rgba(245,208,97,0.05)', 
+                      cursor: 'pointer', 
+                      transition: 'all 0.3s ease',
+                      textAlign: 'center'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = slipDataUrl ? '#22c55e' : '#f5d061'; e.currentTarget.style.background = slipDataUrl ? 'rgba(34,197,94,0.12)' : 'rgba(245,208,97,0.1)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = slipDataUrl ? '#22c55e' : 'rgba(245,208,97,0.4)'; e.currentTarget.style.background = slipDataUrl ? 'rgba(34,197,94,0.08)' : 'rgba(245,208,97,0.05)'; }}
+                  >
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleSlipChange} 
+                      style={{ display: 'none' }} 
+                    />
+                    {slipDataUrl ? (
+                      <>
+                        <div style={{ fontSize: '2.2rem' }}>✅</div>
+                        <span style={{ color: '#22c55e', fontWeight: '700', fontSize: '0.95rem' }}>แนบสลิปการโอนเรียบร้อยแล้ว!</span>
+                        <img src={slipDataUrl} alt="สลิป" style={{ maxWidth: '180px', maxHeight: '180px', borderRadius: '8px', border: '1px solid #22c55e', marginTop: '6px' }} />
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: '4px' }}>แตะที่นี่เพื่อเปลี่ยนไฟล์สลิป</span>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: '2.5rem' }}>📎</div>
+                        <span style={{ color: '#f5d061', fontWeight: '700', fontSize: '0.95rem' }}>แตะที่นี่เพื่อเลือกไฟล์สลิปการโอน</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>รองรับไฟล์รูปภาพ JPG, PNG, HEIC</span>
+                      </>
+                    )}
+                  </label>
+                </div>
+              )}
+
+              {foundOrders.length > 0 && (
+                <button type="submit" disabled={isSubmitting || !slipDataUrl || !selectedOrderId} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #f5d061, #d4af37)', color: '#000', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 6px 20px rgba(245,208,97,0.4)' }}>
+                  {isSubmitting ? '⏳ กำลังส่ง...' : '💳 ยืนยันการจ่ายมัดจำเพิ่ม 100 บาท'}
+                </button>
+              )}
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 9. ADMIN DASHBOARD MODAL COMPONENT (Admin ID: 6800000000)
 function AdminDashboardModal({ isOpen, onClose }) {
   const { showToast } = useContext(AuthContext);
@@ -2604,6 +2888,23 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const [salesMode, setSalesMode] = useState('auto');
   const [customDeadline, setCustomDeadline] = useState('2026-08-08T14:40');
   const [savingSettings, setSavingSettings] = useState(false);
+  const [extraDeposits, setExtraDeposits] = useState([]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const fb = window.CPEFirebase || {};
+    if (!fb.db || !fb.collection || !fb.onSnapshot) return;
+    let unsub = () => {};
+    try {
+      const q = fb.collection(fb.db, 'extra_deposits');
+      unsub = fb.onSnapshot(q, (snap) => {
+        const list = [];
+        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+        setExtraDeposits(list);
+      });
+    } catch (e) { console.log(e); }
+    return () => unsub();
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -2641,6 +2942,33 @@ function AdminDashboardModal({ isOpen, onClose }) {
       }
     }
     setSavingSettings(false);
+  };
+
+  const handleVerifyExtraDeposit = async (depItem) => {
+    const fb = window.CPEFirebase || {};
+    if (!fb.db || !fb.setDoc || !fb.doc) return;
+    try {
+      await fb.setDoc(fb.doc(fb.db, 'extra_deposits', depItem.id), {
+        status: 'verified',
+        verifiedAt: new Date().toISOString()
+      }, { merge: true });
+
+      const targetOrder = orders.find(o => o.id === depItem.orderRef || o.firestoreId === depItem.orderRef);
+      if (targetOrder && targetOrder.firestoreId) {
+        const newDeposit = (targetOrder.deposit || 50) + (depItem.amount || 100);
+        const newRemaining = Math.max(0, (targetOrder.total || 0) - newDeposit);
+        await fb.setDoc(fb.doc(fb.db, 'orders', targetOrder.firestoreId), {
+          deposit: newDeposit,
+          remaining: newRemaining
+        }, { merge: true });
+        showToast(`✅ ยืนยันสลิปมัดจำเพิ่มแล้ว! อัปเดตยอดมัดจำออเดอร์ ${targetOrder.id} เป็น ฿${newDeposit} (ค้าง ฿${newRemaining})`, 'success');
+      } else {
+        showToast('✅ ยืนยันสลิปมัดจำเพิ่มเรียบร้อยแล้ว!', 'success');
+      }
+    } catch (e) {
+      console.log('Verify extra deposit error:', e);
+      showToast('เกิดข้อผิดพลาดในการยืนยันสลิป', 'error');
+    }
   };
 
   useEffect(() => {
@@ -3091,12 +3419,14 @@ function AdminDashboardModal({ isOpen, onClose }) {
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-gold)', paddingBottom: '12px' }}>
             {[
               { id: 'all', label: '📦 ทั้งหมดทุกสินค้า', badgeBg: '#3b82f6' },
+              { id: 'deposit_summary', label: '💰 สรุปคนจ่ายมัดจำทั้งหมด', badgeBg: '#10b981' },
               { id: 'polo_67', label: '🎓 ออเดอร์ CPE 67 (ปี 3)', badgeBg: '#a855f7' },
               { id: 'polo_68', label: '👕 เสื้อโปโล CPE 68 (ปี 2)', badgeBg: '#eab308' },
               { id: 'polo_navy', label: '👕 เสื้อโปโล (สีกรมท่า Navy)', badgeBg: '#1e3a8a' },
-              { id: 'jacket', label: '🧥 เสื้อคลุม CPE 69 (ปี 1)', badgeBg: '#10b981' }
+              { id: 'jacket', label: '🧥 เสื้อคลุม CPE 69 (ปี 1)', badgeBg: '#10b981' },
+              { id: 'extra_deposit', label: '💳 มัดจำเพิ่ม 100 บาท', badgeBg: '#f59e0b' }
             ].map(tab => {
-              const count = tab.id === 'all' ? orders.length : orders.filter(o => {
+              const count = tab.id === 'deposit_summary' ? orders.length + extraDeposits.length : tab.id === 'extra_deposit' ? extraDeposits.length : tab.id === 'all' ? orders.length : orders.filter(o => {
                 if (tab.id === 'polo_67') return (o.studentId && o.studentId.startsWith('67')) || o.year === '3' || (o.items && o.items.some(it => it.studentId && it.studentId.startsWith('67')));
                 if (tab.id === 'polo_68') return (o.studentId && o.studentId.startsWith('68')) || o.year === '2' || (o.items && o.items.some(it => it.productKey === 'polo' || (it.title && (it.title.includes('รุ่น 68') || it.title.includes('CPE Polo Shirt')))));
                 if (tab.id === 'polo_navy') return o.items && o.items.some(it => it.productKey === 'polo_navy' || (it.title && (it.title.includes('Navy') || it.title.includes('สีกรมท่า'))));
@@ -3348,8 +3678,168 @@ function AdminDashboardModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Orders Table */}
-          {loading ? (
+          {/* Orders / Extra Deposits / Deposit Summary Table */}
+          {productFilter === 'deposit_summary' ? (
+            <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '12px', padding: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <h4 style={{ color: '#22c55e', margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>
+                  📊 สรุปจำนวนคนและยอดเงินมัดจำทั้งหมด
+                </h4>
+                <span style={{ color: 'var(--text-sub)', fontSize: '0.85rem' }}>
+                  รวมผู้จ่ายมัดจำทั้งหมด: <strong style={{ color: '#22c55e', fontSize: '1.05rem' }}>{orders.length + extraDeposits.length} รายการ</strong>
+                </span>
+              </div>
+
+              {/* Deposit Breakdown Stats Grid */}
+              {(() => {
+                const count50 = orders.filter(o => (o.deposit || 50) === 50).length;
+                const sum50 = count50 * 50;
+                const count150 = orders.filter(o => (o.deposit || 50) === 150).length;
+                const sum150 = count150 * 150;
+                const countExtra100 = extraDeposits.length;
+                const sumExtra100 = extraDeposits.reduce((sum, ed) => sum + (ed.amount || 100), 0);
+                const totalDepositMoney = orders.reduce((sum, o) => sum + (o.deposit || 50), 0) + sumExtra100;
+
+                return (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+                      <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid #22c55e', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                        <span style={{ color: '#86efac', fontSize: '0.82rem', fontWeight: 600 }}>🟢 มัดจำ 50 บาท (ลูกค้าใหม่)</span>
+                        <h3 style={{ color: '#22c55e', fontSize: '1.4rem', margin: '4px 0 2px' }}>{count50} คน</h3>
+                        <span style={{ color: 'var(--text-sub)', fontSize: '0.78rem' }}>รวมเงิน: ฿{sum50.toLocaleString()}</span>
+                      </div>
+
+                      <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid #f59e0b', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                        <span style={{ color: '#fde047', fontSize: '0.82rem', fontWeight: 600 }}>💳 มัดจำ 150 บาท (ลูกค้าเดิม)</span>
+                        <h3 style={{ color: '#f59e0b', fontSize: '1.4rem', margin: '4px 0 2px' }}>{count150} คน</h3>
+                        <span style={{ color: 'var(--text-sub)', fontSize: '0.78rem' }}>รวมเงิน: ฿{sum150.toLocaleString()}</span>
+                      </div>
+
+                      <div style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid #38bdf8', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                        <span style={{ color: '#7dd3fc', fontSize: '0.82rem', fontWeight: 600 }}>⚡ มัดจำเพิ่ม 100 บาท (โอนแยก)</span>
+                        <h3 style={{ color: '#38bdf8', fontSize: '1.4rem', margin: '4px 0 2px' }}>{countExtra100} รายการ</h3>
+                        <span style={{ color: 'var(--text-sub)', fontSize: '0.78rem' }}>รวมเงิน: ฿{sumExtra100.toLocaleString()}</span>
+                      </div>
+
+                      <div style={{ background: 'rgba(212,175,55,0.15)', border: '1px solid #f5d061', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                        <span style={{ color: '#f5d061', fontSize: '0.82rem', fontWeight: 700 }}>🏆 รวมเงินมัดจำทั้งหมด</span>
+                        <h3 style={{ color: '#f5d061', fontSize: '1.5rem', margin: '4px 0 2px' }}>฿{totalDepositMoney.toLocaleString()}</h3>
+                        <span style={{ color: '#fff', fontSize: '0.78rem', fontWeight: 600 }}>{orders.length + countExtra100} รายการรวม</span>
+                      </div>
+                    </div>
+
+                    {/* Complete Student Deposit Table */}
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#fff', fontSize: '0.88rem' }}>
+                        <thead>
+                          <tr style={{ background: '#090a0f', borderBottom: '1px solid var(--border-gold)' }}>
+                            <th style={{ padding: '10px' }}>#</th>
+                            <th style={{ padding: '10px' }}>รหัสนักศึกษา / ชื่อ</th>
+                            <th style={{ padding: '10px' }}>ออเดอร์</th>
+                            <th style={{ padding: '10px' }}>ประเภทมัดจำ</th>
+                            <th style={{ padding: '10px' }}>ยอดมัดจำ</th>
+                            <th style={{ padding: '10px' }}>ยอดเต็มออเดอร์</th>
+                            <th style={{ padding: '10px' }}>สลิป</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {orders.map((o, idx) => (
+                            <tr key={o.firestoreId || o.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                              <td style={{ padding: '10px', color: '#666' }}>{idx + 1}</td>
+                              <td style={{ padding: '10px' }}>
+                                <strong style={{ color: '#fff' }}>{o.name}</strong>
+                                <div style={{ color: '#38bdf8', fontSize: '0.78rem' }}>{o.studentId}</div>
+                              </td>
+                              <td style={{ padding: '10px', color: '#f5d061', fontWeight: 600 }}>{o.id}</td>
+                              <td style={{ padding: '10px' }}>
+                                {(o.deposit || 50) === 150 ? (
+                                  <span style={{ background: 'rgba(245,158,11,0.2)', color: '#f59e0b', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                    💳 ลูกค้าเดิม (150฿)
+                                  </span>
+                                ) : (
+                                  <span style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                    🟢 ลูกค้าใหม่ (50฿)
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: '10px', color: '#22c55e', fontWeight: 'bold', fontSize: '1rem' }}>
+                                ฿{(o.deposit || 50).toLocaleString()}
+                              </td>
+                              <td style={{ padding: '10px', color: 'var(--text-sub)' }}>
+                                ฿{(o.total || 0).toLocaleString()}
+                              </td>
+                              <td style={{ padding: '10px' }}>
+                                {o.slipUrl ? (
+                                  <button onClick={() => setPreviewSlipOrder(o)} style={{ padding: '4px 10px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>
+                                    📄 ดูสลิป
+                                  </button>
+                                ) : <span style={{ color: '#666', fontSize: '0.75rem' }}>ไม่มีสลิป</span>}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          ) : productFilter === 'extra_deposit' ? (
+            <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '12px', padding: '16px' }}>
+              <h4 style={{ color: '#f5d061', marginTop: 0, marginBottom: '14px', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                💳 รายการแจ้งโอนมัดจำเพิ่ม 100 บาท ({extraDeposits.length} รายการ)
+              </h4>
+              {extraDeposits.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>ยังไม่มีรายการแจ้งโอนมัดจำเพิ่ม</div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#fff', fontSize: '0.88rem' }}>
+                    <thead>
+                      <tr style={{ background: '#090a0f', borderBottom: '1px solid var(--border-gold)' }}>
+                        <th style={{ padding: '10px' }}>วันที่ส่งหลักฐาน</th>
+                        <th style={{ padding: '10px' }}>รหัสนักศึกษา</th>
+                        <th style={{ padding: '10px' }}>ออเดอร์ที่อ้างอิง</th>
+                        <th style={{ padding: '10px' }}>จำนวนเงิน</th>
+                        <th style={{ padding: '10px' }}>สลิป</th>
+                        <th style={{ padding: '10px' }}>สถานะ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {extraDeposits.map(d => (
+                        <tr key={d.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                          <td style={{ padding: '10px' }}>{d.date || '-'}</td>
+                          <td style={{ padding: '10px', color: '#38bdf8', fontWeight: 'bold' }}>{d.studentId}</td>
+                          <td style={{ padding: '10px', color: '#f5d061', fontWeight: 'bold' }}>{d.orderRef}</td>
+                          <td style={{ padding: '10px', color: '#22c55e', fontWeight: 'bold' }}>฿{d.amount || 100}</td>
+                          <td style={{ padding: '10px' }}>
+                            {d.slipUrl ? (
+                              <button onClick={() => setPreviewSlipOrder({ slipUrl: d.slipUrl, id: d.orderRef, name: d.studentId, deposit: d.amount })} style={{ padding: '4px 10px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.78rem' }}>
+                                📄 ดูสลิป
+                              </button>
+                            ) : <span style={{ color: '#666' }}>ไม่มีสลิป</span>}
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            {d.status === 'verified' ? (
+                              <span style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e', padding: '3px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 'bold' }}>
+                                ✅ ยืนยันแล้ว
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleVerifyExtraDeposit(d)}
+                                style={{ padding: '4px 10px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}
+                              >
+                                ⚡ ยืนยันสลิป & หักยอดค้าง
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ) : loading ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-sub)' }}>กำลังดึงข้อมูลออเดอร์จาก Firebase...</div>
           ) : filteredOrders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>ไม่พบข้อมูลออเดอร์ที่ตรงกับการค้นหา</div>
