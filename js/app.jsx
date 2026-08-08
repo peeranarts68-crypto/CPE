@@ -173,17 +173,47 @@ function App() {
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
-  // Countdown timer deadline (Fixed Universal Timestamp: Saturday 8 August 2026 at 14:00 PM)
-  const [deadline] = useState(FIXED_ORDER_DEADLINE);
-  const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(FIXED_ORDER_DEADLINE));
-  const isExpired = timeLeft.total <= 0;
+  // Real-time Dynamic Sales Settings State
+  const [salesSettings, setSalesSettings] = useState({
+    salesMode: 'auto', // 'auto', 'open', 'closed'
+    customDeadline: '2026-08-08T14:40'
+  });
 
   useEffect(() => {
+    const fb = window.CPEFirebase || {};
+    if (!fb.db || !fb.doc || !fb.onSnapshot) return;
+
+    let unsub = () => {};
+    try {
+      const settingsRef = fb.doc(fb.db, 'settings', 'order_settings');
+      unsub = fb.onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setSalesSettings(docSnap.data());
+        }
+      }, (err) => console.log("Settings listener warning:", err));
+    } catch (e) {
+      console.log("Settings listener error:", e);
+    }
+    return () => unsub();
+  }, []);
+
+  const effectiveDeadline = salesSettings.customDeadline 
+    ? new Date(salesSettings.customDeadline).getTime() 
+    : FIXED_ORDER_DEADLINE;
+
+  const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(effectiveDeadline));
+
+  const isExpired = salesSettings.salesMode === 'closed' ? true :
+                    salesSettings.salesMode === 'open' ? false :
+                    timeLeft.total <= 0;
+
+  useEffect(() => {
+    setTimeLeft(calculateTimeLeft(effectiveDeadline));
     const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft(deadline));
+      setTimeLeft(calculateTimeLeft(effectiveDeadline));
     }, 1000);
     return () => clearInterval(timer);
-  }, [deadline]);
+  }, [effectiveDeadline]);
 
   // Determine admin status – include fallback from localStorage in case auth state hasn't loaded yet
   const storedUser = typeof localStorage !== 'undefined' ? localStorage.getItem('cpe_current_user') : null;
@@ -2576,6 +2606,48 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const [previewSlipOrder, setPreviewSlipOrder] = useState(null);
   const [editingTracking, setEditingTracking] = useState({});
   const [activeBreakdownTab, setActiveBreakdownTab] = useState('summary');
+  const [salesMode, setSalesMode] = useState('auto');
+  const [customDeadline, setCustomDeadline] = useState('2026-08-08T14:40');
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const fb = window.CPEFirebase || {};
+    if (!fb.db || !fb.doc || !fb.onSnapshot) return;
+
+    let unsub = () => {};
+    try {
+      const settingsRef = fb.doc(fb.db, 'settings', 'order_settings');
+      unsub = fb.onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.salesMode) setSalesMode(data.salesMode);
+          if (data.customDeadline) setCustomDeadline(data.customDeadline);
+        }
+      });
+    } catch (e) { console.log(e); }
+    return () => unsub();
+  }, [isOpen]);
+
+  const handleSaveSalesSettings = async (mode = salesMode, deadline = customDeadline) => {
+    setSavingSettings(true);
+    const fb = window.CPEFirebase || {};
+    if (fb.db && fb.doc && fb.setDoc) {
+      try {
+        await fb.setDoc(fb.doc(fb.db, 'settings', 'order_settings'), {
+          salesMode: mode,
+          customDeadline: deadline,
+          updatedBy: '6800000000',
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        showToast('💾 บันทึกการตั้งค่าเวลาเปิด-ปิดการขายเรียบร้อยแล้ว!', 'success');
+      } catch (e) {
+        console.log("Save settings error:", e);
+        showToast('บันทึกการตั้งค่าไม่สำเร็จ', 'error');
+      }
+    }
+    setSavingSettings(false);
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -2935,6 +3007,126 @@ function AdminDashboardModal({ isOpen, onClose }) {
 
         {/* Body */}
         <div className="modal-body" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+          
+          {/* Sales Period & Deadline Control Card */}
+          <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+              <h4 style={{ color: 'var(--accent-gold-bright)', margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                ⚙️ ควบคุมสถานะการเปิด-ปิดรับออเดอร์ (Sales Period Settings)
+              </h4>
+              <span style={{ fontSize: '0.8rem', color: salesMode === 'open' ? '#22c55e' : salesMode === 'closed' ? '#ef4444' : '#38bdf8', fontWeight: 'bold' }}>
+                สถานะปัจจุบัน: {salesMode === 'open' ? '🟢 เปิดรับการสั่งซื้อตลอด' : salesMode === 'closed' ? '🔴 ปิดรับการสั่งซื้อทันที' : '⏱️ เปิดตามเวลานับถอยหลัง'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', alignItems: 'end' }}>
+              <div>
+                <label style={{ display: 'block', color: 'var(--text-sub)', fontSize: '0.82rem', marginBottom: '6px' }}>
+                  เลือกโหมดเปิด-ปิดการขาย:
+                </label>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    onClick={() => {
+                      setSalesMode('auto');
+                      handleSaveSalesSettings('auto', customDeadline);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: '6px',
+                      fontSize: '0.78rem',
+                      fontWeight: 'bold',
+                      border: salesMode === 'auto' ? '1px solid #38bdf8' : '1px solid #333',
+                      background: salesMode === 'auto' ? '#0284c7' : '#18181b',
+                      color: '#fff',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ⏱️ ตามเวลา (Auto)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSalesMode('open');
+                      handleSaveSalesSettings('open', customDeadline);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: '6px',
+                      fontSize: '0.78rem',
+                      fontWeight: 'bold',
+                      border: salesMode === 'open' ? '1px solid #22c55e' : '1px solid #333',
+                      background: salesMode === 'open' ? '#16a34a' : '#18181b',
+                      color: '#fff',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🟢 เปิดขาย (Open)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSalesMode('closed');
+                      handleSaveSalesSettings('closed', customDeadline);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: '6px',
+                      fontSize: '0.78rem',
+                      fontWeight: 'bold',
+                      border: salesMode === 'closed' ? '1px solid #ef4444' : '1px solid #333',
+                      background: salesMode === 'closed' ? '#dc2626' : '#18181b',
+                      color: '#fff',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🔴 ปิดขาย (Closed)
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', color: 'var(--text-sub)', fontSize: '0.82rem', marginBottom: '6px' }}>
+                  กำหนดเวลาปิดรับออเดอร์ (กรณีโหมดนับถอยหลัง):
+                </label>
+                <input
+                  type="datetime-local"
+                  value={customDeadline}
+                  onChange={(e) => setCustomDeadline(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#18181b',
+                    border: '1px solid var(--border-gold)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    fontSize: '0.85rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <button
+                  onClick={() => handleSaveSalesSettings(salesMode, customDeadline)}
+                  disabled={savingSettings}
+                  style={{
+                    width: '100%',
+                    padding: '9px 16px',
+                    background: 'linear-gradient(135deg, #f5d061, #d4af37)',
+                    color: '#000',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.85rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(245,208,97,0.3)'
+                  }}
+                >
+                  {savingSettings ? '⏳ กำลังบันทึก...' : '💾 บันทึกเวลาปิดออเดอร์'}
+                </button>
+              </div>
+            </div>
+          </div>
           
           {/* Stats Bar */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
