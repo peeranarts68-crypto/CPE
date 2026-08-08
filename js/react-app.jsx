@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CPE Shirt & Jacket Ordering Web App - React 18 Application Component
  * Integrated with Firebase Auth, Cloud Firestore Database, and Analytics
  */
@@ -3069,8 +3069,10 @@ function AdminDashboardModal({ isOpen, onClose }) {
     setSavingSettings(false);
   };
 
-    const handleDeleteExtraDeposit = async (depItem) => {
-    if (!window.confirm(คุณแน่ใจหรือไม่ว่าต้องการลบรายการแจ้งโอนมัดจำเพิ่มของ  (ออเดอร์ )?)) return;
+  const handleDeleteExtraDeposit = async (depItem) => {
+    const sId = depItem.studentId || '';
+    const oRef = depItem.orderRef || '';
+    if (!window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการแจ้งโอนมัดจำเพิ่มของ ' + sId + ' (ออเดอร์ ' + oRef + ')?')) return;
 
     const fb = window.CPEFirebase || {};
     if (!fb.deleteDoc || !fb.doc || !fb.db) return;
@@ -3090,7 +3092,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
         }
       }
 
-      showToast(🗑️ ลบรายการมัดจำเพิ่มของ  เรียบร้อยแล้ว, 'success');
+      showToast('🗑️ ลบรายการมัดจำเพิ่มเรียบร้อยแล้ว', 'success');
     } catch (e) {
       console.log('Delete extra deposit error:', e);
       showToast('เกิดข้อผิดพลาดในการลบรายการมัดจำเพิ่ม', 'error');
