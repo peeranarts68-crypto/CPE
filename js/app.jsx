@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CPE Shirt & Jacket Ordering Web App - React 18 Application Component
  * Integrated with Firebase Auth, Cloud Firestore Database, and Analytics
  */
@@ -3259,13 +3259,13 @@ function AdminDashboardModal({ isOpen, onClose }) {
     }
 
     const sizeSummary = {};
-    const itemizedList = [];
-    const sizeOrder = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+    const itemizedByProduct = {};
+    const sizeOrder = ['SS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 
     orders.forEach(o => {
       if (o.items) {
         o.items.forEach(it => {
-          const product = it.title || 'ไม่ระบุ';
+          const product = it.title || it.name || 'ไม่ระบุประเภท';
           const size = it.size || 'ไม่ระบุ';
           const qty = it.qty || 1;
 
@@ -3277,16 +3277,25 @@ function AdminDashboardModal({ isOpen, onClose }) {
           if (!sizeSummary[product]) sizeSummary[product] = {};
           sizeSummary[product][size] = (sizeSummary[product][size] || 0) + qty;
 
-          itemizedList.push({
-            product,
-            size,
-            qty,
+          if (!itemizedByProduct[product]) itemizedByProduct[product] = [];
+          itemizedByProduct[product].push({
+            product, size, qty,
             name: o.name || 'นักศึกษา',
             studentId: o.studentId || '',
-            customName: it.customName || 'ไม่ปักชื่อ'
+            customName: it.customName || ''
           });
         });
       }
+    });
+
+    // Sort items within each product by size then by name
+    Object.keys(itemizedByProduct).forEach(p => {
+      itemizedByProduct[p].sort((a, b) => {
+        const ia = sizeOrder.indexOf(a.size);
+        const ib = sizeOrder.indexOf(b.size);
+        if (ia !== ib) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+        return (a.name || '').localeCompare(b.name || '', 'th');
+      });
     });
 
     const products = Object.keys(sizeSummary);
@@ -3298,12 +3307,50 @@ function AdminDashboardModal({ isOpen, onClose }) {
     });
 
     const todayStr = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    const grandTotal = Object.values(itemizedByProduct).flat().reduce((sum, i) => sum + (i.qty || 1), 0);
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       showToast('กรุณาอนุญาต Pop-up ในเบราว์เซอร์เพื่อเปิด PDF', 'error');
       return;
     }
+
+    // Build one embroidery section per product type (with page-break between sections)
+    const embroiderySection = products.map((p, pIdx) => {
+      const items = itemizedByProduct[p] || [];
+      const totalQty = items.reduce((s, i) => s + (i.qty || 1), 0);
+      return `
+        <div class="product-section page-break">
+          <div class="section-title">ใบงานปักชื่อ: ${p} — รวม <span style="color:#c00;">${totalQty} ตัว</span></div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:35px;">ลำดับ</th>
+                <th style="width:55px;">ไซส์</th>
+                <th style="text-align:left;">ชื่อผู้สั่ง (รหัสนักศึกษา)</th>
+                <th style="text-align:left;">ข้อความปักชื่อบนเสื้อ</th>
+                <th style="width:55px;">จำนวน</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((it, idx) => `
+                <tr style="${idx % 2 === 0 ? 'background:#f9f9f9;' : ''}">
+                  <td>${idx + 1}</td>
+                  <td><strong>${it.size}</strong></td>
+                  <td class="left">${it.name} (${it.studentId})</td>
+                  <td class="left custom-name-cell">${it.customName ? `<strong>${it.customName}</strong>` : '<span style="color:#aaa;font-style:italic;">- ไม่ปักชื่อ -</span>'}</td>
+                  <td>${it.qty || 1} ตัว</td>
+                </tr>
+              `).join('')}
+              <tr class="total-row">
+                <td colspan="4" style="text-align:right; font-weight:bold;">รวม ${p}</td>
+                <td style="font-weight:bold; color:#c00;">${totalQty} ตัว</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    }).join('');
 
     const html = `
       <!DOCTYPE html>
@@ -3314,39 +3361,43 @@ function AdminDashboardModal({ isOpen, onClose }) {
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
           body { font-family: 'Sarabun', sans-serif; color: #000; background: #fff; padding: 24px; margin: 0; font-size: 13px; line-height: 1.5; }
-          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 16px; }
-          .header h2 { margin: 0 0 4px 0; font-size: 19px; color: #000; }
-          .header p { margin: 0; font-size: 12px; color: #444; }
-          .section-title { font-size: 15px; font-weight: bold; margin: 16px 0 8px 0; background: #f0f0f0; padding: 6px 10px; border-left: 4px solid #000; }
+          .header { text-align: center; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+          .header h2 { margin: 0 0 4px 0; font-size: 20px; }
+          .header p { margin: 2px 0; font-size: 12px; color: #444; }
+          .section-title { font-size: 15px; font-weight: bold; margin: 20px 0 8px 0; background: #e0e0e0; padding: 8px 12px; border-left: 5px solid #000; }
           table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-          th, td { border: 1px solid #333; padding: 6px 8px; text-align: center; font-size: 12px; }
-          th { background: #e8e8e8; font-weight: bold; }
+          th, td { border: 1px solid #555; padding: 6px 8px; text-align: center; font-size: 12px; }
+          th { background: #c8c8c8; font-weight: bold; }
           td.left { text-align: left; }
-          .total-row { background: #f5f5f5; font-weight: bold; }
-          .custom-name-cell { font-weight: bold; color: #000; background: #fafafa; }
-          @media print { body { padding: 0; } .no-print { display: none; } }
+          .total-row { background: #e0e0e0; font-weight: bold; }
+          .custom-name-cell { color: #000; }
+          .product-section { margin-bottom: 24px; }
+          .page-break { page-break-before: always; padding-top: 16px; }
+          .grand-total { background: #111; color: #fff; text-align: center; padding: 10px 16px; font-size: 15px; font-weight: bold; margin: 16px 0; border-radius: 4px; }
+          @media print { body { padding: 8px; } .no-print { display: none !important; } }
         </style>
       </head>
       <body>
-        <div class="no-print" style="margin-bottom: 15px; text-align: right;">
-          <button onclick="window.print()" style="padding: 8px 18px; font-size: 13px; font-weight: bold; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer;">
-            🖨️ พิมพ์เอกสาร / บันทึกเป็น PDF (Save as PDF)
+        <div class="no-print" style="margin-bottom:15px; text-align:right; display:flex; gap:8px; justify-content:flex-end;">
+          <button onclick="window.print()" style="padding:8px 18px; font-size:13px; font-weight:bold; background:#000; color:#fff; border:none; border-radius:4px; cursor:pointer;">
+            🖨️ พิมพ์ / บันทึกเป็น PDF
           </button>
         </div>
 
         <div class="header">
-          <h2>ใบสรุปยอดสั่งผลิตเสื้อ & รายการปักชื่อ (สำหรับส่งโรงงาน/ร้านปัก)</h2>
+          <h2>ใบสรุปยอดสั่งผลิตเสื้อ & รายการปักชื่อ (สำหรับส่งร้านปัก/โรงงาน)</h2>
           <p>สาขาวิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม</p>
-          <p>วันที่ออกเอกสาร: ${todayStr}</p>
+          <p>วันที่ออกเอกสาร: ${todayStr} &nbsp;|&nbsp; ยอดรวมทั้งหมด: <strong>${grandTotal} ตัว</strong> (${products.length} ประเภท)</p>
         </div>
 
-        <div class="section-title">1. สรุปจำนวนยอดสั่งผลิตแยกตามประเภทสินค้าและไซส์ (Size Totals)</div>
+        <!-- SECTION 1: Size Summary Table -->
+        <div class="section-title">ส่วนที่ 1 — ตารางสรุปยอดสั่งแยกตามประเภทเสื้อและไซส์</div>
         <table>
           <thead>
             <tr>
-              <th style="text-align: left;">รายการสินค้า / สี</th>
+              <th style="text-align:left;">ประเภทเสื้อ / สินค้า</th>
               ${allSizes.map(s => `<th>${s}</th>`).join('')}
-              <th>รวมทั้งหมด (ตัว)</th>
+              <th>รวม (ตัว)</th>
             </tr>
           </thead>
           <tbody>
@@ -3354,54 +3405,31 @@ function AdminDashboardModal({ isOpen, onClose }) {
               const rowTotal = allSizes.reduce((sum, s) => sum + (sizeSummary[p][s] || 0), 0);
               return `
                 <tr>
-                  <td class="left" style="font-weight: bold;">${p}</td>
-                  ${allSizes.map(s => `<td>${sizeSummary[p][s] || 0}</td>`).join('')}
-                  <td style="font-weight: bold;">${rowTotal}</td>
+                  <td class="left" style="font-weight:bold;">${p}</td>
+                  ${allSizes.map(s => `<td>${sizeSummary[p][s] || '-'}</td>`).join('')}
+                  <td style="font-weight:bold;">${rowTotal}</td>
                 </tr>
               `;
             }).join('')}
             <tr class="total-row">
-              <td class="left">รวมทุกรายการสินค้า</td>
+              <td class="left">รวมทุกประเภท</td>
               ${allSizes.map(s => {
-                const colTotal = products.reduce((sum, p) => sum + (sizeSummary[p][s] || 0), 0);
-                return `<td>${colTotal}</td>`;
+                const c = products.reduce((sum, p) => sum + (sizeSummary[p][s] || 0), 0);
+                return `<td>${c || '-'}</td>`;
               }).join('')}
-              <td style="font-size: 14px;">${itemizedList.reduce((sum, i) => sum + (i.qty || 1), 0)} ตัว</td>
+              <td style="font-size:14px; font-weight:bold;">${grandTotal} ตัว</td>
             </tr>
           </tbody>
         </table>
 
-        <div class="section-title">2. รายการข้อความปักชื่อแยกตามเสื้อและไซส์ (Embroidery Job Sheet)</div>
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 35px;">ลำดับ</th>
-              <th style="text-align: left;">สินค้า / สี</th>
-              <th style="width: 55px;">ไซส์</th>
-              <th style="text-align: left;">ชื่อผู้สั่ง (รหัสนักศึกษา)</th>
-              <th style="text-align: left;">ข้อความปักชื่อบนเสื้อ (ปักว่าอะไร)</th>
-              <th style="width: 55px;">จำนวน</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemizedList.map((it, idx) => `
-              <tr>
-                <td>${idx + 1}</td>
-                <td class="left">${it.product}</td>
-                <td><strong>${it.size}</strong></td>
-                <td class="left">${it.name} (${it.studentId})</td>
-                <td class="left custom-name-cell">${it.customName || '- ไม่ปักชื่อ -'}</td>
-                <td>${it.qty || 1} ตัว</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="grand-total">📦 ยอดสั่งผลิตรวม: ${grandTotal} ตัว แบ่งเป็น ${products.length} ประเภทเสื้อ (แต่ละประเภทแยกใบงานปักชื่อด้านล่าง)</div>
+
+        <!-- SECTIONS 2+: One embroidery job sheet per product type -->
+        ${embroiderySection}
 
         <script>
-          window.onload = function() {
-            setTimeout(function() { window.print(); }, 500);
-          };
-        </script>
+          window.onload = function() { setTimeout(function() { window.print(); }, 600); };
+        <\/script>
       </body>
       </html>
     `;
@@ -3409,7 +3437,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
     printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
-    showToast('📄 เปิดรายงาน PDF สำหรับส่งร้านเรียบร้อยแล้ว!', 'success');
+    showToast('📄 เปิดรายงาน PDF แยกตามประเภทเสื้อเรียบร้อยแล้ว!', 'success');
   };
 
   const filteredOrders = orders.filter(o => {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CPE Shirt & Jacket Ordering Web App - React 18 Application Component
  * Integrated with Firebase Auth, Cloud Firestore Database, and Analytics
  */
@@ -3163,6 +3163,306 @@ function AdminDashboardModal({ isOpen, onClose }) {
     }
   };
 
+
+  const filteredOrders = orders.filter(o => {
+    const matchSearch = (o.id || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        (o.studentId || '').includes(searchTerm) || 
+                        (o.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus = statusFilter === 'all' || o.status === statusFilter;
+    
+    let matchProduct = true;
+    if (productFilter !== 'all') {
+      matchProduct = o.items && o.items.some(it => {
+        if (productFilter === 'polo_68') return it.productKey === 'polo' || (it.title && (it.title.includes('รุ่น 68') || it.title.includes('CPE Polo Shirt')));
+        if (productFilter === 'polo_maroon') return it.productKey === 'polo_maroon' || (it.title && it.title.includes('Maroon'));
+        if (productFilter === 'jacket') return it.productKey === 'jacket' || (it.title && (it.title.includes('เสื้อคลุม') || it.title.includes('CPE 69')));
+        return true;
+      });
+    }
+
+    return matchSearch && matchStatus && matchProduct;
+  });
+
+  const totalRev = orders.reduce((sum, o) => {
+    if (o.items && o.items.length > 0) {
+      return sum + o.items.reduce((s, it) => {
+        let p = it.totalPrice || it.price || 350;
+        if (it.customName && it.customName.trim() !== '') {
+          if (!it.totalPrice || it.totalPrice === 350 || it.totalPrice === 270) p = (p || 350) + 20;
+        }
+        return s + p;
+      }, 0);
+    }
+    return sum + (o.total || 350);
+  }, 0);
+  const totalItemsCount = orders.reduce((sum, o) => sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0);
+
+  const exportSizeSummaryCSV = () => {
+    if (!orders || orders.length === 0) {
+      showToast('ไม่มีข้อมูลออเดอร์ในการส่งออก', 'error');
+      return;
+    }
+
+    let csvContent = "\uFEFF"; // UTF-8 BOM for Thai encoding in Excel
+
+    csvContent += "=== ตารางสรุปจำนวนยอดสั่งซื้อแยกตามสินค้าและไซส์ (SIZE SUMMARY MATRIX) ===\n";
+    
+    const sizeSummary = {};
+    const sizeOrder = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+
+    orders.forEach(o => {
+      if (o.items) {
+        o.items.forEach(it => {
+          const product = it.title || 'ไม่ระบุ';
+          const size = it.size || 'ไม่ระบุ';
+          const qty = it.qty || 1;
+
+          if (!sizeSummary[product]) sizeSummary[product] = {};
+          sizeSummary[product][size] = (sizeSummary[product][size] || 0) + qty;
+        });
+      }
+    });
+
+    const products = Object.keys(sizeSummary);
+    const allSizes = [...new Set(products.flatMap(p => Object.keys(sizeSummary[p])))];
+    allSizes.sort((a, b) => {
+      const ia = sizeOrder.indexOf(a);
+      const ib = sizeOrder.indexOf(b);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+
+    csvContent += "รายการสินค้า," + allSizes.join(",") + ",รวมทั้งหมด(ตัว)\n";
+    products.forEach(p => {
+      const rowTotal = allSizes.reduce((sum, s) => sum + (sizeSummary[p][s] || 0), 0);
+      const rowValues = allSizes.map(s => sizeSummary[p][s] || 0);
+      csvContent += `"${p.replace(/"/g, '""')}",` + rowValues.join(",") + `,${rowTotal}\n`;
+    });
+
+    csvContent += "\n\n";
+    csvContent += "=== รายละเอียดผู้สั่งซื้อและข้อความปักชื่อแยกตามเสื้อและไซส์ (ITEMIZED EMBROIDERY REPORT) ===\n";
+    csvContent += "เลขที่ออเดอร์,รหัสนักศึกษา,ชื่อ-นามสกุล,เบอร์โทรศัพท์,รายการสินค้า/สี,ไซส์,จำนวน(ตัว),ข้อความปักชื่อ,ราคา(บาท),สถานะออเดอร์,วันที่สั่งซื้อ\n";
+
+    orders.forEach(o => {
+      if (o.items && o.items.length > 0) {
+        o.items.forEach(it => {
+          const row = [
+            `"${o.id || ''}"`,
+            `"${o.studentId || ''}"`,
+            `"${(o.name || '').replace(/"/g, '""')}"`,
+            `"${o.phone || ''}"`,
+            `"${(it.title || it.name || '').replace(/"/g, '""')}"`,
+            `"${it.size || 'L'}"`,
+            `"${it.qty || 1}"`,
+            `"${(it.customName || 'ไม่ปักชื่อ').replace(/"/g, '""')}"`,
+            `"${it.totalPrice || it.price || 350}"`,
+            `"${o.status || 'pending'}"`,
+            `"${o.date || ''}"`
+          ];
+          csvContent += row.join(",") + "\n";
+        });
+      }
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const dateTag = new Date().toISOString().slice(0, 10);
+    link.setAttribute('download', `รายงานสรุปไซส์เสื้อและข้อความปัก_CPE_${dateTag}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast('📥 ดาวน์โหลดรายงานสรุปไซส์ & ข้อความปัก (CSV/Excel) สำเร็จ!', 'success');
+  };
+
+  const exportSizeSummaryPDF = () => {
+    if (!orders || orders.length === 0) {
+      showToast('ไม่มีข้อมูลออเดอร์ในการส่งออก', 'error');
+      return;
+    }
+
+    const sizeSummary = {};
+    const itemizedByProduct = {};
+    const sizeOrder = ['SS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+
+    orders.forEach(o => {
+      if (o.items) {
+        o.items.forEach(it => {
+          const product = it.title || it.name || 'ไม่ระบุประเภท';
+          const size = it.size || 'ไม่ระบุ';
+          const qty = it.qty || 1;
+
+          if (productFilter === 'polo_67' && !((o.studentId && o.studentId.startsWith('67')) || (it.studentId && it.studentId.startsWith('67')) || o.year === '3')) return;
+          if (productFilter === 'polo_68' && !((o.studentId && o.studentId.startsWith('68')) || it.productKey === 'polo' || product.includes('รุ่น 68') || product.includes('CPE Polo Shirt'))) return;
+          if (productFilter === 'polo_navy' && !(it.productKey === 'polo_navy' || product.includes('Navy') || product.includes('สีกรมท่า'))) return;
+          if (productFilter === 'jacket' && !((o.studentId && o.studentId.startsWith('69')) || it.productKey === 'jacket' || product.includes('เสื้อคลุม') || product.includes('CPE 69'))) return;
+
+          if (!sizeSummary[product]) sizeSummary[product] = {};
+          sizeSummary[product][size] = (sizeSummary[product][size] || 0) + qty;
+
+          if (!itemizedByProduct[product]) itemizedByProduct[product] = [];
+          itemizedByProduct[product].push({
+            product, size, qty,
+            name: o.name || 'นักศึกษา',
+            studentId: o.studentId || '',
+            customName: it.customName || ''
+          });
+        });
+      }
+    });
+
+    // Sort items within each product by size then by name
+    Object.keys(itemizedByProduct).forEach(p => {
+      itemizedByProduct[p].sort((a, b) => {
+        const ia = sizeOrder.indexOf(a.size);
+        const ib = sizeOrder.indexOf(b.size);
+        if (ia !== ib) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+        return (a.name || '').localeCompare(b.name || '', 'th');
+      });
+    });
+
+    const products = Object.keys(sizeSummary);
+    const allSizes = [...new Set(products.flatMap(p => Object.keys(sizeSummary[p])))];
+    allSizes.sort((a, b) => {
+      const ia = sizeOrder.indexOf(a);
+      const ib = sizeOrder.indexOf(b);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+
+    const todayStr = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    const grandTotal = Object.values(itemizedByProduct).flat().reduce((sum, i) => sum + (i.qty || 1), 0);
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showToast('กรุณาอนุญาต Pop-up ในเบราว์เซอร์เพื่อเปิด PDF', 'error');
+      return;
+    }
+
+    // Build one embroidery section per product type (with page-break between sections)
+    const embroiderySection = products.map((p, pIdx) => {
+      const items = itemizedByProduct[p] || [];
+      const totalQty = items.reduce((s, i) => s + (i.qty || 1), 0);
+      return `
+        <div class="product-section page-break">
+          <div class="section-title">ใบงานปักชื่อ: ${p} — รวม <span style="color:#c00;">${totalQty} ตัว</span></div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:35px;">ลำดับ</th>
+                <th style="width:55px;">ไซส์</th>
+                <th style="text-align:left;">ชื่อผู้สั่ง (รหัสนักศึกษา)</th>
+                <th style="text-align:left;">ข้อความปักชื่อบนเสื้อ</th>
+                <th style="width:55px;">จำนวน</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((it, idx) => `
+                <tr style="${idx % 2 === 0 ? 'background:#f9f9f9;' : ''}">
+                  <td>${idx + 1}</td>
+                  <td><strong>${it.size}</strong></td>
+                  <td class="left">${it.name} (${it.studentId})</td>
+                  <td class="left custom-name-cell">${it.customName ? `<strong>${it.customName}</strong>` : '<span style="color:#aaa;font-style:italic;">- ไม่ปักชื่อ -</span>'}</td>
+                  <td>${it.qty || 1} ตัว</td>
+                </tr>
+              `).join('')}
+              <tr class="total-row">
+                <td colspan="4" style="text-align:right; font-weight:bold;">รวม ${p}</td>
+                <td style="font-weight:bold; color:#c00;">${totalQty} ตัว</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    }).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="th">
+      <head>
+        <meta charset="UTF-8">
+        <title>ใบสรุปรายการสั่งผลิตเสื้อ & ข้อความปัก (ส่งร้าน)</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+          body { font-family: 'Sarabun', sans-serif; color: #000; background: #fff; padding: 24px; margin: 0; font-size: 13px; line-height: 1.5; }
+          .header { text-align: center; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+          .header h2 { margin: 0 0 4px 0; font-size: 20px; }
+          .header p { margin: 2px 0; font-size: 12px; color: #444; }
+          .section-title { font-size: 15px; font-weight: bold; margin: 20px 0 8px 0; background: #e0e0e0; padding: 8px 12px; border-left: 5px solid #000; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+          th, td { border: 1px solid #555; padding: 6px 8px; text-align: center; font-size: 12px; }
+          th { background: #c8c8c8; font-weight: bold; }
+          td.left { text-align: left; }
+          .total-row { background: #e0e0e0; font-weight: bold; }
+          .custom-name-cell { color: #000; }
+          .product-section { margin-bottom: 24px; }
+          .page-break { page-break-before: always; padding-top: 16px; }
+          .grand-total { background: #111; color: #fff; text-align: center; padding: 10px 16px; font-size: 15px; font-weight: bold; margin: 16px 0; border-radius: 4px; }
+          @media print { body { padding: 8px; } .no-print { display: none !important; } }
+        </style>
+      </head>
+      <body>
+        <div class="no-print" style="margin-bottom:15px; text-align:right; display:flex; gap:8px; justify-content:flex-end;">
+          <button onclick="window.print()" style="padding:8px 18px; font-size:13px; font-weight:bold; background:#000; color:#fff; border:none; border-radius:4px; cursor:pointer;">
+            🖨️ พิมพ์ / บันทึกเป็น PDF
+          </button>
+        </div>
+
+        <div class="header">
+          <h2>ใบสรุปยอดสั่งผลิตเสื้อ & รายการปักชื่อ (สำหรับส่งร้านปัก/โรงงาน)</h2>
+          <p>สาขาวิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม</p>
+          <p>วันที่ออกเอกสาร: ${todayStr} &nbsp;|&nbsp; ยอดรวมทั้งหมด: <strong>${grandTotal} ตัว</strong> (${products.length} ประเภท)</p>
+        </div>
+
+        <!-- SECTION 1: Size Summary Table -->
+        <div class="section-title">ส่วนที่ 1 — ตารางสรุปยอดสั่งแยกตามประเภทเสื้อและไซส์</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left;">ประเภทเสื้อ / สินค้า</th>
+              ${allSizes.map(s => `<th>${s}</th>`).join('')}
+              <th>รวม (ตัว)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${products.map(p => {
+              const rowTotal = allSizes.reduce((sum, s) => sum + (sizeSummary[p][s] || 0), 0);
+              return `
+                <tr>
+                  <td class="left" style="font-weight:bold;">${p}</td>
+                  ${allSizes.map(s => `<td>${sizeSummary[p][s] || '-'}</td>`).join('')}
+                  <td style="font-weight:bold;">${rowTotal}</td>
+                </tr>
+              `;
+            }).join('')}
+            <tr class="total-row">
+              <td class="left">รวมทุกประเภท</td>
+              ${allSizes.map(s => {
+                const c = products.reduce((sum, p) => sum + (sizeSummary[p][s] || 0), 0);
+                return `<td>${c || '-'}</td>`;
+              }).join('')}
+              <td style="font-size:14px; font-weight:bold;">${grandTotal} ตัว</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="grand-total">📦 ยอดสั่งผลิตรวม: ${grandTotal} ตัว แบ่งเป็น ${products.length} ประเภทเสื้อ (แต่ละประเภทแยกใบงานปักชื่อด้านล่าง)</div>
+
+        <!-- SECTIONS 2+: One embroidery job sheet per product type -->
+        ${embroiderySection}
+
+        <script>
+          window.onload = function() { setTimeout(function() { window.print(); }, 600); };
+        <\/script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    showToast('📄 เปิดรายงาน PDF แยกตามประเภทเสื้อเรียบร้อยแล้ว!', 'success');
+  };
 
   const filteredOrders = orders.filter(o => {
     const matchSearch = (o.id || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
