@@ -433,12 +433,14 @@ function App() {
               <a href="#hero" className="nav-link active">หน้าแรก</a>
               <a href="#ordering" className="nav-link">สั่งซื้อเสื้อสาขา</a>
               {currentUser && <a href="#tracking" className="nav-link">ติดตามสถานะ</a>}
-              <button
-                onClick={() => setIsExtraDepositModalOpen(true)}
-                style={{ background: 'none', border: 'none', color: '#f5d061', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600, padding: '4px 8px', textDecoration: 'underline dotted' }}
-              >
-                💳 จ่ายมัดจำเพิ่ม
-              </button>
+              {currentUser && (
+                <button
+                  onClick={() => setIsExtraDepositModalOpen(true)}
+                  style={{ background: 'none', border: 'none', color: '#f5d061', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600, padding: '4px 8px', textDecoration: 'underline dotted' }}
+                >
+                  💳 จ่ายมัดจำเพิ่ม
+                </button>
+              )}
             </nav>
 
             <div className="nav-actions">
@@ -509,6 +511,17 @@ function App() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
                       ประวัติ &amp; ติดตามออเดอร์
                     </a>
+                    <div 
+                      onClick={() => {
+                        setIsExtraDepositModalOpen(true);
+                        const menu = document.getElementById('reactDropdownMenu');
+                        if (menu) menu.classList.remove('show');
+                      }} 
+                      className="dropdown-item" 
+                      style={{ cursor: 'pointer', color: '#22c55e' }}
+                    >
+                      💳 จ่ายมัดจำเพิ่ม (100 บาท)
+                    </div>
                     <div onClick={handleLogout} className="dropdown-item text-danger" style={{ cursor: 'pointer' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                       ออกจากระบบ
@@ -2664,7 +2677,8 @@ function SizeGuideModal({ isOpen, onClose }) {
 
 // EXTRA DEPOSIT MODAL (ระบบจ่ายมัดจำเพิ่ม 100 บาท)
 function ExtraDepositModal({ isOpen, onClose, showToast }) {
-  const [studentId, setStudentId] = useState('');
+  const { currentUser, setIsAuthModalOpen } = useContext(AuthContext);
+  const [studentId, setStudentId] = useState(currentUser?.studentId || '');
   const [foundOrders, setFoundOrders] = useState([]);
   const [searching, setSearching] = useState(false);
   const [slipDataUrl, setSlipDataUrl] = useState(null);
@@ -2672,7 +2686,41 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  useEffect(() => {
+    if (currentUser?.studentId) {
+      setStudentId(currentUser.studentId);
+    }
+  }, [currentUser]);
+
   if (!isOpen) return null;
+
+  if (!currentUser) {
+    return (
+      <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+        <div onClick={e => e.stopPropagation()} style={{ background: '#10121a', border: '1px solid #d4af37', borderRadius: '20px', width: '100%', maxWidth: '480px', padding: '28px', textAlign: 'center', boxShadow: '0 30px 80px rgba(0,0,0,0.95)' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🔒</div>
+          <h3 style={{ color: '#f5d061', marginBottom: '10px', fontSize: '1.2rem' }}>กรุณาเข้าสู่ระบบก่อนดำเนินการ</h3>
+          <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: '24px', lineHeight: '1.5' }}>
+            คุณต้องเข้าสู่ระบบสมาชิก CPE PORTAL ก่อน เพื่อใช้งานหน้าจ่ายมัดจำเพิ่ม
+          </p>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button 
+              onClick={() => { onClose(); setIsAuthModalOpen(true); }}
+              style={{ padding: '10px 24px', background: 'linear-gradient(135deg, #f5d061, #d4af37)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem' }}
+            >
+              เข้าสู่ระบบ / สมัครสมาชิก
+            </button>
+            <button 
+              onClick={onClose}
+              style={{ padding: '10px 18px', background: '#18181b', color: '#aaa', border: '1px solid #333', borderRadius: '10px', cursor: 'pointer', fontSize: '0.9rem' }}
+            >
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSearch = async () => {
     if (!studentId || studentId.length < 8) {
