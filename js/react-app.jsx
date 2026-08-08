@@ -155,11 +155,7 @@ const SIZES = [
   { id: 'XL', label: 'XL (42")', chest: '42"' },
   { id: '2XL', label: '2XL (44")', chest: '44"' },
   { id: '3XL', label: '3XL (46")', chest: '46"', isLarge: true },
-  { id: '4XL', label: '4XL (48")', chest: '48"', isLarge: true },
-  { id: '5XL', label: '5XL (50")', chest: '50"', isLarge: true },
-  { id: '6XL', label: '6XL (52")', chest: '52"', isLarge: true },
-  { id: '7XL', label: '7XL (54")', chest: '54"', isLarge: true },
-  { id: '8XL', label: '8XL (56")', chest: '56"', isLarge: true }
+  { id: '4XL', label: '4XL (48")', chest: '48"', isLarge: true }
 ];
 
 // Main React App Provider & Root
@@ -1052,7 +1048,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
   // Calculate Total Price dynamically across all items
   const totalPrice = itemsConfig.reduce((sum, item) => {
     let itemPrice = prod.basePrice;
-    if (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size)) {
+    if (['3XL', '4XL'].includes(item.size)) {
       itemPrice += prod.largeFee;
     }
     if (item.customName && item.customName.trim() !== '') {
@@ -1078,7 +1074,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
 
     const newCartItems = itemsConfig.map((itemCfg, idx) => {
       let itemPrice = prod.basePrice;
-      if (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(itemCfg.size)) {
+      if (['3XL', '4XL'].includes(itemCfg.size)) {
         itemPrice += prod.largeFee;
       }
       if (itemCfg.customName && itemCfg.customName.trim() !== '') {
@@ -1244,8 +1240,8 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                       👕 {qty > 1 ? `เสื้อตัวที่ ${idx + 1}` : 'เลือกขนาดเสื้อ'} {item.size ? `(ไซส์ ${item.size})` : ''}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) || (item.customName && item.customName.trim() !== '')) ? '#F5D061' : '#22c55e' }}>
-                        ฿{prod.basePrice + (['3XL', '4XL', '5XL', '6XL', '7XL', '8XL'].includes(item.size) ? prod.largeFee : 0) + (item.customName && item.customName.trim() !== '' ? 20 : 0)}
+                      <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: (['3XL', '4XL'].includes(item.size) || (item.customName && item.customName.trim() !== '')) ? '#F5D061' : '#22c55e' }}>
+                        ฿{prod.basePrice + (['3XL', '4XL'].includes(item.size) ? prod.largeFee : 0) + (item.customName && item.customName.trim() !== '' ? 20 : 0)}
                       </span>
                       {itemsConfig.length > 1 && (
                         <button 
@@ -2540,7 +2536,7 @@ function SizeGuideModal({ isOpen, onClose }) {
             </thead>
             <tbody>
               <tr><td><strong>SS - 2XL</strong></td><td>34" - 44"</td><td>25" - 30"</td><td>350 บาท</td></tr>
-              <tr><td><strong>3XL - 8XL</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+10฿)</span></td><td>46" - 56"</td><td>31" - 36"</td><td><strong style={{ color: '#F5D061' }}>360 บาท</strong></td></tr>
+              <tr><td><strong>3XL - 4XL</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+10฿)</span></td><td>46" - 48"</td><td>31" - 32"</td><td><strong style={{ color: '#F5D061' }}>360 บาท</strong></td></tr>
             </tbody>
           </table>
 
@@ -2556,12 +2552,12 @@ function SizeGuideModal({ isOpen, onClose }) {
             </thead>
             <tbody>
               <tr><td><strong>SS - 2XL</strong></td><td>36" - 46"</td><td>26" - 31"</td><td>920 บาท</td></tr>
-              <tr><td><strong>3XL - 8XL</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+100฿)</span></td><td>48" - 58"</td><td>32" - 37"</td><td><strong style={{ color: '#F5D061' }}>1,020 บาท</strong></td></tr>
+              <tr><td><strong>3XL - 4XL</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+100฿)</span></td><td>48" - 50"</td><td>32" - 33"</td><td><strong style={{ color: '#F5D061' }}>1,020 บาท</strong></td></tr>
             </tbody>
           </table>
 
           <div style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid var(--border-gold)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--accent-gold-bright)', marginTop: '15px' }}>
-            💡 คำแนะนำ: เสื้อโปโล 3XL+ เพิ่ม 10฿ / เสื้อคลุม Jacket 3XL+ เพิ่ม 100฿ | บริการปักชื่อฟรี
+            💡 คำแนะนำ: เสื้อโปโล 3XL - 4XL เพิ่ม 10฿ / เสื้อคลุม Jacket 3XL - 4XL เพิ่ม 100฿ | บริการปักชื่อฟรี
           </div>
         </div>
       </div>
