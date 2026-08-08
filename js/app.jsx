@@ -3076,6 +3076,34 @@ function AdminDashboardModal({ isOpen, onClose }) {
     setSavingSettings(false);
   };
 
+    const handleDeleteExtraDeposit = async (depItem) => {
+    if (!window.confirm(คุณแน่ใจหรือไม่ว่าต้องการลบรายการแจ้งโอนมัดจำเพิ่มของ  (ออเดอร์ )?)) return;
+
+    const fb = window.CPEFirebase || {};
+    if (!fb.deleteDoc || !fb.doc || !fb.db) return;
+
+    try {
+      await fb.deleteDoc(fb.doc(fb.db, 'extra_deposits', depItem.id));
+
+      if (depItem.status === 'verified') {
+        const targetOrder = orders.find(o => o.id === depItem.orderRef || o.firestoreId === depItem.orderRef);
+        if (targetOrder && targetOrder.firestoreId) {
+          const revertedDeposit = Math.max(50, (targetOrder.deposit || 150) - (depItem.amount || 100));
+          const revertedRemaining = (targetOrder.total || 0) - revertedDeposit;
+          await fb.setDoc(fb.doc(fb.db, 'orders', targetOrder.firestoreId), {
+            deposit: revertedDeposit,
+            remaining: revertedRemaining
+          }, { merge: true });
+        }
+      }
+
+      showToast(🗑️ ลบรายการมัดจำเพิ่มของ  เรียบร้อยแล้ว, 'success');
+    } catch (e) {
+      console.log('Delete extra deposit error:', e);
+      showToast('เกิดข้อผิดพลาดในการลบรายการมัดจำเพิ่ม', 'error');
+    }
+  };
+
   const handleVerifyExtraDeposit = async (depItem) => {
     const fb = window.CPEFirebase || {};
     if (!fb.db || !fb.setDoc || !fb.doc) return;
@@ -4022,6 +4050,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
                         <th style={{ padding: '10px' }}>จำนวนเงิน</th>
                         <th style={{ padding: '10px' }}>สลิป</th>
                         <th style={{ padding: '10px' }}>สถานะ</th>
+                        <th style={{ padding: '10px', textAlign: 'center' }}>จัดการ</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -4051,6 +4080,9 @@ function AdminDashboardModal({ isOpen, onClose }) {
                                 ⚡ ยืนยันสลิป & หักยอดค้าง
                               </button>
                             )}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            <button onClick={() => handleDeleteExtraDeposit(d)} style={{ padding: '4px 10px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '4px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}>🗑️ ลบ</button>
                           </td>
                         </tr>
                       ))}
