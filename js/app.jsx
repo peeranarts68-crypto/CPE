@@ -26,8 +26,8 @@ const {
 
 const { useState, useEffect, useContext, createContext } = React;
 
-// Fixed Universal Order Deadline (Target: Saturday 8 August 2026 at 12:00:00 PM Bangkok Time)
-const FIXED_ORDER_DEADLINE = new Date('2026-08-08T12:00:00+07:00').getTime();
+// Fixed Universal Order Deadline (Target: Saturday 8 August 2026 at 14:00:00 PM Bangkok Time)
+const FIXED_ORDER_DEADLINE = new Date('2026-08-08T14:00:00+07:00').getTime();
 
 const calculateTimeLeft = (targetTime = FIXED_ORDER_DEADLINE) => {
   const diff = targetTime - Date.now();
@@ -177,7 +177,7 @@ function App() {
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
-  // Countdown timer deadline (Fixed Universal Timestamp: Saturday 8 August 2026 at 12:00 PM)
+  // Countdown timer deadline (Fixed Universal Timestamp: Saturday 8 August 2026 at 14:00 PM)
   const [deadline] = useState(FIXED_ORDER_DEADLINE);
   const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(FIXED_ORDER_DEADLINE));
   const isExpired = timeLeft.total <= 0;
@@ -207,9 +207,11 @@ function App() {
   const [searchTrackingQuery, setSearchTrackingQuery] = useState('');
   const [trackedOrder, setTrackedOrder] = useState(null);
 
+  const storageKey = currentUser?.studentId ? `cpe_my_orders_${currentUser.studentId}` : 'cpe_my_orders_guest';
+
   const [myOrdersHistory, setMyOrdersHistory] = useState(() => {
     try {
-      const saved = localStorage.getItem('cpe_my_orders');
+      const saved = localStorage.getItem(storageKey);
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return [];
@@ -220,12 +222,74 @@ function App() {
     localStorage.setItem('cpe_cart', JSON.stringify(cart));
   }, [cart]);
 
-  // Save My Orders History to LocalStorage
+  // Save My Orders History to LocalStorage (scoped by studentId)
   useEffect(() => {
-    localStorage.setItem('cpe_my_orders', JSON.stringify(myOrdersHistory));
-  }, [myOrdersHistory]);
+    if (myOrdersHistory && myOrdersHistory.length > 0) {
+      localStorage.setItem(storageKey, JSON.stringify(myOrdersHistory));
+    }
+  }, [myOrdersHistory, storageKey]);
 
-  // Auto load recent order on page load / refresh
+  // Auto sync user's orders from Firestore when currentUser changes
+  useEffect(() => {
+    const studentId = currentUser?.studentId;
+    const uid = currentUser?.uid;
+    if (!studentId && !uid) {
+      setMyOrdersHistory([]);
+      setTrackedOrder(null);
+      return;
+    }
+    const fb = window.CPEFirebase || {};
+    if (!fb.db || !fb.collection || !fb.query || !fb.where || !fb.getDocs) return;
+
+    let isMounted = true;
+    const fetchUserOrders = async () => {
+      try {
+        const ordersRef = fb.collection(fb.db, 'orders');
+        let rawOrders = [];
+
+        if (studentId) {
+          const q = fb.query(ordersRef, fb.where('studentId', '==', studentId));
+          const querySnapshot = await fb.getDocs(q);
+          querySnapshot.forEach(docSnap => {
+            rawOrders.push({ firestoreId: docSnap.id, ...docSnap.data() });
+          });
+        }
+
+        if (rawOrders.length === 0 && uid) {
+          const q2 = fb.query(ordersRef, fb.where('userUid', '==', uid));
+          const querySnapshot2 = await fb.getDocs(q2);
+          querySnapshot2.forEach(docSnap => {
+            rawOrders.push({ firestoreId: docSnap.id, ...docSnap.data() });
+          });
+        }
+
+        // STRICT OWNER ISOLATION FILTER: Keep ONLY orders that strictly match current user!
+        const userOrders = rawOrders.filter(ord => {
+          if (studentId && ord.studentId === studentId) return true;
+          if (uid && ord.userUid === uid) return true;
+          return false;
+        });
+
+        if (isMounted) {
+          setMyOrdersHistory(userOrders);
+          if (userOrders.length > 0) {
+            setTrackedOrder(userOrders[0]);
+            if (userOrders[0].id) setSearchTrackingQuery(userOrders[0].id);
+          } else {
+            setTrackedOrder(null);
+            if (studentId) setSearchTrackingQuery(studentId);
+          }
+        }
+      } catch (e) {
+        console.log("Error fetching user orders from Firestore:", e);
+      }
+    };
+
+    fetchUserOrders();
+    return () => { isMounted = false; };
+  }, [currentUser?.studentId, currentUser?.uid]);
+
+  // Auto load recent order on page load / refresh if trackedOrder not set
   useEffect(() => {
     if (!trackedOrder && myOrdersHistory.length > 0) {
       setTrackedOrder(myOrdersHistory[0]);
@@ -233,14 +297,27 @@ function App() {
     }
   }, [myOrdersHistory]);
 
+  const getSanitizedSavedUser = () => {
+    const savedUser = localStorage.getItem('cpe_current_user');
+    if (!savedUser) return null;
+    try {
+      const parsed = JSON.parse(savedUser);
+      if (parsed && parsed.email && parsed.email !== '6812345678@psru.ac.th' && parsed.studentId === '6812345678') {
+        parsed.studentId = parsed.email.split('@')[0];
+        localStorage.setItem('cpe_current_user', JSON.stringify(parsed));
+      }
+      return parsed;
+    } catch (e) {
+      return null;
+    }
+  };
+
   // Firebase Auth Listener
   useEffect(() => {
     const fb = window.CPEFirebase || {};
     if (!fb.auth || !fb.onAuthStateChanged) {
-      const savedUser = localStorage.getItem('cpe_current_user');
-      if (savedUser) {
-        try { setCurrentUser(JSON.parse(savedUser)); } catch { setCurrentUser(null); }
-      }
+      const user = getSanitizedSavedUser();
+      setCurrentUser(user);
       return;
     }
 
@@ -250,26 +327,32 @@ function App() {
           if (fb.getDoc && fb.doc && fb.db) {
             const userDoc = await fb.getDoc(fb.doc(fb.db, 'users', user.uid));
             if (userDoc.exists()) {
-              setCurrentUser({ uid: user.uid, ...userDoc.data() });
+              const uData = { uid: user.uid, ...userDoc.data() };
+              setCurrentUser(uData);
+              localStorage.setItem('cpe_current_user', JSON.stringify(uData));
             } else {
-              setCurrentUser({
+              const saved = getSanitizedSavedUser();
+              if (saved && (saved.uid === user.uid || saved.email === user.email)) {
+                setCurrentUser(saved);
+                return;
+              }
+              const derivedStudentId = user.email && user.email.includes('@') ? user.email.split('@')[0] : '';
+              const newUser = {
                 uid: user.uid,
                 email: user.email,
                 name: user.displayName || 'นักศึกษา CPE',
-                studentId: '6812345678'
-              });
+                studentId: derivedStudentId
+              };
+              setCurrentUser(newUser);
+              localStorage.setItem('cpe_current_user', JSON.stringify(newUser));
             }
           }
         } catch (e) {
           console.log("Firestore user fetch error:", e);
         }
       } else {
-        const savedUser = localStorage.getItem('cpe_current_user');
-        if (savedUser) {
-          try { setCurrentUser(JSON.parse(savedUser)); } catch { setCurrentUser(null); }
-        } else {
-          setCurrentUser(null);
-        }
+        const saved = getSanitizedSavedUser();
+        setCurrentUser(saved);
       }
     });
 
@@ -317,7 +400,7 @@ function App() {
             <nav className="nav-menu">
               <a href="#hero" className="nav-link active">หน้าแรก</a>
               <a href="#ordering" className="nav-link">สั่งซื้อเสื้อสาขา</a>
-              <a href="#tracking" className="nav-link">ติดตามสถานะ</a>
+              {currentUser && <a href="#tracking" className="nav-link">ติดตามสถานะ</a>}
             </nav>
 
             <div className="nav-actions">
@@ -420,12 +503,15 @@ function App() {
         />
 
         {/* ORDER TRACKING LOOKUP SECTION */}
-        <OrderTracking 
-          searchQuery={searchTrackingQuery}
-          setSearchQuery={setSearchTrackingQuery}
-          trackedOrder={trackedOrder}
-          setTrackedOrder={setTrackedOrder}
-        />
+        {currentUser && (
+          <OrderTracking 
+            searchQuery={searchTrackingQuery}
+            setSearchQuery={setSearchTrackingQuery}
+            trackedOrder={trackedOrder}
+            setTrackedOrder={setTrackedOrder}
+            myOrdersHistory={myOrdersHistory}
+          />
+        )}
 
         {/* CART DRAWER */}
         <CartDrawer 
@@ -435,7 +521,7 @@ function App() {
           setCart={setCart}
           onCheckout={() => {
             if (isExpired) {
-              showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 12:00 น.)', 'error');
+              showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:00 น.)', 'error');
               return;
             }
             setIsCartOpen(false);
@@ -561,7 +647,7 @@ function CountdownBanner({ isExpired, timeLeft }) {
               letterSpacing: '0.3px',
               textShadow: isExpired ? 'none' : '0 0 12px rgba(245,208,97,0.4)'
             }}>
-              {isExpired ? 'ปิดรับการสั่งซื้อเสื้อแล้ว (หมดระยะเวลาสั่งจอง)' : 'นับถอยหลังปิดรับออเดอร์สั่งจองเสื้อ (กำหนดปิด เสาร์ที่ 8 ส.ค. เวลา 12:00 น.)'}
+              {isExpired ? 'ปิดรับการสั่งซื้อเสื้อแล้ว (หมดระยะเวลาสั่งจอง)' : 'นับถอยหลังปิดรับออเดอร์สั่งจองเสื้อ (กำหนดปิด เสาร์ที่ 8 ส.ค. เวลา 14:00 น.)'}
             </h4>
             <p style={{ color: 'var(--text-sub)', margin: 0, fontSize: '0.83rem', marginTop: '3px' }}>
               {isExpired 
@@ -754,6 +840,7 @@ function CountdownBanner({ isExpired, timeLeft }) {
 
 // 1. HERO SLIDER COMPONENT
 function HeroSlider({ onSelectProduct, isExpired, showToast }) {
+  const { currentUser } = useContext(AuthContext);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -783,7 +870,7 @@ function HeroSlider({ onSelectProduct, isExpired, showToast }) {
                   <button 
                     onClick={() => {
                       if (isExpired) {
-                        if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 12:00 น.)', 'error');
+                        if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:00 น.)', 'error');
                         return;
                       }
                       onSelectProduct('polo');
@@ -793,7 +880,7 @@ function HeroSlider({ onSelectProduct, isExpired, showToast }) {
                   >
                     {isExpired ? '⛔ ปิดรับการสั่งซื้อแล้ว' : 'สั่งซื้อเสื้อโปโลสาขา'}
                   </button>
-                  <a href="#tracking" className="btn btn-outline">เช็คสถานะออเดอร์</a>
+                  {currentUser && <a href="#tracking" className="btn btn-outline">เช็คสถานะออเดอร์</a>}
                 </div>
               </div>
             </div>
@@ -812,7 +899,7 @@ function HeroSlider({ onSelectProduct, isExpired, showToast }) {
                   <button 
                     onClick={() => {
                       if (isExpired) {
-                        if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 12:00 น.)', 'error');
+                        if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:00 น.)', 'error');
                         return;
                       }
                       onSelectProduct('polo_navy');
@@ -822,7 +909,7 @@ function HeroSlider({ onSelectProduct, isExpired, showToast }) {
                   >
                     {isExpired ? '⛔ ปิดรับการสั่งซื้อแล้ว' : 'สั่งซื้อเสื้อโปโลสีกรมท่า'}
                   </button>
-                  <a href="#tracking" className="btn btn-outline">เช็คสถานะออเดอร์</a>
+                  {currentUser && <a href="#tracking" className="btn btn-outline">เช็คสถานะออเดอร์</a>}
                 </div>
               </div>
             </div>
@@ -976,7 +1063,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
 
   const handleAddToCart = () => {
     if (isExpired) {
-      showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 12:00 น.)', 'error');
+      showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:00 น.)', 'error');
       return;
     }
     if (!currentUser) {
@@ -1290,17 +1377,27 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
   );
 }
 
-// 4. ORDER TRACKING COMPONENT (Firestore Integration)
-function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOrder }) {
+// 4. ORDER TRACKING COMPONENT (Firestore Integration & Multi-Order Support)
+function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOrder, myOrdersHistory = [] }) {
   const { showToast } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
+  const [foundOrders, setFoundOrders] = useState([]);
+
+  // Sync found orders with myOrdersHistory on change
+  useEffect(() => {
+    if (myOrdersHistory && myOrdersHistory.length > 0) {
+      setFoundOrders(myOrdersHistory);
+    }
+  }, [myOrdersHistory]);
 
   // Real-time order update listener
   useEffect(() => {
     if (!trackedOrder || !trackedOrder.firestoreId || !db) return;
     const unsub = onSnapshot(doc(db, 'orders', trackedOrder.firestoreId), (docSnap) => {
       if (docSnap.exists()) {
-        setTrackedOrder(prev => ({ ...prev, ...docSnap.data() }));
+        const updated = { firestoreId: docSnap.id, ...docSnap.data() };
+        setTrackedOrder(prev => ({ ...prev, ...updated }));
+        setFoundOrders(prevList => prevList.map(o => (o.firestoreId === docSnap.id || o.id === updated.id) ? { ...o, ...updated } : o));
       }
     });
     return () => unsub();
@@ -1327,32 +1424,32 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
       }
 
       if (!querySnapshot.empty) {
-        const docSnap = querySnapshot.docs[0];
-        const orderData = { firestoreId: docSnap.id, ...docSnap.data() };
-        setTrackedOrder(orderData);
-        showToast('พบข้อมูลออเดอร์ในระบบ Firebase!', 'success');
+        let foundList = [];
+        querySnapshot.forEach(docSnap => {
+          foundList.push({ firestoreId: docSnap.id, ...docSnap.data() });
+        });
+
+        // PRIVACY LOCK: Filter out any orders that don't belong to currentUser
+        if (currentUser && currentUser.studentId) {
+          foundList = foundList.filter(ord => 
+            (currentUser.studentId && ord.studentId === currentUser.studentId) ||
+            (currentUser.uid && ord.userUid === currentUser.uid)
+          );
+        }
+
+        if (foundList.length > 0) {
+          setFoundOrders(foundList);
+          setTrackedOrder(foundList[0]);
+          showToast(`พบข้อมูลคำสั่งซื้อ ${foundList.length} รายการของคุณในระบบ!`, 'success');
+        } else {
+          setFoundOrders([]);
+          setTrackedOrder(null);
+          showToast('ไม่พบข้อมูลคำสั่งซื้อของคุณตามข้อมูลที่ระบุในระบบ', 'error');
+        }
       } else {
-        // Fallback demo lookup
-        const demoOrder = {
-          id: queryStr.startsWith('CPE') ? queryStr : 'CPE-2026-8819',
-          studentId: queryStr.length === 10 ? queryStr : '6812345678',
-          name: 'สมชาย ใจดี (CPE68)',
-          items: [
-            { title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (CPE Polo Shirt)', size: 'L', qty: 1, customName: 'ต้อม CPE', price: 270 }
-          ],
-          total: 270,
-          status: 'shipping',
-          date: (() => {
-            try {
-              return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
-            } catch (e) {
-              return new Date(Date.now() + 25200000).toISOString().replace('T', ' ').substring(0, 16);
-            }
-          })(),
-          trackingNumber: 'TH6800192837'
-        };
-        setTrackedOrder(demoOrder);
-        showToast('ค้นหาออเดอร์สำเร็จ!', 'info');
+        setFoundOrders([]);
+        setTrackedOrder(null);
+        showToast('ไม่พบข้อมูลคำสั่งซื้อสำหรับรหัสนักศึกษา หรือเลขที่ออเดอร์นี้ในระบบ', 'error');
       }
     } catch (err) {
       console.log("Firestore Search:", err);
@@ -1367,7 +1464,9 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
     try {
       await deleteDoc(doc(db, 'orders', trackedOrder.firestoreId));
       showToast('ยกเลิกออเดอร์สำเร็จ', 'success');
-      setTrackedOrder(null);
+      const updatedList = foundOrders.filter(o => o.firestoreId !== trackedOrder.firestoreId);
+      setFoundOrders(updatedList);
+      setTrackedOrder(updatedList.length > 0 ? updatedList[0] : null);
     } catch (err) {
       console.log('Cancel order error:', err);
       showToast('ยกเลิกออเดอร์ไม่สำเร็จ', 'error');
@@ -1422,8 +1521,45 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
             </button>
           </form>
 
+          {/* Multiple Orders Selector Tabs */}
+          {foundOrders.length > 1 && (
+            <div style={{ marginTop: '20px', padding: '12px 16px', background: 'rgba(212,175,55,0.06)', border: '1px solid var(--border-gold)', borderRadius: '10px' }}>
+              <div style={{ fontSize: '0.88rem', color: 'var(--accent-gold-bright)', marginBottom: '10px', fontWeight: 'bold' }}>
+                📦 พบรายการสั่งซื้อของคุณทั้งหมด {foundOrders.length} ออเดอร์ (คลิกเพื่อดูรายละเอียด):
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {foundOrders.map((ord, idx) => {
+                  const isSelected = trackedOrder?.id === ord.id || trackedOrder?.firestoreId === ord.firestoreId;
+                  const itemCount = ord.items ? ord.items.reduce((sum, item) => sum + (item.qty || 1), 0) : 1;
+                  return (
+                    <button
+                      key={ord.firestoreId || ord.id || idx}
+                      onClick={() => {
+                        setTrackedOrder(ord);
+                        if (ord.id) setSearchQuery(ord.id);
+                      }}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '6px',
+                        border: isSelected ? '1px solid var(--accent-gold-bright)' : '1px solid rgba(255,255,255,0.15)',
+                        background: isSelected ? 'linear-gradient(135deg, rgba(212,175,55,0.3) 0%, rgba(184,30,48,0.3) 100%)' : 'rgba(255,255,255,0.05)',
+                        color: isSelected ? '#fff' : 'var(--text-sub)',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                        fontWeight: isSelected ? 'bold' : 'normal',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      ออเดอร์ #{idx + 1}: {ord.id} ({itemCount} ตัว)
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Render Tracking Results */}
-          {trackedOrder && (
+          {trackedOrder ? (
             <div className="tracking-result-box" style={{ marginTop: '24px', background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '12px', padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
                 <div>
@@ -1431,10 +1567,36 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
                   <p style={{ color: 'var(--text-sub)', fontSize: '0.85rem' }}>ผู้สั่งซื้อ: {trackedOrder.name} (รหัส: {trackedOrder.studentId})</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <span className="tech-pill">ยอดรวม: ฿{trackedOrder.total.toLocaleString()}</span>
+                  <span className="tech-pill">ยอดรวม: ฿{(trackedOrder.total || 0).toLocaleString()}</span>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>{trackedOrder.date}</p>
                 </div>
               </div>
+
+              {/* Order Items Detail Breakdown */}
+              {trackedOrder.items && trackedOrder.items.length > 0 && (
+                <div style={{ marginTop: '16px', marginBottom: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <h5 style={{ color: 'var(--accent-gold-bright)', marginBottom: '10px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🛒 รายการสินค้าในออเดอร์นี้ ({trackedOrder.items.reduce((acc, item) => acc + (item.qty || 1), 0)} ตัว):
+                  </h5>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {trackedOrder.items.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '10px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                        <div>
+                          <div style={{ fontWeight: 'bold', color: '#fff' }}>{item.title || item.name || 'เสื้อ CPE'}</div>
+                          <div style={{ color: 'var(--text-sub)', fontSize: '0.8rem', marginTop: '2px' }}>
+                            ไซส์: <span style={{ color: 'var(--accent-gold-bright)', fontWeight: 'bold' }}>{item.size || 'L'}</span> 
+                            {item.customName ? ` | ปักชื่อ: "${item.customName}"` : ' | (ไม่ปักชื่อ)'}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ color: 'var(--text-sub)', fontSize: '0.8rem' }}>x{item.qty || 1} ตัว</span>
+                          <div style={{ fontWeight: 'bold', color: '#fff' }}>฿{(item.totalPrice || item.price * (item.qty || 1) || 0).toLocaleString()}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Stepper Timeline */}
               <div className="stepper" style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', marginTop: '24px' }}>
@@ -1497,6 +1659,10 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
                   ❌ ยกเลิกออเดอร์ (Cancel Order)
                 </button>
               )}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--text-sub)' }}>
+              <p style={{ fontSize: '0.95rem' }}>💡 กรอกหมายเลขออเดอร์หรือรหัสนักศึกษา 10 หลัก เพื่อค้นหาสถานะการสั่งซื้อของคุณ</p>
             </div>
           )}
 
@@ -2114,7 +2280,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
     if (isExpired) {
-      showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 12:00 น.)', 'error');
+      showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:00 น.)', 'error');
       return;
     }
     if (!checkoutName || !checkoutStudentId || checkoutStudentId.length !== 10 || !checkoutPhone) {
@@ -2131,6 +2297,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
     const depositAmount = 50;
     const newOrder = {
       id: orderId,
+      userUid: currentUser?.uid || null,
       studentId: checkoutStudentId,
       name: checkoutName,
       phone: checkoutPhone,
@@ -2446,7 +2613,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const handleStatusChange = async (orderId, newStatus) => {
     const updated = orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
     setOrders(updated);
-    localStorage.setItem('cpe_my_orders', JSON.stringify(updated));
 
     const target = orders.find(o => o.id === orderId);
     if (target && target.firestoreId) {
@@ -2465,7 +2631,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
       await deleteDoc(doc(db, 'orders', target.firestoreId));
       const updated = orders.filter(o => o.id !== orderId);
       setOrders(updated);
-      localStorage.setItem('cpe_my_orders', JSON.stringify(updated));
       showToast(`ลบออเดอร์ ${orderId} สำเร็จ`, 'success');
     } catch (e) {
       console.log('Delete error:', e);
@@ -2913,6 +3078,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
 
 // 10. FOOTER COMPONENT
 function Footer() {
+  const { currentUser } = useContext(AuthContext);
   return (
     <footer className="footer">
       <div className="container">
@@ -2936,7 +3102,7 @@ function Footer() {
             <ul className="footer-links">
               <li><a href="#hero">หน้าแรก</a></li>
               <li><a href="#ordering">สั่งซื้อเสื้อโปโล &amp; เสื้อคลุม</a></li>
-              <li><a href="#tracking">ตรวจสอบสถานะการสั่งซื้อ</a></li>
+              {currentUser && <li><a href="#tracking">ตรวจสอบสถานะการสั่งซื้อ</a></li>}
             </ul>
           </div>
 
