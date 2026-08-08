@@ -2746,7 +2746,6 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
   const handleSearchWithId = async (sid) => {
     const searchTarget = sid || studentId;
     if (!searchTarget || searchTarget.length < 8) {
