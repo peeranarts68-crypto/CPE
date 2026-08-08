@@ -3646,7 +3646,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
               { id: 'jacket', label: '🧥 เสื้อคลุม CPE 69 (ปี 1)', badgeBg: '#10b981' },
               { id: 'extra_deposit', label: '💳 มัดจำเพิ่ม 100 บาท', badgeBg: '#f59e0b' }
             ].map(tab => {
-              const count = tab.id === 'deposit_summary' ? orders.length + extraDeposits.length : tab.id === 'extra_deposit' ? extraDeposits.length : tab.id === 'all' ? orders.length : orders.filter(o => {
+              const count = tab.id === 'deposit_summary' ? orders.length : tab.id === 'extra_deposit' ? extraDeposits.length : tab.id === 'all' ? orders.length : orders.filter(o => {
                 if (tab.id === 'polo_67') return (o.studentId && o.studentId.startsWith('67')) || o.year === '3' || (o.items && o.items.some(it => it.studentId && it.studentId.startsWith('67')));
                 if (tab.id === 'polo_68') return (o.studentId && o.studentId.startsWith('68')) || o.year === '2' || (o.items && o.items.some(it => it.productKey === 'polo' || (it.title && (it.title.includes('รุ่น 68') || it.title.includes('CPE Polo Shirt')))));
                 if (tab.id === 'polo_navy') return o.items && o.items.some(it => it.productKey === 'polo_navy' || (it.title && (it.title.includes('Navy') || it.title.includes('สีกรมท่า'))));
@@ -3906,7 +3906,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
                   📊 สรุปจำนวนคนและยอดเงินมัดจำทั้งหมด
                 </h4>
                 <span style={{ color: 'var(--text-sub)', fontSize: '0.85rem' }}>
-                  รวมผู้จ่ายมัดจำทั้งหมด: <strong style={{ color: '#22c55e', fontSize: '1.05rem' }}>{orders.length + extraDeposits.length} รายการ</strong>
+                  รวมผู้จ่ายมัดจำทั้งหมด: <strong style={{ color: '#22c55e', fontSize: '1.05rem' }}>{orders.length} คน</strong>
                 </span>
               </div>
 
@@ -3918,7 +3918,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
                 const sum150 = count150 * 150;
                 const countExtra100 = extraDeposits.length;
                 const sumExtra100 = extraDeposits.reduce((sum, ed) => sum + (ed.amount || 100), 0);
-                const totalDepositMoney = orders.reduce((sum, o) => sum + (o.deposit || 50), 0) + sumExtra100;
+                const totalDepositMoney = orders.reduce((sum, o) => sum + (o.deposit || 50), 0);
 
                 return (
                   <>
@@ -3944,7 +3944,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
                       <div style={{ background: 'rgba(212,175,55,0.15)', border: '1px solid #f5d061', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
                         <span style={{ color: '#f5d061', fontSize: '0.82rem', fontWeight: 700 }}>🏆 รวมเงินมัดจำทั้งหมด</span>
                         <h3 style={{ color: '#f5d061', fontSize: '1.5rem', margin: '4px 0 2px' }}>฿{totalDepositMoney.toLocaleString()}</h3>
-                        <span style={{ color: '#fff', fontSize: '0.78rem', fontWeight: 600 }}>{orders.length + countExtra100} รายการรวม</span>
+                        <span style={{ color: '#fff', fontSize: '0.78rem', fontWeight: 600 }}>{orders.length} คนรวม</span>
                       </div>
                     </div>
 
