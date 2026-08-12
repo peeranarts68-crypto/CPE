@@ -63,6 +63,23 @@ const withTimeout = (promise, ms = 4000) => {
 // Create Auth Context
 const AuthContext = createContext();
 
+// Helper to retrieve sanitized saved user from localStorage
+function getSanitizedSavedUser() {
+  try {
+    const raw = localStorage.getItem('cpe_current_user');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Ensure essential fields exist
+    if (parsed && parsed.uid && parsed.name) {
+      return parsed;
+    }
+    return null;
+  } catch (e) {
+    console.warn('Failed to parse saved user:', e);
+    return null;
+  }
+}
+
 // App Toast Notification Component
 function Toast({ toast }) {
   if (!toast.visible) return null;
@@ -144,6 +161,7 @@ const PRODUCTS = {
     originalPrice: 1200,
     badgeText: 'สำหรับน้อง CPE 69 (3XL+ +฿100)',
     images: {
+
       front: 'assets/jacket_front.png',
       back: 'assets/jacket_back.png',
       sleeve: 'assets/jacket_side.png'
@@ -156,6 +174,7 @@ const PRODUCTS = {
     ]
   }
 };
+
 
 // Size Base Labels & Chest Measurements
 const SIZES = [
@@ -171,7 +190,52 @@ const SIZES = [
 
 // Main React App Provider & Root
 function App() {
-  const [currentUser, setCurrentUser] = useState(null);
+  // Global pre-fetch for Admin Dashboard so Admin Modal opens INSTANTLY
+  useEffect(() => {
+    let unsubOrders = () => {};
+    let unsubExtra = () => {};
+
+    const startPrefetch = () => {
+      const fb = window.CPEFirebase || {};
+      if (!fb.db || !fb.collection || !fb.onSnapshot) return;
+
+      try {
+        if (adminCachedOrders.length === 0) {
+          const ordersRef = fb.collection(fb.db, 'orders');
+          unsubOrders = fb.onSnapshot(ordersRef, (querySnapshot) => {
+            let firestoreList = [];
+            querySnapshot.forEach((docSnap) => {
+              firestoreList.push({ firestoreId: docSnap.id, ...docSnap.data() });
+            });
+            firestoreList.sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
+            adminCachedOrders = firestoreList;
+            window.dispatchEvent(new Event('cpe-admin-data-updated'));
+          }, (err) => console.log("Prefetch orders warning:", err));
+        }
+
+        if (adminCachedExtraDeposits.length === 0) {
+          const q = fb.collection(fb.db, 'extra_deposits');
+          unsubExtra = fb.onSnapshot(q, (snap) => {
+            const list = [];
+            snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+            adminCachedExtraDeposits = list;
+            window.dispatchEvent(new Event('cpe-admin-data-updated'));
+          }, (err) => console.log("Prefetch extra deposits warning:", err));
+        }
+      } catch (e) {
+        console.log("Global prefetch error:", e);
+      }
+    };
+
+    startPrefetch();
+    window.addEventListener('cpe-firebase-ready', startPrefetch);
+    return () => {
+      unsubOrders();
+      unsubExtra();
+      window.removeEventListener('cpe-firebase-ready', startPrefetch);
+    };
+  }, []);
+  const [currentUser, setCurrentUser] = useState(() => getSanitizedSavedUser());
   const [cart, setCart] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cpe_cart')) || []; }
     catch { return []; }
@@ -327,74 +391,55 @@ function App() {
     return () => { isMounted = false; };
   }, [currentUser?.studentId, currentUser?.uid]);
 
-  // Auto load recent order on page load / refresh if trackedOrder not set
+  
+
+  // Firebase Auth Listener with Session Persistence
   useEffect(() => {
-    if (!trackedOrder && myOrdersHistory.length > 0) {
-      setTrackedOrder(myOrdersHistory[0]);
-      if (myOrdersHistory[0].id) setSearchTrackingQuery(myOrdersHistory[0].id);
-    }
-  }, [myOrdersHistory]);
+    let unsubscribe = () => {};
 
-  const getSanitizedSavedUser = () => {
-    const savedUser = localStorage.getItem('cpe_current_user');
-    if (!savedUser) return null;
-    try {
-      const parsed = JSON.parse(savedUser);
-      if (parsed && parsed.email && parsed.email !== '6812345678@psru.ac.th' && parsed.studentId === '6812345678') {
-        parsed.studentId = parsed.email.split('@')[0];
-        localStorage.setItem('cpe_current_user', JSON.stringify(parsed));
-      }
-      return parsed;
-    } catch (e) {
-      return null;
-    }
-  };
+    const initAuthListener = () => {
+      const fb = window.CPEFirebase || {};
+      if (!fb.auth || !fb.onAuthStateChanged) return;
 
-  // Firebase Auth Listener
-  useEffect(() => {
-    const fb = window.CPEFirebase || {};
-    if (!fb.auth || !fb.onAuthStateChanged) {
-      const user = getSanitizedSavedUser();
-      setCurrentUser(user);
-      return;
-    }
-
-    const unsubscribe = fb.onAuthStateChanged(fb.auth, async (user) => {
-      if (user) {
-        try {
-          if (fb.getDoc && fb.doc && fb.db) {
-            const userDoc = await fb.getDoc(fb.doc(fb.db, 'users', user.uid));
-            if (userDoc.exists()) {
-              const uData = { uid: user.uid, ...userDoc.data() };
-              setCurrentUser(uData);
-              localStorage.setItem('cpe_current_user', JSON.stringify(uData));
-            } else {
-              const saved = getSanitizedSavedUser();
-              if (saved && (saved.uid === user.uid || saved.email === user.email)) {
-                setCurrentUser(saved);
+      unsubscribe = fb.onAuthStateChanged(fb.auth, async (user) => {
+        if (user) {
+          try {
+            if (fb.getDoc && fb.doc && fb.db) {
+              const userDoc = await fb.getDoc(fb.doc(fb.db, 'users', user.uid));
+              if (userDoc.exists()) {
+                const uData = { uid: user.uid, ...userDoc.data() };
+                setCurrentUser(uData);
+                localStorage.setItem('cpe_current_user', JSON.stringify(uData));
                 return;
               }
-              const derivedStudentId = user.email && user.email.includes('@') ? user.email.split('@')[0] : '';
-              const newUser = {
-                uid: user.uid,
-                email: user.email,
-                name: user.displayName || 'นักศึกษา CPE',
-                studentId: derivedStudentId
-              };
-              setCurrentUser(newUser);
-              localStorage.setItem('cpe_current_user', JSON.stringify(newUser));
             }
+            // Fallback: derive minimal user info if document does not exist yet
+            const derivedStudentId = user.email && user.email.includes('@') ? user.email.split('@')[0] : '';
+            const newUser = {
+              uid: user.uid,
+              email: user.email,
+              name: user.displayName || 'ผู้ใช้งาน CPE',
+              studentId: derivedStudentId
+            };
+            setCurrentUser(newUser);
+            localStorage.setItem('cpe_current_user', JSON.stringify(newUser));
+          } catch (e) {
+            console.log('Firestore user fetch error:', e);
           }
-        } catch (e) {
-          console.log("Firestore user fetch error:", e);
         }
-      } else {
-        const saved = getSanitizedSavedUser();
-        setCurrentUser(saved);
-      }
-    });
+      });
+    };
 
-    return () => unsubscribe();
+    if (window.CPEFirebase && window.CPEFirebase.auth) {
+      initAuthListener();
+    } else {
+      window.addEventListener('cpe-firebase-ready', initAuthListener);
+    }
+
+    return () => {
+      window.removeEventListener('cpe-firebase-ready', initAuthListener);
+      unsubscribe();
+    };
   }, []);
 
   const showToast = (message, type = 'info') => {
@@ -619,7 +664,6 @@ function App() {
           onClose={() => setIsAdminModalOpen(false)}
         />
 
-        {/* EXTRA DEPOSIT MODAL */}
         <ExtraDepositModal
           isOpen={isExtraDepositModalOpen}
           onClose={() => setIsExtraDepositModalOpen(false)}
@@ -2070,6 +2114,7 @@ function AuthModal({ isOpen, onClose }) {
     setAuthErr('');
     if (isSubmitting) return;
 
+    const isTeacher = regYear === 'teacher';
     const name = regName.trim();
     const studentId = regStudentId.trim();
     const phone = regPhone.trim() || '-';
@@ -2083,7 +2128,13 @@ function AuthModal({ isOpen, onClose }) {
       showToast(msg, 'error');
       return;
     }
-    if (studentId.length !== 10) {
+    if (!studentId) {
+      const msg = isTeacher ? 'กรุณากรอกรหัสอาจารย์ / รหัสประจำตัว' : 'กรุณากรอกรหัสนักศึกษา';
+      setAuthErr(msg);
+      showToast(msg, 'error');
+      return;
+    }
+    if (!isTeacher && studentId.length !== 10) {
       const msg = 'กรุณากรอกรหัสนักศึกษาให้ครบ 10 หลัก (เช่น 6812345678)';
       setAuthErr(msg);
       showToast(msg, 'error');
@@ -2107,7 +2158,7 @@ function AuthModal({ isOpen, onClose }) {
 
     try {
       let finalUid = 'user-' + Date.now();
-      const authEmail = `${studentId}@psru.ac.th`;
+      const authEmail = email.includes('@') ? email : `${studentId}@psru.ac.th`;
 
       if (fb && fb.auth && fb.createUserWithEmailAndPassword) {
         try {
@@ -2119,7 +2170,6 @@ function AuthModal({ isOpen, onClose }) {
           console.log("Firebase Register Auth attempt:", err);
           if (err.code === 'auth/email-already-in-use' && fb.signInWithEmailAndPassword) {
             try {
-              const authEmail = `${studentId}@psru.ac.th`;
               const loginRes = await withTimeout(fb.signInWithEmailAndPassword(fb.auth, authEmail, pass), 3000);
               if (loginRes && loginRes.user) {
                 finalUid = loginRes.user.uid;
@@ -2138,8 +2188,9 @@ function AuthModal({ isOpen, onClose }) {
         name: name,
         nickname: regNickname.trim() || name,
         year: regYear,
+        role: isTeacher ? 'teacher' : 'student',
         phone: phone,
-        email: email,
+        email: authEmail,
         createdAt: new Date().toISOString()
       };
       
@@ -2248,19 +2299,19 @@ function AuthModal({ isOpen, onClose }) {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>รหัสนักศึกษา (10 หลัก) <span style={{ color: '#ef4444' }}>*</span></label>
+                  <label>{regYear === 'teacher' ? 'รหัสอาจารย์ / รหัสประจำตัว' : 'รหัสนักศึกษา (10 หลัก)'} <span style={{ color: '#ef4444' }}>*</span></label>
                   <input 
                     type="text" 
                     className="form-input" 
-                    placeholder="6812345678"
-                    maxLength={10}
+                    placeholder={regYear === 'teacher' ? "เช่น T12345" : "6812345678"}
+                    maxLength={regYear === 'teacher' ? 20 : 10}
                     value={regStudentId}
-                    onChange={e => setRegStudentId(e.target.value.replace(/\D/g, ''))}
+                    onChange={e => setRegStudentId(regYear === 'teacher' ? e.target.value : e.target.value.replace(/\D/g, ''))}
                     required 
                   />
                 </div>
                 <div className="form-group">
-                  <label>ชั้นปี / รุ่น <span style={{ color: '#ef4444' }}>*</span></label>
+                  <label>ชั้นปี / สถานะ <span style={{ color: '#ef4444' }}>*</span></label>
                   <select 
                     className="form-input" 
                     style={{ height: '44px' }}
@@ -2270,6 +2321,7 @@ function AuthModal({ isOpen, onClose }) {
                     <option value="1">ปี 1 (CPE69)</option>
                     <option value="2">ปี 2 (CPE68)</option>
                     <option value="3">ปี 3 (CPE67)</option>
+                    <option value="teacher">อาจารย์ / บุคลากร 👨‍🏫</option>
                   </select>
                 </div>
               </div>
@@ -2745,6 +2797,9 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
   const [selectedOrderId, setSelectedOrderId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [alreadyPaid, setAlreadyPaid] = useState(false);
+  // Local cache of extra deposits for duplicate payment guard
+  const [extraDepositsList, setExtraDepositsList] = useState([]);
 
   const handleSearchWithId = async (sid) => {
     const searchTarget = sid || studentId;
@@ -2757,13 +2812,33 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
     try {
       const fb = window.CPEFirebase || {};
       if (fb.db && fb.collection && fb.query && fb.where && fb.getDocs) {
+        // Query orders for the given student ID
         const q = fb.query(fb.collection(fb.db, 'orders'), fb.where('studentId', '==', searchTarget));
         const snap = await fb.getDocs(q);
         const results = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
         setFoundOrders(results);
-        if (results.length === 0) showToast('ไม่พบออเดอร์ในระบบ ตรวจสอบรหัสอีกครั้ง', 'error');
-        else {
-          setSelectedOrderId(results[0].id || results[0].firestoreId);
+        if (results.length === 0) {
+          showToast('ไม่พบออเดอร์ในระบบ ตรวจสอบรหัสอีกครั้ง', 'error');
+          setAlreadyPaid(false);
+        } else {
+          const firstId = results[0].id || results[0].firestoreId;
+          setSelectedOrderId(firstId);
+          const orderIds = results.map(o => o.id || o.firestoreId);
+          // Fetch all extra deposits (could be optimized with a query) and filter
+          if (fb.collection && fb.getDocs) {
+            const depSnap = await fb.getDocs(fb.collection(fb.db, 'extra_deposits'));
+            const depList = [];
+            depSnap.forEach(d => depList.push({ id: d.id, ...d.data() }));
+            setExtraDepositsList(depList);
+            const hasPaid = depList.some(ed => orderIds.includes(ed.orderRef) && ed.status === 'verified');
+            setAlreadyPaid(hasPaid);
+            if (hasPaid) {
+              showToast('คุณได้จ่ายมัดจำเพิ่มแล้วสำหรับออเดอร์นี้', 'warning');
+            }
+          } else {
+            // Fallback if extra deposits collection not available
+            setAlreadyPaid(false);
+          }
         }
       }
     } catch (e) {
@@ -2833,6 +2908,10 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (alreadyPaid) {
+      showToast('คุณได้จ่ายมัดจำเพิ่มแล้วสำหรับออเดอร์นี้', 'error');
+      return;
+    }
     if (!selectedOrderId) {
       showToast('กรุณาเลือกออเดอร์และอัพโหลดสลิปให้ครบถ้วนก่อน', 'error');
       return;
@@ -2862,6 +2941,8 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
     }
     setIsSubmitting(false);
   };
+
+
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
@@ -2928,6 +3009,7 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
                   </div>
                 </div>
               )}
+
 
               {/* Step 3: Upload Slip (Luxury Custom Dropzone) */}
               {foundOrders.length > 0 && (
@@ -3005,11 +3087,16 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
   );
 }
 
+let adminCachedOrders = [];
+let adminCachedExtraDeposits = [];
+let adminCachedSalesMode = 'auto';
+let adminCachedDeadline = '2026-08-08T14:40';
+
 // 9. ADMIN DASHBOARD MODAL COMPONENT (Admin ID: 6800000000)
 function AdminDashboardModal({ isOpen, onClose }) {
   const { showToast } = useContext(AuthContext);
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState(adminCachedOrders);
+  const [loading, setLoading] = useState(adminCachedOrders.length === 0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [productFilter, setProductFilter] = useState('all');
@@ -3019,22 +3106,28 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const [salesMode, setSalesMode] = useState('auto');
   const [customDeadline, setCustomDeadline] = useState('2026-08-08T14:40');
   const [savingSettings, setSavingSettings] = useState(false);
-  const [extraDeposits, setExtraDeposits] = useState([]);
+  const [extraDeposits, setExtraDeposits] = useState(adminCachedExtraDeposits);
 
   useEffect(() => {
     if (!isOpen) return;
     const fb = window.CPEFirebase || {};
-    if (!fb.db || !fb.collection || !fb.onSnapshot) return;
-    let unsub = () => {};
-    try {
-      const q = fb.collection(fb.db, 'extra_deposits');
-      unsub = fb.onSnapshot(q, (snap) => {
+    if (!fb.db || !fb.collection || !fb.getDocs) {
+      setExtraDeposits([]);
+      return;
+    }
+    const extraDepositsRef = fb.collection(fb.db, 'extra_deposits');
+    const fetchExtraDeposits = async () => {
+      try {
+        const snapshot = await fb.getDocs(extraDepositsRef);
         const list = [];
-        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+        snapshot.forEach(d => list.push({ id: d.id, ...d.data() }));
+        adminCachedExtraDeposits = list;
         setExtraDeposits(list);
-      });
-    } catch (e) { console.log(e); }
-    return () => unsub();
+      } catch (e) {
+        console.log('Fetch extra deposits error:', e);
+      }
+    };
+    fetchExtraDeposits();
   }, [isOpen]);
 
   useEffect(() => {
@@ -3087,6 +3180,10 @@ function AdminDashboardModal({ isOpen, onClose }) {
     try {
       await fb.deleteDoc(fb.doc(fb.db, 'extra_deposits', depItem.id));
 
+      const updatedExtra = extraDeposits.filter(ed => ed.id !== depItem.id);
+      adminCachedExtraDeposits = updatedExtra;
+      setExtraDeposits(updatedExtra);
+
       if (depItem.status === 'verified') {
         const targetOrder = orders.find(o => o.id === depItem.orderRef || o.firestoreId === depItem.orderRef);
         if (targetOrder && targetOrder.firestoreId) {
@@ -3096,6 +3193,12 @@ function AdminDashboardModal({ isOpen, onClose }) {
             deposit: revertedDeposit,
             remaining: revertedRemaining
           }, { merge: true });
+
+          const updatedOrders = orders.map(o => 
+            o.firestoreId === targetOrder.firestoreId ? { ...o, deposit: revertedDeposit, remaining: revertedRemaining } : o
+          );
+          adminCachedOrders = updatedOrders;
+          setOrders(updatedOrders);
         }
       }
 
@@ -3116,6 +3219,12 @@ function AdminDashboardModal({ isOpen, onClose }) {
         verifiedAt: new Date().toISOString()
       }, { merge: true });
 
+      const updatedExtra = extraDeposits.map(ed => 
+        ed.id === depItem.id ? { ...ed, status: 'verified', verifiedAt: new Date().toISOString() } : ed
+      );
+      adminCachedExtraDeposits = updatedExtra;
+      setExtraDeposits(updatedExtra);
+
       // 2. Find target order and deduct remaining balance / update deposit
       const targetOrder = orders.find(o => o.id === depItem.orderRef || o.firestoreId === depItem.orderRef);
       if (targetOrder && targetOrder.firestoreId) {
@@ -3125,7 +3234,14 @@ function AdminDashboardModal({ isOpen, onClose }) {
           deposit: newDeposit,
           remaining: newRemaining
         }, { merge: true });
-        showToast(`✅ ยืนยันสลิปมัดจำเพิ่มแล้ว! อัปเดตยอดมัดจำออเดอร์ ${targetOrder.id} เป็น ฿${newDeposit} (ค้าง ฿${newRemaining})`, 'success');
+
+        const updatedOrders = orders.map(o => 
+          o.firestoreId === targetOrder.firestoreId ? { ...o, deposit: newDeposit, remaining: newRemaining } : o
+        );
+        adminCachedOrders = updatedOrders;
+        setOrders(updatedOrders);
+
+        showToast('✅ ยืนยันสลิปมัดจำเพิ่มแล้ว! อัปเดตยอดมัดจำออเดอร์ ' + targetOrder.id + ' เป็น ฿' + newDeposit + ' (ค้าง ฿' + newRemaining + ')', 'success');
       } else {
         showToast('✅ ยืนยันสลิปมัดจำเพิ่มเรียบร้อยแล้ว!', 'success');
       }
@@ -3138,35 +3254,32 @@ function AdminDashboardModal({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return;
 
-    setLoading(true);
-    let unsub = () => {};
+    if (adminCachedOrders.length === 0) setLoading(true);
 
-    try {
-      const fb = window.CPEFirebase || {};
-      if (!fb.db || !fb.collection || !fb.query || !fb.onSnapshot) {
-        setLoading(false);
-        return;
-      }
+    const fb = window.CPEFirebase || {};
+    if (!fb.db || !fb.collection || !fb.getDocs) {
+      setLoading(false);
+      return;
+    }
 
-      const ordersRef = fb.collection(fb.db, 'orders');
-      const q = fb.orderBy ? fb.query(ordersRef, fb.orderBy('date', 'desc')) : fb.query(ordersRef);
-      unsub = fb.onSnapshot(q, (querySnapshot) => {
+    const ordersRef = fb.collection(fb.db, 'orders');
+    const fetchOrders = async () => {
+      try {
+        const querySnapshot = await fb.getDocs(ordersRef);
         let firestoreList = [];
         querySnapshot.forEach((docSnap) => {
           firestoreList.push({ firestoreId: docSnap.id, ...docSnap.data() });
         });
+        firestoreList.sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
+        adminCachedOrders = firestoreList;
         setOrders(firestoreList);
+      } catch (e) {
+        console.log('Fetch orders error:', e);
+      } finally {
         setLoading(false);
-      }, (err) => {
-        console.log("Realtime orders snapshot error:", err);
-        setLoading(false);
-      });
-    } catch (e) {
-      console.log("Firestore real-time listener setup error:", e);
-      setLoading(false);
-    }
-
-    return () => unsub();
+      }
+    };
+    fetchOrders();
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -3942,13 +4055,18 @@ function AdminDashboardModal({ isOpen, onClose }) {
 
               {/* Deposit Breakdown Stats Grid */}
               {(() => {
-                const count50 = orders.filter(o => (o.deposit || 50) === 50).length;
+                const verifiedExtraOrderRefs = new Set(extraDeposits.filter(ed => ed.status === 'verified').map(ed => ed.orderRef));
+                const upgradedOrders = orders.filter(o => verifiedExtraOrderRefs.has(o.id) || verifiedExtraOrderRefs.has(o.firestoreId));
+                const original150Orders = orders.filter(o => (o.deposit || 50) === 150 && !verifiedExtraOrderRefs.has(o.id) && !verifiedExtraOrderRefs.has(o.firestoreId));
+                const original50Orders = orders.filter(o => (o.deposit || 50) === 50);
+                const count50 = original50Orders.length + upgradedOrders.length;
                 const sum50 = count50 * 50;
-                const count150 = orders.filter(o => (o.deposit || 50) === 150).length;
+                const count150 = original150Orders.length;
                 const sum150 = count150 * 150;
-                const countExtra100 = extraDeposits.length;
-                const sumExtra100 = extraDeposits.reduce((sum, ed) => sum + (ed.amount || 100), 0);
-                const totalDepositMoney = orders.reduce((sum, o) => sum + (o.deposit || 50), 0);
+                const countExtra100 = extraDeposits.filter(ed => ed.status === 'verified').length;
+                const sumExtra100 = extraDeposits.filter(ed => ed.status === 'verified').reduce((sum, ed) => sum + (ed.amount || 100), 0);
+                const countPendingExtra100 = extraDeposits.filter(ed => ed.status !== 'verified').length;
+                const totalDepositMoney = sum50 + sum150 + sumExtra100;
 
                 return (
                   <>
@@ -3969,6 +4087,11 @@ function AdminDashboardModal({ isOpen, onClose }) {
                         <span style={{ color: '#7dd3fc', fontSize: '0.82rem', fontWeight: 600 }}>⚡ มัดจำเพิ่ม 100 บาท (โอนแยก)</span>
                         <h3 style={{ color: '#38bdf8', fontSize: '1.4rem', margin: '4px 0 2px' }}>{countExtra100} รายการ</h3>
                         <span style={{ color: 'var(--text-sub)', fontSize: '0.78rem' }}>รวมเงิน: ฿{sumExtra100.toLocaleString()}</span>
+                        {countPendingExtra100 > 0 && (
+                          <div style={{ color: '#ef4444', fontSize: '0.72rem', fontWeight: 'bold', marginTop: '2px' }}>
+                            ⏳ รออนุมัติ {countPendingExtra100} รายการ
+                          </div>
+                        )}
                       </div>
 
                       <div style={{ background: 'rgba(212,175,55,0.15)', border: '1px solid #f5d061', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>

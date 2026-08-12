@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CPE Shirt & Jacket Ordering Web App - React 18 Application Component
  * Integrated with Firebase Auth, Cloud Firestore Database, and Analytics
  */
@@ -170,6 +170,51 @@ const SIZES = [
 
 // Main React App Provider & Root
 function App() {
+  // Global pre-fetch for Admin Dashboard so Admin Modal opens INSTANTLY
+  useEffect(() => {
+    let unsubOrders = () => {};
+    let unsubExtra = () => {};
+
+    const startPrefetch = () => {
+      const fb = window.CPEFirebase || {};
+      if (!fb.db || !fb.collection || !fb.onSnapshot) return;
+
+      try {
+        if (adminCachedOrders.length === 0) {
+          const ordersRef = fb.collection(fb.db, 'orders');
+          unsubOrders = fb.onSnapshot(ordersRef, (querySnapshot) => {
+            let firestoreList = [];
+            querySnapshot.forEach((docSnap) => {
+              firestoreList.push({ firestoreId: docSnap.id, ...docSnap.data() });
+            });
+            firestoreList.sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
+            adminCachedOrders = firestoreList;
+            window.dispatchEvent(new Event('cpe-admin-data-updated'));
+          }, (err) => console.log("Prefetch orders warning:", err));
+        }
+
+        if (adminCachedExtraDeposits.length === 0) {
+          const q = fb.collection(fb.db, 'extra_deposits');
+          unsubExtra = fb.onSnapshot(q, (snap) => {
+            const list = [];
+            snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+            adminCachedExtraDeposits = list;
+            window.dispatchEvent(new Event('cpe-admin-data-updated'));
+          }, (err) => console.log("Prefetch extra deposits warning:", err));
+        }
+      } catch (e) {
+        console.log("Global prefetch error:", e);
+      }
+    };
+
+    startPrefetch();
+    window.addEventListener('cpe-firebase-ready', startPrefetch);
+    return () => {
+      unsubOrders();
+      unsubExtra();
+      window.removeEventListener('cpe-firebase-ready', startPrefetch);
+    };
+  }, []);
   const [currentUser, setCurrentUser] = useState(null);
   const [cart, setCart] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cpe_cart')) || []; }
@@ -2999,11 +3044,16 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
   );
 }
 
+let adminCachedOrders = [];
+let adminCachedExtraDeposits = [];
+let adminCachedSalesMode = 'auto';
+let adminCachedDeadline = '2026-08-08T14:40';
+
 // 9. ADMIN DASHBOARD MODAL COMPONENT (Admin ID: 6800000000)
 function AdminDashboardModal({ isOpen, onClose }) {
   const { showToast } = useContext(AuthContext);
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState(adminCachedOrders);
+  const [loading, setLoading] = useState(adminCachedOrders.length === 0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [productFilter, setProductFilter] = useState('all');
@@ -3013,7 +3063,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const [salesMode, setSalesMode] = useState('auto');
   const [customDeadline, setCustomDeadline] = useState('2026-08-08T14:40');
   const [savingSettings, setSavingSettings] = useState(false);
-  const [extraDeposits, setExtraDeposits] = useState([]);
+  const [extraDeposits, setExtraDeposits] = useState(adminCachedExtraDeposits);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -3025,6 +3075,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
       unsub = fb.onSnapshot(q, (snap) => {
         const list = [];
         snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+        adminCachedExtraDeposits = list;
         setExtraDeposits(list);
       });
     } catch (e) { console.log(e); }
@@ -3129,23 +3180,24 @@ function AdminDashboardModal({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return;
 
-    setLoading(true);
+    if (adminCachedOrders.length === 0) setLoading(true);
     let unsub = () => {};
 
     try {
       const fb = window.CPEFirebase || {};
-      if (!fb.db || !fb.collection || !fb.query || !fb.onSnapshot) {
+      if (!fb.db || !fb.collection || !fb.onSnapshot) {
         setLoading(false);
         return;
       }
 
       const ordersRef = fb.collection(fb.db, 'orders');
-      const q = fb.orderBy ? fb.query(ordersRef, fb.orderBy('date', 'desc')) : fb.query(ordersRef);
-      unsub = fb.onSnapshot(q, (querySnapshot) => {
+      unsub = fb.onSnapshot(ordersRef, (querySnapshot) => {
         let firestoreList = [];
         querySnapshot.forEach((docSnap) => {
           firestoreList.push({ firestoreId: docSnap.id, ...docSnap.data() });
         });
+        firestoreList.sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
+        adminCachedOrders = firestoreList;
         setOrders(firestoreList);
         setLoading(false);
       }, (err) => {
