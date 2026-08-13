@@ -3687,16 +3687,65 @@ function PayRemainingModal({ isOpen, onClose, initialOrder, showToast }) {
   );
 }
 
-let adminCachedOrders = [];
+let adminCachedOrders = (() => {
+  try {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('cpe_cached_admin_orders') : null;
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    return [];
+  }
+})();
 let adminCachedExtraDeposits = [];
 let adminCachedSalesMode = 'auto';
 let adminCachedDeadline = '2026-08-08T14:40';
+
+let isGlobalSyncStarted = false;
+function initGlobalAdminSync() {
+  if (isGlobalSyncStarted) return;
+  const fb = window.CPEFirebase || {};
+  if (!fb.db || !fb.collection || !fb.onSnapshot) return;
+
+  isGlobalSyncStarted = true;
+  try {
+    fb.onSnapshot(fb.collection(fb.db, 'orders'), (snap) => {
+      let list = [];
+      snap.forEach((docSnap) => {
+        list.push({ firestoreId: docSnap.id, ...docSnap.data() });
+      });
+      list.sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
+      adminCachedOrders = list;
+      try {
+        localStorage.setItem('cpe_cached_admin_orders', JSON.stringify(list.slice(0, 300)));
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('cpe-admin-orders-updated', { detail: list }));
+    }, (err) => {
+      console.log('Global orders listener error:', err);
+    });
+
+    fb.onSnapshot(fb.collection(fb.db, 'extra_deposits'), (snap) => {
+      const list = [];
+      snap.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
+      adminCachedExtraDeposits = list;
+      window.dispatchEvent(new CustomEvent('cpe-admin-extra-updated', { detail: list }));
+    }, (err) => {
+      console.log('Global extra deposits listener error:', err);
+    });
+  } catch (e) {
+    console.log('Global admin sync error:', e);
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('cpe-firebase-ready', () => initGlobalAdminSync());
+  setTimeout(() => { if (window.CPEFirebase && window.CPEFirebase.db) initGlobalAdminSync(); }, 300);
+}
 
 // 9. ADMIN DASHBOARD MODAL COMPONENT (Admin ID: 6800000000)
 function AdminDashboardModal({ isOpen, onClose }) {
   const { showToast } = useContext(AuthContext);
   const [orders, setOrders] = useState(adminCachedOrders);
   const [loading, setLoading] = useState(adminCachedOrders.length === 0);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [productFilter, setProductFilter] = useState('all');
@@ -3898,10 +3947,45 @@ function AdminDashboardModal({ isOpen, onClose }) {
     }
   };
 
+  const fetchOrdersDirect = async (showNotification = false) => {
+    setRefreshing(true);
+    const fb = window.CPEFirebase || {};
+    if (!fb.db || !fb.collection || !fb.getDocs) {
+      if (showNotification) showToast('ระบบ Firebase กำลังเชื่อมต่อ กรุณาลองอีกครั้งในสักครู่', 'warning');
+      setRefreshing(false);
+      return;
+    }
+
+    try {
+      const snap = await fb.getDocs(fb.collection(fb.db, 'orders'));
+      let list = [];
+      snap.forEach(docSnap => {
+        list.push({ firestoreId: docSnap.id, ...docSnap.data() });
+      });
+      list.sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
+      
+      adminCachedOrders = list;
+      setOrders(list);
+      try {
+        localStorage.setItem('cpe_cached_admin_orders', JSON.stringify(list.slice(0, 300)));
+      } catch (e) {}
+
+      if (showNotification) {
+        showToast(`⚡ ซิงค์ข้อมูลจาก Firebase สำเร็จทั้งหมด ${list.length} ออเดอร์ (100%)`, 'success');
+      }
+    } catch (e) {
+      console.log('Direct fetch orders error:', e);
+      if (showNotification) showToast('เกิดข้อผิดพลาดในการดึงข้อมูลจาก Cloud', 'error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
-    if (adminCachedOrders.length > 0) {
+    if (adminCachedOrders && adminCachedOrders.length > 0) {
       setOrders(adminCachedOrders);
       setLoading(false);
     } else {
@@ -3910,59 +3994,65 @@ function AdminDashboardModal({ isOpen, onClose }) {
 
     let unsubOrders = () => {};
     let unsubExtra = () => {};
+    let isMounted = true;
 
-    const subscribeAll = () => {
+    const startSubscriptions = () => {
       const fb = window.CPEFirebase || {};
-      if (!fb.db || !fb.collection || !fb.onSnapshot) return false;
+      if (!fb.db || !fb.collection) return false;
 
-      try {
-        const ordersRef = fb.collection(fb.db, 'orders');
-        unsubOrders = fb.onSnapshot(ordersRef, (querySnapshot) => {
-          let firestoreList = [];
-          querySnapshot.forEach((docSnap) => {
-            firestoreList.push({ firestoreId: docSnap.id, ...docSnap.data() });
-          });
-          firestoreList.sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
-          adminCachedOrders = firestoreList;
-          setOrders(firestoreList);
-          setLoading(false);
-        }, (err) => {
-          console.log('Orders snapshot error:', err);
-          setLoading(false);
-        });
+      // 1. Direct fetch immediately
+      fetchOrdersDirect(false);
 
-        const extraRef = fb.collection(fb.db, 'extra_deposits');
-        unsubExtra = fb.onSnapshot(extraRef, (snap) => {
-          const list = [];
-          snap.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
-          adminCachedExtraDeposits = list;
-          setExtraDeposits(list);
-        }, (err) => {
-          console.log('Extra deposits snapshot error:', err);
-        });
+      // 2. Realtime listener for Orders
+      if (fb.onSnapshot) {
+        try {
+          unsubOrders = fb.onSnapshot(fb.collection(fb.db, 'orders'), (snap) => {
+            if (!isMounted) return;
+            let list = [];
+            snap.forEach(docSnap => list.push({ firestoreId: docSnap.id, ...docSnap.data() }));
+            list.sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
+            adminCachedOrders = list;
+            setOrders(list);
+            setLoading(false);
+            try { localStorage.setItem('cpe_cached_admin_orders', JSON.stringify(list.slice(0, 300))); } catch (e) {}
+          }, (err) => console.log('Admin orders snapshot error:', err));
+        } catch (e) { console.log('Orders snapshot err:', e); }
 
-        return true;
-      } catch (e) {
-        console.log('Admin subscribe error:', e);
-        setLoading(false);
-        return false;
+        // 3. Realtime listener for Extra Deposits
+        try {
+          unsubExtra = fb.onSnapshot(fb.collection(fb.db, 'extra_deposits'), (snap) => {
+            if (!isMounted) return;
+            const list = [];
+            snap.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
+            adminCachedExtraDeposits = list;
+            setExtraDeposits(list);
+          }, (err) => console.log('Extra deposits snapshot error:', err));
+        } catch (e) { console.log('Extra snapshot err:', e); }
       }
+
+      return true;
     };
 
-    const success = subscribeAll();
+    const success = startSubscriptions();
+    let checkInterval = null;
+
     if (!success) {
-      const handleReady = () => subscribeAll();
-      window.addEventListener('cpe-firebase-ready', handleReady);
-      return () => {
-        unsubOrders();
-        unsubExtra();
-        window.removeEventListener('cpe-firebase-ready', handleReady);
-      };
+      checkInterval = setInterval(() => {
+        if (window.CPEFirebase && window.CPEFirebase.db) {
+          clearInterval(checkInterval);
+          startSubscriptions();
+        }
+      }, 400);
+
+      window.addEventListener('cpe-firebase-ready', startSubscriptions);
     }
 
     return () => {
-      unsubOrders();
-      unsubExtra();
+      isMounted = false;
+      if (checkInterval) clearInterval(checkInterval);
+      if (typeof unsubOrders === 'function') unsubOrders();
+      if (typeof unsubExtra === 'function') unsubExtra();
+      window.removeEventListener('cpe-firebase-ready', startSubscriptions);
     };
   }, [isOpen]);
 
@@ -4500,11 +4590,33 @@ function AdminDashboardModal({ isOpen, onClose }) {
       <div className="modal-card xl admin-modal-card" onClick={e => e.stopPropagation()} style={{ position: 'relative', zIndex: 10000, background: '#10121a', border: '1px solid var(--border-gold)', borderRadius: '16px', maxWidth: '1100px', width: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', opacity: 1, visibility: 'visible' }}>
         
         {/* Header */}
-        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #1b0a0e, #0a0b10)', borderBottom: '1px solid var(--accent-gold)', padding: '16px 24px' }}>
-          <h3 className="modal-title" style={{ color: 'var(--accent-gold-bright)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.2rem' }}>
+        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #1b0a0e, #0a0b10)', borderBottom: '1px solid var(--accent-gold)', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 className="modal-title" style={{ color: 'var(--accent-gold-bright)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.2rem', margin: 0 }}>
             <span>👑 CPE ADMIN PORTAL (ผู้ดูแลระบบ: 6800000000)</span>
           </h3>
-          <button className="close-btn" onClick={onClose}>&times;</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={() => fetchOrdersDirect(true)}
+              disabled={refreshing}
+              style={{
+                background: 'rgba(34,197,94,0.15)',
+                border: '1px solid #22c55e',
+                color: '#22c55e',
+                borderRadius: '8px',
+                padding: '6px 14px',
+                fontSize: '0.82rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 0 12px rgba(34,197,94,0.2)'
+              }}
+            >
+              <span>{refreshing ? '⏳ กำลังดึงข้อมูล...' : '⚡ ดึงข้อมูลล่าสุด (100%)'}</span>
+            </button>
+            <button className="close-btn" onClick={onClose} style={{ fontSize: '1.8rem', lineHeight: 1 }}>&times;</button>
+          </div>
         </div>
 
         {/* Body */}
