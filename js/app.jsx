@@ -1615,14 +1615,14 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
         return;
       }
 
-      // Query Firestore
+      // Query Firestore with timeout protection (max 4s)
       const ordersRef = fb.collection(fb.db, 'orders');
       let q = fb.query(ordersRef, fb.where('id', '==', queryStr));
-      let querySnapshot = await fb.getDocs(q);
+      let querySnapshot = await withTimeout(fb.getDocs(q), 4000);
 
       if (querySnapshot.empty) {
         q = fb.query(ordersRef, fb.where('studentId', '==', queryStr));
-        querySnapshot = await fb.getDocs(q);
+        querySnapshot = await withTimeout(fb.getDocs(q), 4000);
       }
 
       if (!querySnapshot.empty) {
@@ -3805,18 +3805,31 @@ function AdminDashboardModal({ isOpen, onClose }) {
     const fb = window.CPEFirebase || {};
     if (!fb.db || !fb.setDoc || !fb.doc || !orderItem.firestoreId) return;
     try {
+      const calcTotal = (orderItem.items && orderItem.items.length > 0)
+        ? orderItem.items.reduce((sum, it) => {
+            let itemP = it.totalPrice || it.price || 350;
+            if (it.customName && it.customName.trim() !== '') {
+              if (!it.totalPrice || it.totalPrice === 350 || it.totalPrice === 270) itemP = (itemP || 350) + 20;
+            }
+            return sum + (itemP || 350);
+          }, 0)
+        : (orderItem.total || 350);
+
+      const fullDeposit = calcTotal;
+
       await fb.setDoc(fb.doc(fb.db, 'orders', orderItem.firestoreId), {
         remainingPaidStatus: 'approved',
+        deposit: fullDeposit,
         remaining: 0,
         status: 'completed'
       }, { merge: true });
 
       const updatedOrders = orders.map(o =>
-        o.firestoreId === orderItem.firestoreId ? { ...o, remainingPaidStatus: 'approved', remaining: 0, status: 'completed' } : o
+        o.firestoreId === orderItem.firestoreId ? { ...o, remainingPaidStatus: 'approved', deposit: fullDeposit, remaining: 0, status: 'completed' } : o
       );
       adminCachedOrders = updatedOrders;
       setOrders(updatedOrders);
-      showToast(`✅ ยืนยันสลิปชำระส่วนที่เหลือของออเดอร์ ${orderItem.id} เรียบร้อยแล้ว!`, 'success');
+      showToast(`✅ ยืนยันสลิปชำระส่วนที่เหลือของออเดอร์ ${orderItem.id} เรียบร้อยแล้ว (อัปเดตยอดชำระเป็น ฿${fullDeposit.toLocaleString()})!`, 'success');
     } catch (e) {
       console.log('Verify remaining deposit error:', e);
       showToast('เกิดข้อผิดพลาดในการยืนยันสลิปส่วนที่เหลือ', 'error');
@@ -3848,32 +3861,69 @@ function AdminDashboardModal({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return;
 
-    if (adminCachedOrders.length === 0) setLoading(true);
-
-    const fb = window.CPEFirebase || {};
-    if (!fb.db || !fb.collection || !fb.getDocs) {
+    if (adminCachedOrders.length > 0) {
+      setOrders(adminCachedOrders);
       setLoading(false);
-      return;
+    } else {
+      setLoading(true);
     }
 
-    const ordersRef = fb.collection(fb.db, 'orders');
-    const fetchOrders = async () => {
+    let unsubOrders = () => {};
+    let unsubExtra = () => {};
+
+    const subscribeAll = () => {
+      const fb = window.CPEFirebase || {};
+      if (!fb.db || !fb.collection || !fb.onSnapshot) return false;
+
       try {
-        const querySnapshot = await fb.getDocs(ordersRef);
-        let firestoreList = [];
-        querySnapshot.forEach((docSnap) => {
-          firestoreList.push({ firestoreId: docSnap.id, ...docSnap.data() });
+        const ordersRef = fb.collection(fb.db, 'orders');
+        unsubOrders = fb.onSnapshot(ordersRef, (querySnapshot) => {
+          let firestoreList = [];
+          querySnapshot.forEach((docSnap) => {
+            firestoreList.push({ firestoreId: docSnap.id, ...docSnap.data() });
+          });
+          firestoreList.sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
+          adminCachedOrders = firestoreList;
+          setOrders(firestoreList);
+          setLoading(false);
+        }, (err) => {
+          console.log('Orders snapshot error:', err);
+          setLoading(false);
         });
-        firestoreList.sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
-        adminCachedOrders = firestoreList;
-        setOrders(firestoreList);
+
+        const extraRef = fb.collection(fb.db, 'extra_deposits');
+        unsubExtra = fb.onSnapshot(extraRef, (snap) => {
+          const list = [];
+          snap.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
+          adminCachedExtraDeposits = list;
+          setExtraDeposits(list);
+        }, (err) => {
+          console.log('Extra deposits snapshot error:', err);
+        });
+
+        return true;
       } catch (e) {
-        console.log('Fetch orders error:', e);
-      } finally {
+        console.log('Admin subscribe error:', e);
         setLoading(false);
+        return false;
       }
     };
-    fetchOrders();
+
+    const success = subscribeAll();
+    if (!success) {
+      const handleReady = () => subscribeAll();
+      window.addEventListener('cpe-firebase-ready', handleReady);
+      return () => {
+        unsubOrders();
+        unsubExtra();
+        window.removeEventListener('cpe-firebase-ready', handleReady);
+      };
+    }
+
+    return () => {
+      unsubOrders();
+      unsubExtra();
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -4361,7 +4411,21 @@ function AdminDashboardModal({ isOpen, onClose }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '20px' }}>
             <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
               <span style={{ color: 'var(--text-sub)', fontSize: '0.78rem' }}>ยอดชำระแล้วทั้งหมด</span>
-              <h3 style={{ color: '#22c55e', fontSize: '1.4rem', marginTop: '4px', margin: '4px 0 0' }}>฿{(orders.reduce((sum, o) => sum + (o.deposit || 50), 0)).toLocaleString()}</h3>
+              <h3 style={{ color: '#22c55e', fontSize: '1.4rem', marginTop: '4px', margin: '4px 0 0' }}>
+                ฿{orders.reduce((sum, o) => {
+                  const calcTotal = (o.items && o.items.length > 0)
+                    ? o.items.reduce((s, it) => {
+                        let itemP = it.totalPrice || it.price || 350;
+                        if (it.customName && it.customName.trim() !== '') {
+                          if (!it.totalPrice || it.totalPrice === 350 || it.totalPrice === 270) itemP = (itemP || 350) + 20;
+                        }
+                        return s + (itemP || 350);
+                      }, 0)
+                    : (o.total || 350);
+                  const isFullyPaid = o.remainingPaidStatus === 'approved' || o.isTeacher || o.role === 'teacher' || o.remaining === 0 || (o.deposit && o.deposit >= calcTotal);
+                  return sum + (isFullyPaid ? Math.max(calcTotal, o.deposit || 0) : (o.deposit || 50));
+                }, 0).toLocaleString()}
+              </h3>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>ยอดขายรวม: ฿{totalRev.toLocaleString()}</span>
             </div>
             <div style={{ background: '#0a0b10', border: '1px solid #38bdf8', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
@@ -5008,7 +5072,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
 
                       <td style={{ padding: '10px', fontSize: '0.85rem', lineHeight: '1.4' }}>
                         {(() => {
-                          const deposit = o.deposit || 50;
                           const calcTotal = (o.items && o.items.length > 0)
                             ? o.items.reduce((sum, it) => {
                                 let itemP = it.totalPrice || it.price || 350;
@@ -5018,19 +5081,24 @@ function AdminDashboardModal({ isOpen, onClose }) {
                                 return sum + (itemP || 350);
                               }, 0)
                             : (o.total || 350);
-                          const remaining = Math.max(0, calcTotal - deposit);
-                          const isTeacherOrder = o.isTeacher || o.role === 'teacher' || (remaining === 0 && deposit === calcTotal);
-                          return isTeacherOrder ? (
+
+                          const isFullyPaid = o.remainingPaidStatus === 'approved' || o.isTeacher || o.role === 'teacher' || o.remaining === 0 || (o.deposit && o.deposit >= calcTotal);
+                          const effectiveDeposit = isFullyPaid ? calcTotal : (o.deposit || 50);
+                          const effectiveRemaining = isFullyPaid ? 0 : Math.max(0, calcTotal - effectiveDeposit);
+
+                          return isFullyPaid ? (
                             <>
                               <div style={{ color: '#22c55e', fontWeight: 'bold' }}>ชำระเต็มจำนวน: ฿{calcTotal.toLocaleString()}</div>
-                              <div style={{ color: '#38bdf8', fontSize: '0.78rem' }}>อาจารย์ / บุคลากร 👨‍🏫</div>
+                              <div style={{ color: o.isTeacher || o.role === 'teacher' ? '#38bdf8' : '#22c55e', fontSize: '0.78rem' }}>
+                                {o.isTeacher || o.role === 'teacher' ? 'อาจารย์ / บุคลากร 👨‍🏫' : '✅ ชำระครบ 100% แล้ว'}
+                              </div>
                               <div style={{ color: '#22c55e', fontSize: '0.78rem' }}>✓ ไม่มียอดค้างชำระ</div>
                             </>
                           ) : (
                             <>
-                              <div style={{ color: '#22c55e', fontWeight: 'bold' }}>มัดจำ: ฿{deposit.toLocaleString()}</div>
+                              <div style={{ color: '#22c55e', fontWeight: 'bold' }}>มัดจำแล้ว: ฿{effectiveDeposit.toLocaleString()}</div>
                               <div style={{ color: 'var(--text-sub)' }}>ยอดเต็ม: ฿{calcTotal.toLocaleString()}</div>
-                              <div style={{ color: '#eab308' }}>ค้าง: ฿{remaining.toLocaleString()}</div>
+                              <div style={{ color: '#eab308' }}>ค้าง: ฿{effectiveRemaining.toLocaleString()}</div>
                             </>
                           );
                         })()}
