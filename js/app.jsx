@@ -2411,7 +2411,7 @@ function AuthModal({ isOpen, onClose }) {
         {/* CPE PORTAL BRANDING */}
         <div className="auth-card-branding">
           <h2 className="auth-brand-title">CPE PORTAL</h2>
-          <span className="auth-brand-sub">68 &times; 69 &middot; UNIFORM PORTAL</span>
+          <span className="auth-brand-sub">Create and Develop By Peeranart Singto</span>
         </div>
 
         <div className="modal-body auth-modal-body" style={{ padding: 0 }}>

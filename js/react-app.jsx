@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CPE Shirt & Jacket Ordering Web App - React 18 Application Component
  * Integrated with Firebase Auth, Cloud Firestore Database, and Analytics
  */
