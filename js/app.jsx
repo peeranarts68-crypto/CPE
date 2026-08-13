@@ -92,6 +92,16 @@ const withTimeout = (promise, ms = 4000) => {
   ]);
 };
 
+// Helper to retrieve exact grand total of an order without over-calculating
+const getOrderTotal = (o) => {
+  if (!o) return 350;
+  if (typeof o.total === 'number' && o.total > 0) return o.total;
+  if (o.items && o.items.length > 0) {
+    return o.items.reduce((sum, it) => sum + (it.totalPrice || it.price || 350), 0);
+  }
+  return 350;
+};
+
 // Create Auth Context
 const AuthContext = createContext();
 
@@ -563,56 +573,114 @@ function App() {
                   </button>
                 </div>
               ) : (
-                <div className="user-profile-menu">
-                  <button className={`user-avatar-btn ${isAdmin ? 'admin-badge' : ''}`} onClick={() => {
-                    const menu = document.getElementById('reactDropdownMenu');
-                    if (menu) menu.classList.toggle('show');
-                  }}>
-                    <div className={`user-avatar-img ${isAdmin ? 'admin-avatar' : ''}`}>
-                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                    <span className="user-name">{currentUser.name || 'นักศึกษา CPE'}</span>
-                  </button>
+                (() => {
+                  const getUserTag = (user) => {
+                    if (!user) return { label: 'นักศึกษา', badge: 'นักศึกษา', color: '#38bdf8', bg: 'rgba(56,189,248,0.18)', border: '#38bdf8', isTeacher: false };
+                    
+                    const isTeacher = user.role === 'teacher' || 
+                                      user.year === 'teacher' || 
+                                      user.year === 'อาจารย์ / บุคลากร' || 
+                                      (user.studentId && user.studentId.toUpperCase().startsWith('T')) ||
+                                      (user.studentId && !/^\d{10}$/.test(user.studentId));
 
-                  <div id="reactDropdownMenu" className="dropdown-menu">
-                    <div className="dropdown-header">
-                      <strong>{currentUser.name}</strong>
-                      <p>รหัส: {currentUser.studentId || '6812345678'}</p>
-                    </div>
-                    {isAdmin && (
-                      <div 
-                        onClick={() => {
-                          setIsAdminModalOpen(true);
-                          const menu = document.getElementById('reactDropdownMenu');
-                          if (menu) menu.classList.remove('show');
-                        }} 
-                        className="dropdown-item" 
-                        style={{ cursor: 'pointer', color: '#f5d061', fontWeight: 'bold' }}
-                      >
-                        👑 แผงควบคุมแอดมิน (Admin Portal)
-                      </div>
-                    )}
-                    <a href="#tracking" className="dropdown-item">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-                      ประวัติ &amp; ติดตามออเดอร์
-                    </a>
-                    <div 
-                      onClick={() => {
-                        setIsExtraDepositModalOpen(true);
+                    if (isTeacher) {
+                      return { label: '👨‍🏫 อาจารย์', badge: '👨‍🏫 อาจารย์ / บุคลากร', color: '#38bdf8', bg: 'rgba(56,189,248,0.18)', border: '#38bdf8', isTeacher: true };
+                    }
+
+                    // Calculate year from studentId or year property
+                    let yearNum = user.year;
+                    if (!yearNum && user.studentId && user.studentId.length === 10) {
+                      const prefix = user.studentId.substring(0, 2);
+                      if (prefix === '69') yearNum = '1';
+                      else if (prefix === '68') yearNum = '2';
+                      else if (prefix === '67') yearNum = '3';
+                      else if (prefix === '66') yearNum = '4';
+                    }
+
+                    if (yearNum) {
+                      const cleanYear = String(yearNum).replace(/\D/g, '');
+                      if (cleanYear === '1') return { label: '🎓 นักศึกษา ปี 1', badge: '🎓 ปี 1 (CPE 69)', color: '#10b981', bg: 'rgba(16,185,129,0.18)', border: '#10b981', isTeacher: false };
+                      if (cleanYear === '2') return { label: '🎓 นักศึกษา ปี 2', badge: '🎓 ปี 2 (CPE 68)', color: '#eab308', bg: 'rgba(234,179,8,0.18)', border: '#eab308', isTeacher: false };
+                      if (cleanYear === '3') return { label: '🎓 นักศึกษา ปี 3', badge: '🎓 ปี 3 (CPE 67)', color: '#a855f7', bg: 'rgba(168,85,247,0.18)', border: '#a855f7', isTeacher: false };
+                      if (cleanYear === '4') return { label: '🎓 นักศึกษา ปี 4', badge: '🎓 ปี 4 (CPE 66)', color: '#f97316', bg: 'rgba(249,115,22,0.18)', border: '#f97316', isTeacher: false };
+                    }
+
+                    return { label: '🎓 นักศึกษา', badge: '🎓 นักศึกษา', color: '#38bdf8', bg: 'rgba(56,189,248,0.18)', border: '#38bdf8', isTeacher: false };
+                  };
+
+                  const tag = getUserTag(currentUser);
+
+                  return (
+                    <div className="user-profile-menu">
+                      <button className={`user-avatar-btn ${isAdmin ? 'admin-badge' : ''}`} onClick={() => {
                         const menu = document.getElementById('reactDropdownMenu');
-                        if (menu) menu.classList.remove('show');
-                      }} 
-                      className="dropdown-item" 
-                      style={{ cursor: 'pointer', color: '#22c55e' }}
-                    >
-                      💳 จ่ายมัดจำเพิ่ม (100 บาท)
+                        if (menu) menu.classList.toggle('show');
+                      }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px 4px 6px' }}>
+                        <div className={`user-avatar-img ${isAdmin ? 'admin-avatar' : ''}`}>
+                          {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.2' }}>
+                          <span className="user-name" style={{ fontWeight: 'bold', fontSize: '0.88rem' }}>{currentUser.name || 'ผู้ใช้งาน'}</span>
+                          <span style={{ 
+                            fontSize: '0.68rem', 
+                            fontWeight: 700, 
+                            color: tag.color, 
+                            background: tag.bg, 
+                            border: `1px solid ${tag.border}`,
+                            padding: '0px 5px', 
+                            borderRadius: '4px',
+                            marginTop: '2px'
+                          }}>
+                            {tag.badge}
+                          </span>
+                        </div>
+                      </button>
+
+                      <div id="reactDropdownMenu" className="dropdown-menu">
+                        <div className="dropdown-header">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                            <strong style={{ fontSize: '0.95rem' }}>{currentUser.name}</strong>
+                            <span style={{ 
+                              fontSize: '0.72rem', 
+                              fontWeight: 'bold', 
+                              color: tag.color, 
+                              background: tag.bg, 
+                              border: `1px solid ${tag.border}`,
+                              padding: '1px 6px', 
+                              borderRadius: '4px'
+                            }}>
+                              {tag.badge}
+                            </span>
+                          </div>
+                          <p style={{ margin: 0, color: 'var(--text-sub)', fontSize: '0.8rem' }}>
+                            {tag.isTeacher ? `รหัสอาจารย์: ${currentUser.studentId || '-'}` : `รหัสนักศึกษา: ${currentUser.studentId || '-'}`}
+                          </p>
+                        </div>
+                        {isAdmin && (
+                          <div 
+                            onClick={() => {
+                              setIsAdminModalOpen(true);
+                              const menu = document.getElementById('reactDropdownMenu');
+                              if (menu) menu.classList.remove('show');
+                            }} 
+                            className="dropdown-item" 
+                            style={{ cursor: 'pointer', color: '#f5d061', fontWeight: 'bold' }}
+                          >
+                            👑 แผงควบคุมแอดมิน (Admin Portal)
+                          </div>
+                        )}
+                        <a href="#tracking" className="dropdown-item">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                          ประวัติ &amp; ติดตามออเดอร์
+                        </a>
+                        <div onClick={handleLogout} className="dropdown-item text-danger" style={{ cursor: 'pointer' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                          ออกจากระบบ
+                        </div>
+                      </div>
                     </div>
-                    <div onClick={handleLogout} className="dropdown-item text-danger" style={{ cursor: 'pointer' }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                      ออกจากระบบ
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()
               )}
             </div>
           </div>
@@ -1200,8 +1268,21 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                   parsedStored?.studentId === '6800000000' || parsedStored?.role === 'admin';
 
   const userStudentId = currentUser?.studentId;
-  const showPolo = isAdmin || !userStudentId || userStudentId.startsWith('68') || userStudentId.startsWith('67') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69') && !userStudentId.startsWith('67'));
-  const showJacket = isAdmin || !userStudentId || userStudentId.startsWith('69') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69') && !userStudentId.startsWith('67'));
+  const isTeacherUser = currentUser?.role === 'teacher' || 
+                        currentUser?.year === 'teacher' || 
+                        currentUser?.year === 'อาจารย์ / บุคลากร' || 
+                        (userStudentId && userStudentId.toUpperCase().startsWith('T')) ||
+                        (studentIdInput && studentIdInput.trim().toUpperCase().startsWith('T')) ||
+                        (userStudentId && !/^\d{10}$/.test(userStudentId));
+
+  const showPolo = isTeacherUser || isAdmin || !userStudentId || userStudentId.startsWith('68') || userStudentId.startsWith('67') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69') && !userStudentId.startsWith('67'));
+  const showJacket = !isTeacherUser && (isAdmin || !userStudentId || userStudentId.startsWith('69') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69') && !userStudentId.startsWith('67')));
+
+  useEffect(() => {
+    if (isTeacherUser && selectedProductKey === 'jacket') {
+      setSelectedProductKey('polo');
+    }
+  }, [isTeacherUser, selectedProductKey]);
 
   useEffect(() => {
     if (currentUser?.studentId) setStudentIdInput(currentUser.studentId);
@@ -1237,7 +1318,12 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
       if (setIsAuthModalOpen) setIsAuthModalOpen(true);
       return;
     }
-    const isTeacher = currentUser?.role === 'teacher' || currentUser?.year === 'teacher' || currentUser?.year === 'อาจารย์ / บุคลากร' || (currentUser?.studentId && currentUser?.studentId.toUpperCase().startsWith('T')) || studentIdInput.trim().toUpperCase().startsWith('T');
+    const isTeacher = isTeacherUser;
+
+    if (isTeacher && selectedProductKey === 'jacket') {
+      showToast('🚫 บัญชีอาจารย์ / บุคลากร สามารถสั่งซื้อได้เฉพาะเสื้อโปโลสาขา CPE เท่านั้น (ไม่เปิดรับสั่งเสื้อคลุม)', 'error');
+      return;
+    }
 
     if (!studentIdInput.trim() || (!isTeacher && studentIdInput.trim().length !== 10)) {
       showToast(isTeacher ? 'กรุณากรอกรหัสอาจารย์ / รหัสประจำตัว' : 'กรุณากรอกรหัสนักศึกษาให้ครบ 10 หลัก (เช่น 6812345678)', 'error');
@@ -2042,31 +2128,24 @@ function CartDrawer({ isOpen, onClose, cart, setCart, onCheckout }) {
             <span>ยอดรวมทั้งหมด</span>
             <span style={{ color: 'var(--text-sub)' }}>฿{subtotal.toLocaleString()}</span>
           </div>
-          {(() => {
-            const isTeacher = currentUser?.role === 'teacher' || currentUser?.year === 'teacher' || currentUser?.year === 'อาจารย์ / บุคลากร' || (currentUser?.studentId && currentUser?.studentId.toUpperCase().startsWith('T'));
-            return (
-              <>
-                <div className="summary-row total">
-                  <span>{isTeacher ? '💰 ยอดชำระเงินเต็มจำนวน' : '💰 ค่ามัดจำ (ชำระตอนนี้)'}</span>
-                  <span style={{ color: '#22c55e', fontSize: '1.3rem', fontWeight: 'bold' }}>
-                    {isTeacher ? `฿${subtotal.toLocaleString()}` : '฿50'}
-                  </span>
-                </div>
-                <div style={{ background: isTeacher ? 'rgba(34,197,94,0.08)' : 'rgba(234,179,8,0.08)', border: isTeacher ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(234,179,8,0.2)', borderRadius: '8px', padding: '8px 10px', marginTop: '6px', fontSize: '0.78rem', color: isTeacher ? '#22c55e' : '#eab308' }}>
-                  {isTeacher ? '✅ ชำระเงินเต็มจำนวนสำหรับอาจารย์ / บุคลากร (ไม่มียอดค้างชำระ)' : '⚠️ ชำระค่ามัดจำ 50 บาท/ออเดอร์ • ส่วนที่เหลือจะแจ้งอีกที'}
-                </div>
+          <div className="summary-row total">
+            <span>💰 ยอดชำระเงินเต็มจำนวน (100%)</span>
+            <span style={{ color: '#22c55e', fontSize: '1.3rem', fontWeight: 'bold' }}>
+              ฿{subtotal.toLocaleString()}
+            </span>
+          </div>
+          <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '8px', padding: '8px 10px', marginTop: '6px', fontSize: '0.78rem', color: '#22c55e' }}>
+            ✅ ชำระเงินเต็มจำนวน 100% (ไม่มี ยอดค้างชำระ)
+          </div>
 
-                <button 
-                  className="btn btn-gold" 
-                  style={{ width: '100%', marginTop: '15px' }}
-                  disabled={cart.length === 0}
-                  onClick={onCheckout}
-                >
-                  {isTeacher ? `ดำเนินการชำระเงินเต็มจำนวน ฿${subtotal.toLocaleString()}` : 'ดำเนินการชำระค่ามัดจำ ฿50'}
-                </button>
-              </>
-            );
-          })()}
+          <button 
+            className="btn btn-gold" 
+            style={{ width: '100%', marginTop: '15px' }}
+            disabled={cart.length === 0}
+            onClick={onCheckout}
+          >
+            ดำเนินการชำระเงินเต็มจำนวน ฿{subtotal.toLocaleString()} &rarr;
+          </button>
         </div>
       </aside>
     </>
@@ -2574,9 +2653,9 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
   const orderId = 'CPE-2026-' + Math.floor(1000 + Math.random() * 9000);
 
   const promptPayNumber = '0923637199';
-  const teacherQrPayload = generatePromptPayPayload(promptPayNumber, totalAmount);
-  const teacherQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(teacherQrPayload)}`;
-  const fallbackTeacherQrUrl = `https://promptpay.io/${promptPayNumber}/${totalAmount}.png`;
+  const fullQrPayload = generatePromptPayPayload(promptPayNumber, totalAmount);
+  const fullQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(fullQrPayload)}`;
+  const fallbackFullQrUrl = `https://promptpay.io/${promptPayNumber}/${totalAmount}.png`;
 
   const handleSlipChange = (e) => {
     const file = e.target.files[0];
@@ -2621,8 +2700,8 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
 
     setIsSubmitting(true);
 
-    const depositAmount = isTeacher ? totalAmount : (hasExistingOrder ? 150 : 50);
-    const remainingAmount = isTeacher ? 0 : Math.max(0, totalAmount - depositAmount);
+    const depositAmount = totalAmount;
+    const remainingAmount = 0;
     const newOrder = {
       id: orderId,
       userUid: currentUser?.uid || null,
@@ -2632,7 +2711,8 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       items: cart,
       total: totalAmount,
       deposit: depositAmount,
-      remaining: remainingAmount,
+      remaining: 0,
+      remainingPaidStatus: 'approved',
       isTeacher: isTeacher,
       role: isTeacher ? 'teacher' : 'student',
       status: 'pending', // pending -> paid -> preparing -> shipping -> completed
@@ -2721,9 +2801,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       >
         <div className="modal-header" style={{ borderBottom: '1px solid var(--border-color)', padding: '16px 20px' }}>
           <h3 className="modal-title" style={{ color: 'var(--accent-gold-bright)', fontSize: '1.2rem' }}>
-            {isTeacher 
-              ? `💳 ชำระเงินเต็มจำนวนสำหรับอาจารย์ ฿${totalAmount.toLocaleString()} (สแกน PromptPay QR Code)`
-              : (hasExistingOrder ? '💳 ชำระเงิน 150 บาท (สแกน QR Code)' : '💰 ชำระเงิน 50 บาท (สแกน QR Code)')}
+            💳 ชำระเงินเต็มจำนวน ฿{totalAmount.toLocaleString()} (สแกน PromptPay QR Code)
           </h3>
           <button className="close-btn" onClick={onClose} style={{ color: '#fff', fontSize: '1.8rem' }}>&times;</button>
         </div>
@@ -2735,105 +2813,77 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
               {/* Left: PromptPay QR Code */}
               <div style={{ flex: '1 1 300px' }}>
                 <h4 style={{ color: '#fff', fontSize: '0.95rem', marginBottom: '10px' }}>
-                  {isTeacher ? '1. สแกน QR Code ชำระเงินเต็มจำนวน (0923637199)' : '1. สแกน QR Code ชำระเงิน (0923637199)'}
+                  1. สแกน QR Code ชำระเงินเต็มจำนวน (0923637199)
                 </h4>
                 <div style={{ background: '#fff', padding: '14px', borderRadius: '12px', textAlign: 'center', boxShadow: '0 8px 25px rgba(0,0,0,0.5)' }}>
-                  {checkingExisting ? (
-                    <div style={{ padding: '40px 0', color: '#888', fontSize: '0.9rem' }}>⏳ กำลังตรวจสอบออเดอร์เดิม...</div>
-                  ) : isTeacher ? (
-                    <div>
-                      <div style={{ background: '#003b64', padding: '6px 10px', borderRadius: '6px', marginBottom: '10px', color: '#fff', fontWeight: 800, fontSize: '0.85rem' }}>
-                        PROMPTPAY | พร้อมเพย์ 0923637199
-                      </div>
-                      <img 
-                        src={teacherQrUrl}
-                        onError={(e) => { e.target.src = fallbackTeacherQrUrl; }}
-                        alt={`PromptPay QR Code ชำระเต็มจำนวน ฿${totalAmount}`}
-                        style={{ width: '100%', maxWidth: '240px', height: 'auto', margin: '0 auto', display: 'block', borderRadius: '8px' }}
-                      />
+                  <div>
+                    <div style={{ background: '#003b64', padding: '6px 10px', borderRadius: '6px', marginBottom: '10px', color: '#fff', fontWeight: 800, fontSize: '0.85rem' }}>
+                      PROMPTPAY | พร้อมเพย์ 0923637199
                     </div>
-                  ) : (
                     <img 
-                      src={hasExistingOrder ? 'assets/extra_deposit_qr.png' : 'assets/deposit_qr.png'}
-                      alt={hasExistingOrder ? 'QR Code ชำระเงิน 150 บาท' : 'QR Code ชำระเงิน 50 บาท'}
-                      style={{ width: '100%', maxWidth: '260px', height: 'auto', margin: '0 auto', display: 'block', borderRadius: '8px' }}
+                      src={fullQrUrl}
+                      onError={(e) => { e.target.src = fallbackFullQrUrl; }}
+                      alt={`PromptPay QR Code ชำระเต็มจำนวน ฿${totalAmount}`}
+                      style={{ width: '100%', maxWidth: '240px', height: 'auto', margin: '0 auto', display: 'block', borderRadius: '8px' }}
                     />
-                  )}
-                  <div style={{ background: '#0f1017', border: `1px solid ${isTeacher ? '#22c55e' : (hasExistingOrder ? '#f59e0b' : '#22c55e')}`, borderRadius: '8px', padding: '10px', marginTop: '12px' }}>
-                    <p style={{ color: isTeacher ? '#22c55e' : (hasExistingOrder ? '#f59e0b' : '#22c55e'), fontWeight: '700', fontSize: '1.4rem', margin: 0 }}>
-                      {isTeacher 
-                        ? `💰 ชำระเต็มจำนวน: ฿${totalAmount.toLocaleString()}`
-                        : (hasExistingOrder ? '💳 ยอดชำระ: ฿150 (รวม +฿100 สำหรับออเดอร์เพิ่ม)' : '💰 ยอดชำระ: ฿50')}
+                  </div>
+                  <div style={{ background: '#0f1017', border: '1px solid #22c55e', borderRadius: '8px', padding: '10px', marginTop: '12px' }}>
+                    <p style={{ color: '#22c55e', fontWeight: '700', fontSize: '1.4rem', margin: 0 }}>
+                      💰 ยอดชำระเงินเต็มจำนวน: ฿{totalAmount.toLocaleString()}
                     </p>
                     <p style={{ color: '#94A3B8', fontSize: '0.8rem', marginTop: '4px', margin: 0 }}>
-                      {isTeacher 
-                        ? 'สำหรับอาจารย์ / บุคลากร (ไม่มี ยอดค้างชำระ)'
-                        : `ยอดรวมทั้งหมด: ฿${totalAmount.toLocaleString()} (ส่วนที่เหลือ ฿${(totalAmount - (hasExistingOrder ? 150 : 50)).toLocaleString()} จะแจ้งอีกที)`}
+                      ชำระเงินครบถ้วน 100% (ไม่มี ยอดค้างชำระ)
                     </p>
                   </div>
-                  {!isTeacher && hasExistingOrder && (
-                    <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid #f59e0b', borderRadius: '8px', padding: '10px', marginTop: '10px', textAlign: 'left' }}>
-                      <p style={{ color: '#fbbf24', fontSize: '0.8rem', margin: 0, fontWeight: 600 }}>
-                        ⚠️ คุณมีออเดอร์เดิมอยู่แล้ว จึงต้องชำระเพิ่มอีก ฿100 รวมเป็น ฿150 ทั้งหมด — กรุณาสแกน QR ด้านบนและอัพโหลดสลิป
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {/* Right: Student Receiver Info & Slip Upload */}
+              {/* Right: Receiver Info & Slip Upload */}
               <div style={{ flex: '1 1 300px' }}>
                 <h4 style={{ color: '#fff', fontSize: '0.95rem', marginBottom: '10px' }}>2. ข้อมูลผู้รับเสื้อ &amp; หลักฐาน</h4>
                 
-                {/* Role Status Display for Teacher vs Student */}
-                {isTeacher ? (
-                  <div style={{ marginBottom: '14px', background: 'rgba(34,197,94,0.12)', border: '1px solid #22c55e', borderRadius: '10px', padding: '10px 14px', color: '#22c55e', fontSize: '0.88rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '1.2rem' }}>👨‍🏫</span>
-                    <span>ประเภท: อาจารย์ / บุคลากร (ชำระเงินเต็มจำนวน)</span>
+                {/* Role Selection */}
+                <div className="form-group" style={{ marginBottom: '12px', background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <label style={{ color: 'var(--accent-gold-bright)', fontSize: '0.82rem', fontWeight: 'bold', marginBottom: '6px', display: 'block' }}>
+                    ประเภทการสั่งซื้อ (ชำระเงินเต็มจำนวน 100%)
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setUserRoleType('student')}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '8px',
+                        border: !isTeacher ? '2px solid #22c55e' : '1px solid rgba(255,255,255,0.15)',
+                        background: !isTeacher ? 'rgba(34,197,94,0.18)' : '#0a0b10',
+                        color: !isTeacher ? '#22c55e' : '#94a3b8',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        fontSize: '0.82rem'
+                      }}
+                    >
+                      👨‍🎓 นักศึกษา (ชำระเต็ม)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUserRoleType('teacher')}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '8px',
+                        border: isTeacher ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.15)',
+                        background: isTeacher ? 'rgba(56,189,248,0.18)' : '#0a0b10',
+                        color: isTeacher ? '#38bdf8' : '#94a3b8',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        fontSize: '0.82rem'
+                      }}
+                    >
+                      👨‍🏫 อาจารย์ (ชำระเต็ม)
+                    </button>
                   </div>
-                ) : (
-                  <div className="form-group" style={{ marginBottom: '12px', background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <label style={{ color: 'var(--accent-gold-bright)', fontSize: '0.82rem', fontWeight: 'bold', marginBottom: '6px', display: 'block' }}>
-                      เลือกประเภทการสั่งซื้อ
-                    </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        type="button"
-                        onClick={() => setUserRoleType('student')}
-                        style={{
-                          flex: 1,
-                          padding: '8px',
-                          borderRadius: '8px',
-                          border: !isTeacher ? '2px solid #f5d061' : '1px solid rgba(255,255,255,0.15)',
-                          background: !isTeacher ? 'rgba(245,208,97,0.18)' : '#0a0b10',
-                          color: !isTeacher ? '#f5d061' : '#94a3b8',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                          fontSize: '0.82rem'
-                        }}
-                      >
-                        👨‍🎓 นักศึกษา
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setUserRoleType('teacher')}
-                        style={{
-                          flex: 1,
-                          padding: '8px',
-                          borderRadius: '8px',
-                          border: isTeacher ? '2px solid #22c55e' : '1px solid rgba(255,255,255,0.15)',
-                          background: isTeacher ? 'rgba(34,197,94,0.18)' : '#0a0b10',
-                          color: isTeacher ? '#22c55e' : '#94a3b8',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                          fontSize: '0.82rem'
-                        }}
-                      >
-                        👨‍🏫 อาจารย์ (จ่ายเต็ม)
-                      </button>
-                    </div>
-                  </div>
-                )}
+                </div>
 
                 <div className="form-group" style={{ marginBottom: '10px' }}>
                   <label style={{ color: '#fff' }}>ชื่อ-นามสกุล ผู้สั่งซื้อ</label>
@@ -2872,7 +2922,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
 
                 <div className="form-group" style={{ marginBottom: '15px' }}>
                   <label style={{ color: '#fff', marginBottom: '8px', display: 'block' }}>
-                    {isTeacher ? `แนบสลิปชำระเงินเต็มจำนวน ฿${totalAmount.toLocaleString()}` : `แนบสลิปค่ามัดจำ ${hasExistingOrder ? '150' : '50'} บาท`}
+                    แนบสลิปชำระเงินเต็มจำนวน ฿{totalAmount.toLocaleString()}
                   </label>
                   <label 
                     style={{ 
@@ -2915,7 +2965,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
                 </div>
 
                 <button type="submit" className="btn btn-gold" style={{ width: '100%', padding: '12px', fontWeight: 'bold' }} disabled={isSubmitting}>
-                  {isSubmitting ? '⏳ กำลังบันทึกคำสั่งซื้อ...' : (isTeacher ? `🚀 ยืนยันสั่งซื้อและชำระเต็มจำนวน ฿${totalAmount.toLocaleString()}` : `🚀 ยืนยันการสั่งซื้อและชำระค่ามัดจำ ${hasExistingOrder ? '฿150' : '฿50'}`)}
+                  {isSubmitting ? '⏳ กำลังบันทึกคำสั่งซื้อ...' : `🚀 ยืนยันการสั่งซื้อและชำระเงินเต็มจำนวน ฿${totalAmount.toLocaleString()}`}
                 </button>
               </div>
 
@@ -3805,17 +3855,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
     const fb = window.CPEFirebase || {};
     if (!fb.db || !fb.setDoc || !fb.doc || !orderItem.firestoreId) return;
     try {
-      const calcTotal = (orderItem.items && orderItem.items.length > 0)
-        ? orderItem.items.reduce((sum, it) => {
-            let itemP = it.totalPrice || it.price || 350;
-            if (it.customName && it.customName.trim() !== '') {
-              if (!it.totalPrice || it.totalPrice === 350 || it.totalPrice === 270) itemP = (itemP || 350) + 20;
-            }
-            return sum + (itemP || 350);
-          }, 0)
-        : (orderItem.total || 350);
-
-      const fullDeposit = calcTotal;
+      const fullDeposit = getOrderTotal(orderItem);
 
       await fb.setDoc(fb.doc(fb.db, 'orders', orderItem.firestoreId), {
         remainingPaidStatus: 'approved',
@@ -4037,6 +4077,189 @@ function AdminDashboardModal({ isOpen, onClose }) {
     document.body.removeChild(link);
 
     showToast('📥 ดาวน์โหลดรายงานสรุปไซส์ & ข้อความปัก (CSV/Excel) สำเร็จ!', 'success');
+  };
+
+  const exportFullyPaidPDF = () => {
+    const fullyPaidOrders = orders.filter(o => {
+      const calcTotal = getOrderTotal(o);
+      return o.remainingPaidStatus === 'approved' ||
+             o.isTeacher ||
+             o.role === 'teacher' ||
+             o.remaining === 0 ||
+             (o.deposit && o.deposit >= calcTotal);
+    });
+
+    if (!fullyPaidOrders || fullyPaidOrders.length === 0) {
+      showToast('ไม่พบรายการผู้ชำระเงินครบถ้วน (100%) ในระบบ', 'error');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showToast('กรุณาอนุญาต Pop-up ในเบราว์เซอร์เพื่อเปิดรายงาน PDF', 'error');
+      return;
+    }
+
+    const todayStr = new Date().toLocaleDateString('th-TH', { 
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+    });
+
+    const totalRevenue = fullyPaidOrders.reduce((sum, o) => sum + getOrderTotal(o), 0);
+
+    const totalShirts = fullyPaidOrders.reduce((sum, o) => 
+      sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0
+    );
+
+    const teacherCount = fullyPaidOrders.filter(o => 
+      o.isTeacher || o.role === 'teacher' || (o.studentId && o.studentId.toUpperCase().startsWith('T'))
+    ).length;
+
+    const studentCount = fullyPaidOrders.length - teacherCount;
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="th">
+      <head>
+        <meta charset="UTF-8">
+        <title>รายงานสรุปรายชื่อผู้ชำระเงินครบถ้วนแล้ว (100% Fully Paid)</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
+          body { font-family: 'Sarabun', sans-serif; color: #111; background: #fff; padding: 24px; margin: 0; font-size: 13px; line-height: 1.5; }
+          .header { text-align: center; border-bottom: 2px solid #16a34a; padding-bottom: 12px; margin-bottom: 16px; }
+          .title { font-size: 18px; font-weight: 800; color: #15803d; margin: 0 0 4px; }
+          .subtitle { font-size: 13px; color: #475569; margin: 0; }
+          .meta-info { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 8px; }
+
+          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; text-align: center; }
+          .stat-card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; background: #f8fafc; }
+          .stat-label { font-size: 11px; color: #64748b; font-weight: 600; }
+          .stat-val { font-size: 16px; font-weight: 800; color: #16a34a; margin-top: 2px; }
+
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th { background: #16a34a; color: #fff; border: 1px solid #15803d; padding: 8px 6px; font-size: 12px; font-weight: 700; text-align: center; }
+          td { border: 1px solid #cbd5e1; padding: 7px 8px; font-size: 12px; text-align: center; vertical-align: middle; }
+          td.left { text-align: left; }
+          td.right { text-align: right; }
+          tr:nth-child(even) { background: #f8fafc; }
+          
+          .badge-teacher { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+          .badge-student { background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+
+          .total-row { background: #f0fdf4 !important; font-weight: 800; font-size: 13px; }
+          .total-row td { border-top: 2px solid #16a34a; border-bottom: 2px solid #16a34a; }
+
+          .signature-section { margin-top: 40px; display: flex; justify-content: space-between; page-break-inside: avoid; }
+          .sig-box { text-align: center; width: 42%; font-size: 12px; }
+
+          @media print {
+            body { padding: 10px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">🎓 รายงานสรุปรายชื่อผู้ชำระเงินครบถ้วนแล้ว (100% Fully Paid Report)</div>
+          <div class="subtitle">สาขาวิศวกรรมคอมพิวเตอร์ (Computer Engineering) • คณะวิศวกรรมศาสตร์</div>
+          <div class="meta-info">
+            <span>พิมพ์รายงานเมื่อ: ${todayStr}</span>
+            <span>สถานะระบบ: ข้อมูลจาก Cloud Database (Firestore)</span>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">ผู้ชำระเงินครบทั้งหมด</div>
+            <div class="stat-val">${fullyPaidOrders.length} รายการ</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">อาจารย์ / บุคลากร</div>
+            <div class="stat-val" style="color: #0284c7;">${teacherCount} ท่าน</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">นักศึกษา (ชำระครบ)</div>
+            <div class="stat-val">${studentCount} คน</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">ยอดเงินรับชำระแล้วรวม</div>
+            <div class="stat-val">฿${totalRevenue.toLocaleString()}</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px;">#</th>
+              <th style="width: 110px;">เลขที่ออเดอร์</th>
+              <th style="width: 100px;">รหัสประจำตัว</th>
+              <th style="text-align: left;">ชื่อ-นามสกุล (ผู้สั่งซื้อ)</th>
+              <th style="width: 95px;">เบอร์โทรศัพท์</th>
+              <th style="width: 90px;">ประเภท</th>
+              <th style="text-align: left;">รายการสั่งซื้อ & ไซส์</th>
+              <th style="width: 95px; text-align: right;">ยอดชำระแล้ว</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${fullyPaidOrders.map((o, idx) => {
+              const isTeacher = o.isTeacher || o.role === 'teacher' || (o.studentId && o.studentId.toUpperCase().startsWith('T'));
+              const calcTotal = getOrderTotal(o);
+
+              const itemDetails = o.items ? o.items.map(it => 
+                `${it.title || 'เสื้อ'} (ไซส์ ${it.size} x ${it.qty || 1})${it.customName ? ` [ปัก: ${it.customName}]` : ''}`
+              ).join(', ') : 'เสื้อ CPE';
+
+              return `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td><strong>${o.id}</strong></td>
+                  <td>${o.studentId || '-'}</td>
+                  <td class="left"><strong>${o.name || '-'}</strong></td>
+                  <td>${o.phone || '-'}</td>
+                  <td>
+                    ${isTeacher ? '<span class="badge-teacher">👨‍🏫 อาจารย์</span>' : '<span class="badge-student">🎓 นักศึกษา</span>'}
+                  </td>
+                  <td class="left">${itemDetails}</td>
+                  <td class="right" style="font-weight: bold; color: #16a34a;">฿${calcTotal.toLocaleString()}</td>
+                </tr>
+              `;
+            }).join('')}
+            
+            <tr class="total-row">
+              <td colspan="6" style="text-align: right;">รวมทั้งหมด (${fullyPaidOrders.length} ออเดอร์ / ${totalShirts} ตัว)</td>
+              <td class="left" style="color: #15803d;">ชำระครบถ้วน 100% ทุกรายการ</td>
+              <td class="right" style="color: #16a34a; font-size: 14px;">฿${totalRevenue.toLocaleString()}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="signature-section">
+          <div class="sig-box">
+            <p style="margin-bottom: 45px;">ลงชื่อ....................................................ผู้พิมพ์รายงาน</p>
+            <p>(....................................................)</p>
+            <p style="color: #64748b; font-size: 11px;">ตำแหน่ง กรรมการดำเนินงานเสื้อ CPE</p>
+          </div>
+          <div class="sig-box">
+            <p style="margin-bottom: 45px;">ลงชื่อ....................................................ผู้ตรวจสอบ / เหรัญญิก</p>
+            <p>(....................................................)</p>
+            <p style="color: #64748b; font-size: 11px;">วันที่ ........ / ........ / ................</p>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 600);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    showToast('📄 สร้างรายงาน PDF สรุปผู้ชำระเงินครบถ้วนเรียบร้อยแล้ว!', 'success');
   };
 
   const exportSizeSummaryPDF = () => {
@@ -4413,15 +4636,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
               <span style={{ color: 'var(--text-sub)', fontSize: '0.78rem' }}>ยอดชำระแล้วทั้งหมด</span>
               <h3 style={{ color: '#22c55e', fontSize: '1.4rem', marginTop: '4px', margin: '4px 0 0' }}>
                 ฿{orders.reduce((sum, o) => {
-                  const calcTotal = (o.items && o.items.length > 0)
-                    ? o.items.reduce((s, it) => {
-                        let itemP = it.totalPrice || it.price || 350;
-                        if (it.customName && it.customName.trim() !== '') {
-                          if (!it.totalPrice || it.totalPrice === 350 || it.totalPrice === 270) itemP = (itemP || 350) + 20;
-                        }
-                        return s + (itemP || 350);
-                      }, 0)
-                    : (o.total || 350);
+                  const calcTotal = getOrderTotal(o);
                   const isFullyPaid = o.remainingPaidStatus === 'approved' || o.isTeacher || o.role === 'teacher' || o.remaining === 0 || (o.deposit && o.deposit >= calcTotal);
                   return sum + (isFullyPaid ? Math.max(calcTotal, o.deposit || 0) : (o.deposit || 50));
                 }, 0).toLocaleString()}
@@ -4582,6 +4797,28 @@ function AdminDashboardModal({ isOpen, onClose }) {
                       }}
                     >
                       <span>📄 พิมพ์ / โหลด PDF ส่งร้านปัก</span>
+                    </button>
+
+                    <button 
+                      onClick={exportFullyPaidPDF}
+                      className="btn"
+                      style={{
+                        background: 'linear-gradient(135deg, #16a34a, #15803d)',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.83rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 14px rgba(22,163,74,0.3)',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <span>📄 ปริ้นท์ PDF สรุปผู้ชำระเงินครบถ้วน (100%)</span>
                     </button>
 
                     <button 
@@ -4850,9 +5087,30 @@ function AdminDashboardModal({ isOpen, onClose }) {
                 <h4 style={{ color: '#22c55e', margin: 0, fontSize: '1.05rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   💳 รายการแจ้งอนุมัติชำระส่วนที่เหลือ ({orders.filter(o => o.remainingPaidStatus === 'pending_verification' || o.remainingPaidStatus === 'approved' || o.remainingSlipUrl).length} รายการ)
                 </h4>
-                <span style={{ color: '#fde047', fontSize: '0.82rem', background: 'rgba(234,179,8,0.15)', padding: '4px 10px', borderRadius: '6px', border: '1px solid #eab308' }}>
-                  ⏳ รออนุมัติ: <strong>{orders.filter(o => o.remainingPaidStatus === 'pending_verification').length} รายการ</strong>
-                </span>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={exportFullyPaidPDF}
+                    style={{
+                      background: 'linear-gradient(135deg, #16a34a, #15803d)',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(22,163,74,0.3)'
+                    }}
+                  >
+                    📄 ปริ้นท์ PDF สรุปคนชำระครบถ้วน (100%)
+                  </button>
+                  <span style={{ color: '#fde047', fontSize: '0.82rem', background: 'rgba(234,179,8,0.15)', padding: '4px 10px', borderRadius: '6px', border: '1px solid #eab308' }}>
+                    ⏳ รออนุมัติ: <strong>{orders.filter(o => o.remainingPaidStatus === 'pending_verification').length} รายการ</strong>
+                  </span>
+                </div>
               </div>
 
               {(() => {
@@ -5072,16 +5330,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
 
                       <td style={{ padding: '10px', fontSize: '0.85rem', lineHeight: '1.4' }}>
                         {(() => {
-                          const calcTotal = (o.items && o.items.length > 0)
-                            ? o.items.reduce((sum, it) => {
-                                let itemP = it.totalPrice || it.price || 350;
-                                if (it.customName && it.customName.trim() !== '') {
-                                  if (!it.totalPrice || it.totalPrice === 350 || it.totalPrice === 270) itemP = (itemP || 350) + 20;
-                                }
-                                return sum + (itemP || 350);
-                              }, 0)
-                            : (o.total || 350);
-
+                          const calcTotal = getOrderTotal(o);
                           const isFullyPaid = o.remainingPaidStatus === 'approved' || o.isTeacher || o.role === 'teacher' || o.remaining === 0 || (o.deposit && o.deposit >= calcTotal);
                           const effectiveDeposit = isFullyPaid ? calcTotal : (o.deposit || 50);
                           const effectiveRemaining = isFullyPaid ? 0 : Math.max(0, calcTotal - effectiveDeposit);
