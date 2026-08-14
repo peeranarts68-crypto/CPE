@@ -341,15 +341,89 @@ function App() {
   const isAdmin = currentUser?.studentId === '6800000000' || currentUser?.role === 'admin' ||
                   parsedStored?.studentId === '6800000000' || parsedStored?.role === 'admin';
   
-  const [selectedProductKey, setSelectedProductKey] = useState('polo');
+  const [selectedProductKey, setSelectedProductKey] = useState('polo_navy');
 
-  // Adjust default product based on student ID (67/68 → polo only, 69 → jacket only)
+  // Force polo_navy for everyone as requested ("ปรับให้ทุกคนสั่งได้แค่เสื้อโปโลสีกรม")
   useEffect(() => {
-    if (!isAdmin && currentUser?.studentId) {
-      if (currentUser.studentId.startsWith('68') || currentUser.studentId.startsWith('67')) setSelectedProductKey('polo');
-      else if (currentUser.studentId.startsWith('69')) setSelectedProductKey('jacket');
+    setSelectedProductKey('polo_navy');
+  }, []);
+
+  const [totalShirtsCount, setTotalShirtsCount] = useState(() => {
+    try {
+      const cached = typeof localStorage !== 'undefined' ? localStorage.getItem('cpe_public_total_shirts') : null;
+      return cached ? parseInt(cached, 10) : 0;
+    } catch (e) {
+      return 0;
     }
-  }, [currentUser, isAdmin]);
+  });
+
+  useEffect(() => {
+    let unsub = () => {};
+    let isMounted = true;
+
+    const fetchPublicTotalShirts = () => {
+      const fb = window.CPEFirebase || {};
+      if (!fb.db || !fb.collection) return false;
+
+      // 1. Direct fetch immediately
+      if (fb.getDocs) {
+        fb.getDocs(fb.collection(fb.db, 'orders')).then(snap => {
+          if (!isMounted) return;
+          let count = 0;
+          snap.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.items && Array.isArray(data.items)) {
+              count += data.items.reduce((s, it) => s + (it.qty || 1), 0);
+            } else {
+              count += 1;
+            }
+          });
+          setTotalShirtsCount(count);
+          try { localStorage.setItem('cpe_public_total_shirts', count.toString()); } catch (e) {}
+        }).catch(e => console.log('Public total fetch error:', e));
+      }
+
+      // 2. Realtime listener
+      if (fb.onSnapshot) {
+        try {
+          unsub = fb.onSnapshot(fb.collection(fb.db, 'orders'), (snap) => {
+            if (!isMounted) return;
+            let count = 0;
+            snap.forEach(docSnap => {
+              const data = docSnap.data();
+              if (data.items && Array.isArray(data.items)) {
+                count += data.items.reduce((s, it) => s + (it.qty || 1), 0);
+              } else {
+                count += 1;
+              }
+            });
+            setTotalShirtsCount(count);
+            try { localStorage.setItem('cpe_public_total_shirts', count.toString()); } catch (e) {}
+          }, (err) => console.log('Public total snapshot error:', err));
+        } catch (e) {}
+      }
+      return true;
+    };
+
+    const success = fetchPublicTotalShirts();
+    let interval = null;
+    if (!success) {
+      interval = setInterval(() => {
+        if (window.CPEFirebase && window.CPEFirebase.db) {
+          clearInterval(interval);
+          fetchPublicTotalShirts();
+        }
+      }, 400);
+      window.addEventListener('cpe-firebase-ready', fetchPublicTotalShirts);
+    }
+
+    return () => {
+      isMounted = false;
+      if (interval) clearInterval(interval);
+      if (typeof unsub === 'function') unsub();
+      window.removeEventListener('cpe-firebase-ready', fetchPublicTotalShirts);
+    };
+  }, []);
   const [searchTrackingQuery, setSearchTrackingQuery] = useState('');
   const [trackedOrder, setTrackedOrder] = useState(null);
 
@@ -693,6 +767,25 @@ function App() {
         {(() => { window._effectiveDeadline = effectiveDeadline; return null; })()}
         <CountdownBanner isExpired={isExpired} timeLeft={timeLeft} salesMode={salesSettings.salesMode} effectiveDeadline={effectiveDeadline} />
 
+        {/* PUBLIC TOTAL ORDERED SHIRTS COUNTER BADGE */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(234,179,8,0.12), rgba(34,197,94,0.12))', border: '1px solid rgba(234,179,8,0.3)', padding: '14px 20px', borderRadius: '12px', textAlign: 'center', margin: '20px auto 0', maxWidth: '1100px', width: '92%', boxShadow: '0 8px 25px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '1.6rem' }}>🔥</div>
+          <div>
+            <span style={{ color: '#fff', fontSize: '1.05rem', fontWeight: 700 }}>
+              ยอดสั่งจองเสื้อสาขาวิชาในขณะนี้:
+            </span>
+            <span style={{ color: '#22c55e', fontSize: '1.6rem', fontWeight: 800, marginLeft: '8px', marginRight: '6px' }}>
+              {totalShirtsCount.toLocaleString()}
+            </span>
+            <span style={{ color: '#fde047', fontSize: '1.1rem', fontWeight: 800 }}>
+              ตัว
+            </span>
+          </div>
+          <span style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.4)', borderRadius: '20px', padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700 }}>
+            ⚡ อัปเดตข้อมูลสดแบบ Realtime
+          </span>
+        </div>
+
         {/* FEATURES GRID */}
         <Features />
 
@@ -705,6 +798,7 @@ function App() {
           setIsSizeGuideOpen={setIsSizeGuideOpen}
           setIsCartOpen={setIsCartOpen}
           isExpired={isExpired}
+          totalShirtsCount={totalShirtsCount}
         />
 
         {/* ORDER TRACKING LOOKUP SECTION */}
@@ -1107,7 +1201,7 @@ function HeroSlider({ onSelectProduct, isExpired, showToast }) {
                         if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:40 น.)', 'error');
                         return;
                       }
-                      onSelectProduct('polo');
+                      onSelectProduct('polo_navy');
                     }} 
                     className="btn btn-gold"
                     style={{ opacity: isExpired ? 0.6 : 1 }}
@@ -1215,7 +1309,7 @@ function Features() {
 }
 
 // 3. PRODUCT CONFIGURATOR COMPONENT
-function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, setCart, setIsSizeGuideOpen, setIsCartOpen, isExpired }) {
+function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, setCart, setIsSizeGuideOpen, setIsCartOpen, isExpired, totalShirtsCount = 0 }) {
   const { currentUser, showToast, setIsAuthModalOpen } = useContext(AuthContext);
   const [selectedSize, setSelectedSize] = useState('M');
   const [currentView, setCurrentView] = useState('front');
@@ -1275,26 +1369,24 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                         (studentIdInput && studentIdInput.trim().toUpperCase().startsWith('T')) ||
                         (userStudentId && !/^\d{10}$/.test(userStudentId));
 
-  const showPolo = isTeacherUser || isAdmin || !userStudentId || userStudentId.startsWith('68') || userStudentId.startsWith('67') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69') && !userStudentId.startsWith('67'));
-  const showJacket = !isTeacherUser && (isAdmin || !userStudentId || userStudentId.startsWith('69') || (!userStudentId.startsWith('68') && !userStudentId.startsWith('69') && !userStudentId.startsWith('67')));
-
+  // Force polo_navy for ALL users as requested: "ปรับให้ทุกคนสั่งได้แค่เสื้อโปโลสีกรม"
   useEffect(() => {
-    if (isTeacherUser && selectedProductKey === 'jacket') {
-      setSelectedProductKey('polo');
+    if (selectedProductKey !== 'polo_navy') {
+      setSelectedProductKey('polo_navy');
     }
-  }, [isTeacherUser, selectedProductKey]);
+  }, [selectedProductKey]);
 
   useEffect(() => {
     if (currentUser?.studentId) setStudentIdInput(currentUser.studentId);
   }, [currentUser]);
 
   useEffect(() => {
-    if ((selectedProductKey === 'polo' || selectedProductKey === 'polo_navy') && currentView === 'sleeve') {
+    if (currentView === 'sleeve') {
       setCurrentView('front');
     }
   }, [selectedProductKey]);
 
-  const prod = PRODUCTS[selectedProductKey] || PRODUCTS.polo;
+  const prod = PRODUCTS.polo_navy || PRODUCTS.polo;
 
   // Calculate Total Price dynamically across all items
   const totalPrice = itemsConfig.reduce((sum, item) => {
@@ -1320,11 +1412,6 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
     }
     const isTeacher = isTeacherUser;
 
-    if (isTeacher && selectedProductKey === 'jacket') {
-      showToast('🚫 บัญชีอาจารย์ / บุคลากร สามารถสั่งซื้อได้เฉพาะเสื้อโปโลสาขา CPE เท่านั้น (ไม่เปิดรับสั่งเสื้อคลุม)', 'error');
-      return;
-    }
-
     if (!studentIdInput.trim() || (!isTeacher && studentIdInput.trim().length !== 10)) {
       showToast(isTeacher ? 'กรุณากรอกรหัสอาจารย์ / รหัสประจำตัว' : 'กรุณากรอกรหัสนักศึกษาให้ครบ 10 หลัก (เช่น 6812345678)', 'error');
       return;
@@ -1340,7 +1427,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
       }
       return {
         id: Date.now() + idx,
-        productKey: selectedProductKey,
+        productKey: 'polo_navy',
         title: prod.title,
         size: itemCfg.size,
         qty: 1,
@@ -1362,35 +1449,23 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
         
         <div className="section-header">
           <span className="subtitle">COMPUTER ENGINEERING UNIFORM</span>
-          <h2 className="title">สั่งซื้อเสื้อโปโล &amp; เสื้อคลุมสาขาวิศวกรรมคอมพิวเตอร์</h2>
+          <h2 className="title">สั่งซื้อเสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (สีกรมท่า Navy Blue)</h2>
+          {totalShirtsCount > 0 && (
+            <div style={{ marginTop: '10px', display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(34,197,94,0.12)', border: '1px solid #22c55e', padding: '6px 16px', borderRadius: '20px', color: '#22c55e', fontWeight: 'bold', fontSize: '0.9rem' }}>
+              <span>📦 ยอดสั่งซื้อเสื้อทั้งหมดขณะนี้: <strong>{totalShirtsCount.toLocaleString()} ตัว</strong></span>
+            </div>
+          )}
         </div>
 
-        {/* Product Selector Switcher Tabs - restricted by student ID */}
-        <div className="product-select-tabs">
-          {showPolo && (
-            <button
-              className={`product-tab-btn ${selectedProductKey === 'polo' ? 'active' : ''}`}
-              onClick={() => setSelectedProductKey('polo')}
-            >
-              <span>👕 เสื้อโปโลสาขา CPE (LXVIII) - ฿350</span>
-            </button>
-          )}
-          {showPolo && (
-            <button
-              className={`product-tab-btn ${selectedProductKey === 'polo_navy' ? 'active' : ''}`}
-              onClick={() => setSelectedProductKey('polo_navy')}
-            >
-              <span>👕 เสื้อโปโลสาขา (สีกรมท่า Navy Blue) - ฿350</span>
-            </button>
-          )}
-          {showJacket && (
-            <button
-              className={`product-tab-btn ${selectedProductKey === 'jacket' ? 'active' : ''}`}
-              onClick={() => setSelectedProductKey('jacket')}
-            >
-              <span>🧥 เสื้อคลุมสาขา CPE 69 (LXIX) - ฿920</span>
-            </button>
-          )}
+        {/* Product Selector Switcher Tabs - Restricted to Navy Polo Only */}
+        <div className="product-select-tabs" style={{ display: 'flex', justifyContent: 'center' }}>
+          <button
+            className="product-tab-btn active"
+            onClick={() => setSelectedProductKey('polo_navy')}
+            style={{ background: 'linear-gradient(135deg, #1e3a8a, #0f172a)', border: '2px solid #38bdf8', boxShadow: '0 4px 20px rgba(56,189,248,0.4)', padding: '12px 24px', borderRadius: '12px', color: '#fff', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            <span>👕 เสื้อโปโลสาขา (สีกรมท่า Navy Blue) - ฿350 (เปิดรับสั่งเฉพาะสีกรมท่า)</span>
+          </button>
         </div>
 
         <div className="product-grid">
