@@ -1403,7 +1403,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
         title: prod.title,
         size: itemCfg.size,
         qty: 1,
-        customName: itemCfg.customName ? itemCfg.customName.trim() : '',
+        customName: '',
         studentId: studentIdInput.trim() || currentUser?.studentId || '6812345678',
         price: itemPrice,
         totalPrice: itemPrice
@@ -1483,23 +1483,6 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                       transition: 'all 0.4s ease'
                     }}
                   />
-                  {itemsConfig[0]?.customName?.trim() && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '15px',
-                      background: 'rgba(139,12,26,0.92)',
-                      border: '1px solid var(--accent-gold)',
-                      color: 'var(--accent-gold-bright)',
-                      padding: '6px 16px',
-                      borderRadius: '20px',
-                      fontSize: '0.88rem',
-                      fontWeight: 600,
-                      boxShadow: '0 4px 15px rgba(0,0,0,0.7)',
-                      zIndex: 10
-                    }}>
-                      ปักชื่อ: {itemsConfig[0].customName.trim()}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -1580,24 +1563,6 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                         </div>
                       ))}
                     </div>
-                  </div>
-
-                  {/* Custom Embroidery Input */}
-                  <div style={{ marginTop: '14px' }}>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>ปักชื่ออกเสื้อ {qty > 1 ? `(ตัวที่ ${idx + 1})` : ''}:</span>
-                      <span style={{ color: '#22c55e', fontWeight: 600 }}>
-                        ปักชื่อฟรี
-                      </span>
-                    </div>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ height: '38px', fontSize: '0.85rem' }}
-                      placeholder={`ตัวอย่าง: ต้อม CPE68 ${qty > 1 ? `(ตัวที่ ${idx + 1})` : '(ปล่อยว่างถ้าไม่ปักชื่อ)'}`}
-                      value={item.customName || ''}
-                      onChange={e => updateItemConfig(idx, 'customName', e.target.value)}
-                    />
                   </div>
                 </div>
               ))}
@@ -3074,7 +3039,7 @@ function SizeGuideModal({ isOpen, onClose }) {
           </table>
 
           <div style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid var(--border-gold)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--accent-gold-bright)', marginTop: '15px' }}>
-            💡 คำแนะนำ: เสื้อโปโล SS - 3XL ราคา 350฿ / ไซส์ 4XL ขึ้นไป ราคา 370฿ (+20฿) | บริการปักชื่อฟรี
+            💡 คำแนะนำ: เสื้อโปโล SS - 3XL ราคา 350฿ / ไซส์ 4XL ขึ้นไป ราคา 370฿ (+20฿)
           </div>
         </div>
       </div>
@@ -4343,7 +4308,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
               const calcTotal = getOrderTotal(o);
 
               const itemDetails = o.items ? o.items.map(it => 
-                `${it.title || 'เสื้อ'} (ไซส์ ${it.size} x ${it.qty || 1})${it.customName ? ` [ปัก: ${it.customName}]` : ''}`
+                `${it.title || 'เสื้อ'} (ไซส์ ${it.size} x ${it.qty || 1})`
               ).join(', ') : 'เสื้อ CPE';
 
               return `
@@ -4463,21 +4428,20 @@ function AdminDashboardModal({ isOpen, onClose }) {
       return;
     }
 
-    // Build one embroidery section per product type (with page-break between sections)
+    // Build one product section per product type
     const embroiderySection = products.map((p, pIdx) => {
       const items = itemizedByProduct[p] || [];
       const totalQty = items.reduce((s, i) => s + (i.qty || 1), 0);
       return `
         <div class="product-section page-break">
-          <div class="section-title">ใบงานปักชื่อ: ${p} — รวม <span style="color:#c00;">${totalQty} ตัว</span></div>
+          <div class="section-title">ใบงานรายละเอียดการสั่งผลิต: ${p} — รวม <span style="color:#c00;">${totalQty} ตัว</span></div>
           <table>
             <thead>
               <tr>
                 <th style="width:35px;">ลำดับ</th>
-                <th style="width:55px;">ไซส์</th>
+                <th style="width:65px;">ไซส์</th>
                 <th style="text-align:left;">ชื่อผู้สั่ง (รหัสนักศึกษา/รหัสอาจารย์)</th>
-                <th style="text-align:left;">ข้อความปักชื่อบนเสื้อ</th>
-                <th style="width:55px;">จำนวน</th>
+                <th style="width:65px;">จำนวน</th>
               </tr>
             </thead>
             <tbody>
@@ -4486,12 +4450,11 @@ function AdminDashboardModal({ isOpen, onClose }) {
                   <td>${idx + 1}</td>
                   <td><strong>${it.size}</strong></td>
                   <td class="left">${it.name} (${it.studentId})</td>
-                  <td class="left custom-name-cell">${it.customName ? `<strong>${it.customName}</strong>` : '<span style="color:#aaa;font-style:italic;">- ไม่ปักชื่อ -</span>'}</td>
                   <td>${it.qty || 1} ตัว</td>
                 </tr>
               `).join('')}
               <tr class="total-row">
-                <td colspan="4" style="text-align:right; font-weight:bold;">รวม ${p}</td>
+                <td colspan="3" style="text-align:right; font-weight:bold;">รวม ${p}</td>
                 <td style="font-weight:bold; color:#c00;">${totalQty} ตัว</td>
               </tr>
             </tbody>
@@ -4505,7 +4468,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
       <html lang="th">
       <head>
         <meta charset="UTF-8">
-        <title>ใบสรุปรายการสั่งผลิตเสื้อ & ข้อความปัก (ส่งร้าน)</title>
+        <title>ใบสรุปรายการสั่งผลิตเสื้อ (ส่งร้าน/โรงงาน)</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
           body { font-family: 'Sarabun', sans-serif; color: #000; background: #fff; padding: 24px; margin: 0; font-size: 13px; line-height: 1.5; }
@@ -4518,7 +4481,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
           th { background: #c8c8c8; font-weight: bold; }
           td.left { text-align: left; }
           .total-row { background: #e0e0e0; font-weight: bold; }
-          .custom-name-cell { color: #000; }
           .product-section { margin-bottom: 24px; }
           .page-break { page-break-before: always; padding-top: 16px; }
           .grand-total { background: #111; color: #fff; text-align: center; padding: 10px 16px; font-size: 15px; font-weight: bold; margin: 16px 0; border-radius: 4px; }
@@ -4533,7 +4495,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
         </div>
 
         <div class="header">
-          <h2>ใบสรุปยอดสั่งผลิตเสื้อ & รายการปักชื่อ (สำหรับส่งร้านปัก/โรงงาน)</h2>
+          <h2>ใบสรุปยอดสั่งผลิตเสื้อ (สำหรับส่งโรงงาน/ร้านค้า)</h2>
           <p>สาขาวิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม</p>
           <p>วันที่ออกเอกสาร: ${todayStr} &nbsp;|&nbsp; ยอดรวมทั้งหมด: <strong>${grandTotal} ตัว</strong> (${products.length} ประเภท)</p>
         </div>
@@ -4570,9 +4532,9 @@ function AdminDashboardModal({ isOpen, onClose }) {
           </tbody>
         </table>
 
-        <div class="grand-total">📦 ยอดสั่งผลิตรวม: ${grandTotal} ตัว แบ่งเป็น ${products.length} ประเภทเสื้อ (แต่ละประเภทแยกใบงานปักชื่อด้านล่าง)</div>
+        <div class="grand-total">📦 ยอดสั่งผลิตรวม: ${grandTotal} ตัว แบ่งเป็น ${products.length} ประเภทเสื้อ</div>
 
-        <!-- SECTIONS 2+: One embroidery job sheet per product type -->
+        <!-- SECTIONS 2+: One product job sheet per product type -->
         ${embroiderySection}
 
         <script>
