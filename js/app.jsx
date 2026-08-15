@@ -94,15 +94,15 @@ const withTimeout = (promise, ms = 4000) => {
 
 const isLargeSizeHelper = (sz) => ['4XL', '5XL', '6XL', '7XL', '8XL'].includes((sz || '').toString().toUpperCase().trim());
 
-// Helper to retrieve exact grand total of an order recalculated dynamically with the current price policy (300฿ / 4XL+ 330฿)
+// Helper to retrieve exact grand total of an order recalculated dynamically with the current price policy (350฿ / 4XL+ 370฿)
 const getOrderTotal = (o) => {
-  if (!o) return 300;
+  if (!o) return 350;
 
   if (o.items && Array.isArray(o.items) && o.items.length > 0) {
     return o.items.reduce((sum, it) => {
       const prodKey = it.productKey || 'polo_navy';
-      let base = 300;
-      let largeFee = 30;
+      let base = 350;
+      let largeFee = 20;
 
       if (prodKey === 'jacket') {
         base = 920;
@@ -119,7 +119,7 @@ const getOrderTotal = (o) => {
     }, 0);
   }
 
-  return 300;
+  return 350;
 };
 
 // Create Auth Context
@@ -179,10 +179,10 @@ const PRODUCTS = {
     id: 'polo',
     title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (CPE Polo Shirt)',
     batch: 'LXVIII (รุ่น 68)',
-    basePrice: 300,
-    largeFee: 30,
-    originalPrice: 300,
-    badgeText: 'ราคาตัวละ ฿300 (4XL+ ฿330)',
+    basePrice: 350,
+    largeFee: 20,
+    originalPrice: 350,
+    badgeText: 'ราคาตัวละ ฿350 (4XL+ ฿370)',
     images: {
       front: 'assets/shirt_front.jpg',
       back: 'assets/shirt_back.jpg',
@@ -198,10 +198,10 @@ const PRODUCTS = {
     id: 'polo_navy',
     title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (สีกรมท่า Navy Blue)',
     batch: 'คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม CPE',
-    basePrice: 300,
-    largeFee: 30,
-    originalPrice: 300,
-    badgeText: 'ราคาตัวละ ฿300 (4XL+ ฿330)',
+    basePrice: 350,
+    largeFee: 20,
+    originalPrice: 350,
+    badgeText: 'ราคาตัวละ ฿350 (4XL+ ฿370)',
     images: {
       front: 'assets/polo_navy_front.jpg',
       back: 'assets/polo_navy_back.jpg',
@@ -1403,7 +1403,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
         title: prod.title,
         size: itemCfg.size,
         qty: 1,
-        customName: '',
+        customName: itemCfg.customName ? itemCfg.customName.trim() : '',
         studentId: studentIdInput.trim() || currentUser?.studentId || '6812345678',
         price: itemPrice,
         totalPrice: itemPrice
@@ -1436,7 +1436,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
             onClick={() => setSelectedProductKey('polo_navy')}
             style={{ background: 'linear-gradient(135deg, #1e3a8a, #0f172a)', border: '2px solid #38bdf8', boxShadow: '0 4px 20px rgba(56,189,248,0.4)', padding: '12px 24px', borderRadius: '12px', color: '#fff', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}
           >
-            <span>👕 เสื้อโปโลสาขา (สีกรมท่า Navy Blue) - ฿300 (4XL ขึ้นไป ฿330)</span>
+            <span>👕 เสื้อโปโลสาขา (สีกรมท่า Navy Blue) - ฿350 (4XL ขึ้นไป ฿370)</span>
           </button>
         </div>
 
@@ -1483,6 +1483,23 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                       transition: 'all 0.4s ease'
                     }}
                   />
+                  {itemsConfig[0]?.customName?.trim() && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '15px',
+                      background: 'rgba(139,12,26,0.92)',
+                      border: '1px solid var(--accent-gold)',
+                      color: 'var(--accent-gold-bright)',
+                      padding: '6px 16px',
+                      borderRadius: '20px',
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.7)',
+                      zIndex: 10
+                    }}>
+                      ปักชื่อ: {itemsConfig[0].customName.trim()}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1563,6 +1580,24 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                         </div>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Custom Embroidery Input */}
+                  <div style={{ marginTop: '14px' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>ปักชื่ออกเสื้อ {qty > 1 ? `(ตัวที่ ${idx + 1})` : ''}:</span>
+                      <span style={{ color: '#22c55e', fontWeight: 600 }}>
+                        ปักชื่อฟรี
+                      </span>
+                    </div>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      style={{ height: '38px', fontSize: '0.85rem' }}
+                      placeholder={`ตัวอย่าง: ต้อม CPE68 ${qty > 1 ? `(ตัวที่ ${idx + 1})` : '(ปล่อยว่างถ้าไม่ปักชื่อ)'}`}
+                      value={item.customName || ''}
+                      onChange={e => updateItemConfig(idx, 'customName', e.target.value)}
+                    />
                   </div>
                 </div>
               ))}
@@ -3006,7 +3041,7 @@ function SizeGuideModal({ isOpen, onClose }) {
             ขนาดรอบอก (นิ้ว) และความยาวตัวเสื้อ (นิ้ว) สำหรับทรงเสื้อโปโล &amp; เสื้อคลุม CPE 69
           </p>
 
-          <h4 style={{ color: 'var(--accent-gold)', marginTop: '12px', fontSize: '0.95rem' }}>1. เสื้อโปโลสาขา CPE (Polo Shirt) - ฿300</h4>
+          <h4 style={{ color: 'var(--accent-gold)', marginTop: '12px', fontSize: '0.95rem' }}>1. เสื้อโปโลสาขา CPE (Polo Shirt) - ฿350</h4>
           <table className="size-table">
             <thead>
               <tr>
@@ -3017,8 +3052,8 @@ function SizeGuideModal({ isOpen, onClose }) {
               </tr>
             </thead>
             <tbody>
-              <tr><td><strong>SS - 3XL</strong></td><td>34" - 46"</td><td>25" - 31"</td><td>300 บาท</td></tr>
-              <tr><td><strong>4XL ขึ้นไป</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+30฿)</span></td><td>48" ขึ้นไป</td><td>32" ขึ้นไป</td><td><strong style={{ color: '#F5D061' }}>330 บาท</strong></td></tr>
+              <tr><td><strong>SS - 3XL</strong></td><td>34" - 46"</td><td>25" - 31"</td><td>350 บาท</td></tr>
+              <tr><td><strong>4XL ขึ้นไป</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+20฿)</span></td><td>48" ขึ้นไป</td><td>32" ขึ้นไป</td><td><strong style={{ color: '#F5D061' }}>370 บาท</strong></td></tr>
             </tbody>
           </table>
 
@@ -3039,7 +3074,7 @@ function SizeGuideModal({ isOpen, onClose }) {
           </table>
 
           <div style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid var(--border-gold)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--accent-gold-bright)', marginTop: '15px' }}>
-            💡 คำแนะนำ: เสื้อโปโล SS - 3XL ราคา 300฿ / ไซส์ 4XL ขึ้นไป ราคา 330฿ (+30฿) | บริการปักชื่อฟรี
+            💡 คำแนะนำ: เสื้อโปโล SS - 3XL ราคา 350฿ / ไซส์ 4XL ขึ้นไป ราคา 370฿ (+20฿) | บริการปักชื่อฟรี
           </div>
         </div>
       </div>
@@ -4308,7 +4343,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
               const calcTotal = getOrderTotal(o);
 
               const itemDetails = o.items ? o.items.map(it => 
-                `${it.title || 'เสื้อ'} (ไซส์ ${it.size} x ${it.qty || 1})`
+                `${it.title || 'เสื้อ'} (ไซส์ ${it.size} x ${it.qty || 1})${it.customName ? ` [ปัก: ${it.customName}]` : ''}`
               ).join(', ') : 'เสื้อ CPE';
 
               return `
@@ -4428,20 +4463,21 @@ function AdminDashboardModal({ isOpen, onClose }) {
       return;
     }
 
-    // Build one product section per product type
+    // Build one embroidery section per product type (with page-break between sections)
     const embroiderySection = products.map((p, pIdx) => {
       const items = itemizedByProduct[p] || [];
       const totalQty = items.reduce((s, i) => s + (i.qty || 1), 0);
       return `
         <div class="product-section page-break">
-          <div class="section-title">ใบงานรายละเอียดการสั่งผลิต: ${p} — รวม <span style="color:#c00;">${totalQty} ตัว</span></div>
+          <div class="section-title">ใบงานปักชื่อ: ${p} — รวม <span style="color:#c00;">${totalQty} ตัว</span></div>
           <table>
             <thead>
               <tr>
                 <th style="width:35px;">ลำดับ</th>
-                <th style="width:65px;">ไซส์</th>
+                <th style="width:55px;">ไซส์</th>
                 <th style="text-align:left;">ชื่อผู้สั่ง (รหัสนักศึกษา/รหัสอาจารย์)</th>
-                <th style="width:65px;">จำนวน</th>
+                <th style="text-align:left;">ข้อความปักชื่อบนเสื้อ</th>
+                <th style="width:55px;">จำนวน</th>
               </tr>
             </thead>
             <tbody>
@@ -4450,11 +4486,12 @@ function AdminDashboardModal({ isOpen, onClose }) {
                   <td>${idx + 1}</td>
                   <td><strong>${it.size}</strong></td>
                   <td class="left">${it.name} (${it.studentId})</td>
+                  <td class="left custom-name-cell">${it.customName ? `<strong>${it.customName}</strong>` : '<span style="color:#aaa;font-style:italic;">- ไม่ปักชื่อ -</span>'}</td>
                   <td>${it.qty || 1} ตัว</td>
                 </tr>
               `).join('')}
               <tr class="total-row">
-                <td colspan="3" style="text-align:right; font-weight:bold;">รวม ${p}</td>
+                <td colspan="4" style="text-align:right; font-weight:bold;">รวม ${p}</td>
                 <td style="font-weight:bold; color:#c00;">${totalQty} ตัว</td>
               </tr>
             </tbody>
@@ -4468,7 +4505,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
       <html lang="th">
       <head>
         <meta charset="UTF-8">
-        <title>ใบสรุปรายการสั่งผลิตเสื้อ (ส่งร้าน/โรงงาน)</title>
+        <title>ใบสรุปรายการสั่งผลิตเสื้อ & ข้อความปัก (ส่งร้าน)</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
           body { font-family: 'Sarabun', sans-serif; color: #000; background: #fff; padding: 24px; margin: 0; font-size: 13px; line-height: 1.5; }
@@ -4481,6 +4518,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
           th { background: #c8c8c8; font-weight: bold; }
           td.left { text-align: left; }
           .total-row { background: #e0e0e0; font-weight: bold; }
+          .custom-name-cell { color: #000; }
           .product-section { margin-bottom: 24px; }
           .page-break { page-break-before: always; padding-top: 16px; }
           .grand-total { background: #111; color: #fff; text-align: center; padding: 10px 16px; font-size: 15px; font-weight: bold; margin: 16px 0; border-radius: 4px; }
@@ -4495,7 +4533,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
         </div>
 
         <div class="header">
-          <h2>ใบสรุปยอดสั่งผลิตเสื้อ (สำหรับส่งโรงงาน/ร้านค้า)</h2>
+          <h2>ใบสรุปยอดสั่งผลิตเสื้อ & รายการปักชื่อ (สำหรับส่งร้านปัก/โรงงาน)</h2>
           <p>สาขาวิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม</p>
           <p>วันที่ออกเอกสาร: ${todayStr} &nbsp;|&nbsp; ยอดรวมทั้งหมด: <strong>${grandTotal} ตัว</strong> (${products.length} ประเภท)</p>
         </div>
@@ -4532,9 +4570,9 @@ function AdminDashboardModal({ isOpen, onClose }) {
           </tbody>
         </table>
 
-        <div class="grand-total">📦 ยอดสั่งผลิตรวม: ${grandTotal} ตัว แบ่งเป็น ${products.length} ประเภทเสื้อ</div>
+        <div class="grand-total">📦 ยอดสั่งผลิตรวม: ${grandTotal} ตัว แบ่งเป็น ${products.length} ประเภทเสื้อ (แต่ละประเภทแยกใบงานปักชื่อด้านล่าง)</div>
 
-        <!-- SECTIONS 2+: One product job sheet per product type -->
+        <!-- SECTIONS 2+: One embroidery job sheet per product type -->
         ${embroiderySection}
 
         <script>
