@@ -92,14 +92,34 @@ const withTimeout = (promise, ms = 4000) => {
   ]);
 };
 
-// Helper to retrieve exact grand total of an order without over-calculating
+const isLargeSizeHelper = (sz) => ['4XL', '5XL', '6XL', '7XL', '8XL'].includes((sz || '').toString().toUpperCase().trim());
+
+// Helper to retrieve exact grand total of an order recalculated dynamically with the current price policy (300฿ / 4XL+ 330฿)
 const getOrderTotal = (o) => {
-  if (!o) return 350;
-  if (typeof o.total === 'number' && o.total > 0) return o.total;
-  if (o.items && o.items.length > 0) {
-    return o.items.reduce((sum, it) => sum + (it.totalPrice || it.price || 350), 0);
+  if (!o) return 300;
+
+  if (o.items && Array.isArray(o.items) && o.items.length > 0) {
+    return o.items.reduce((sum, it) => {
+      const prodKey = it.productKey || 'polo_navy';
+      let base = 300;
+      let largeFee = 30;
+
+      if (prodKey === 'jacket') {
+        base = 920;
+        largeFee = 100;
+      }
+
+      let unitPrice = base;
+      if (isLargeSizeHelper(it.size)) {
+        unitPrice += largeFee;
+      }
+
+      const qty = typeof it.qty === 'number' && it.qty > 0 ? it.qty : 1;
+      return sum + (unitPrice * qty);
+    }, 0);
   }
-  return 350;
+
+  return 300;
 };
 
 // Create Auth Context
@@ -159,10 +179,10 @@ const PRODUCTS = {
     id: 'polo',
     title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (CPE Polo Shirt)',
     batch: 'LXVIII (รุ่น 68)',
-    basePrice: 350,
-    largeFee: 10,
-    originalPrice: 350,
-    badgeText: 'ราคาเต็ม ฿350',
+    basePrice: 300,
+    largeFee: 30,
+    originalPrice: 300,
+    badgeText: 'ราคาตัวละ ฿300 (4XL+ ฿330)',
     images: {
       front: 'assets/shirt_front.jpg',
       back: 'assets/shirt_back.jpg',
@@ -178,10 +198,10 @@ const PRODUCTS = {
     id: 'polo_navy',
     title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (สีกรมท่า Navy Blue)',
     batch: 'คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม CPE',
-    basePrice: 350,
-    largeFee: 10,
-    originalPrice: 350,
-    badgeText: 'ราคา ฿350',
+    basePrice: 300,
+    largeFee: 30,
+    originalPrice: 300,
+    badgeText: 'ราคาตัวละ ฿300 (4XL+ ฿330)',
     images: {
       front: 'assets/polo_navy_front.jpg',
       back: 'assets/polo_navy_back.jpg',
@@ -226,8 +246,11 @@ const SIZES = [
   { id: 'L', label: 'L (40")', chest: '40"' },
   { id: 'XL', label: 'XL (42")', chest: '42"' },
   { id: '2XL', label: '2XL (44")', chest: '44"' },
-  { id: '3XL', label: '3XL (46")', chest: '46"', isLarge: true },
-  { id: '4XL', label: '4XL (48")', chest: '48"', isLarge: true }
+  { id: '3XL', label: '3XL (46")', chest: '46"' },
+  { id: '4XL', label: '4XL (48")', chest: '48"', isLarge: true },
+  { id: '5XL', label: '5XL (50")', chest: '50"', isLarge: true },
+  { id: '6XL', label: '6XL (52")', chest: '52"', isLarge: true },
+  { id: '7XL', label: '7XL (54")', chest: '54"', isLarge: true }
 ];
 
 // Main React App Provider & Root
@@ -1166,61 +1189,23 @@ function CountdownBanner({ isExpired, timeLeft, salesMode, effectiveDeadline }) 
   );
 }
 
-// 1. HERO SLIDER COMPONENT
+// 1. HERO BANNER COMPONENT
 function HeroSlider({ onSelectProduct, isExpired, showToast }) {
   const { currentUser } = useContext(AuthContext);
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % 2);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
 
   return (
     <section id="hero" className="hero-section">
       <div className="container">
         <div className="banner-container">
-          
           <div className="banner-slider">
-            {/* Slide 0: Polo Shirts */}
-            <div className={`banner-slide ${currentSlide === 0 ? 'active' : ''}`}>
-              <img src="assets/banner.png" alt="CPE Polo Shirts Banner" className="banner-img" />
-              <div className="banner-overlay-bar">
-                <div className="banner-tagline">
-                  <span className="tech-pill">CPE BATCH LXVIII</span>
-                  <div className="banner-text-content">
-                    <h2>ดีไซน์เรียบเท่ โดดเด่นในสไตล์วิศวกรรมคอมพิวเตอร์ (เสื้อโปโล ฿350)</h2>
-                  </div>
-                </div>
-                <div className="banner-cta-group">
-                  <button 
-                    onClick={() => {
-                      if (isExpired) {
-                        if (showToast) showToast('🚫 ระบบปิดรับการสั่งซื้อเสื้อแล้ว (หมดเวลาสั่งจองเมื่อ 14:40 น.)', 'error');
-                        return;
-                      }
-                      onSelectProduct('polo_navy');
-                    }} 
-                    className="btn btn-gold"
-                    style={{ opacity: isExpired ? 0.6 : 1 }}
-                  >
-                    {isExpired ? '⛔ ปิดรับการสั่งซื้อแล้ว' : 'สั่งซื้อเสื้อโปโลสาขา'}
-                  </button>
-                  {currentUser && <a href="#tracking" className="btn btn-outline">เช็คสถานะออเดอร์</a>}
-                </div>
-              </div>
-            </div>
-
-            {/* Slide 1: CPE Navy Polo Poster */}
-            <div className={`banner-slide ${currentSlide === 1 ? 'active' : ''}`}>
+            {/* CPE Navy Polo Poster */}
+            <div className="banner-slide active">
               <img src="assets/polo_navy_banner.jpg" alt="CPE Polo Navy Banner" className="banner-img" />
               <div className="banner-overlay-bar">
                 <div className="banner-tagline">
                   <span className="tech-pill">CPE POLO SHIRT (NAVY BLUE)</span>
                   <div className="banner-text-content">
-                    <h2>เสื้อโปโลสาขารุ่นใหม่ สีกรมท่า ดีไซน์เรียบหรู ใส่สบาย (ราคา ฿350)</h2>
+                    <h2>เสื้อโปโลสาขารุ่นใหม่ สีกรมท่า ดีไซน์เรียบหรู ใส่สบาย (ราคา ฿300)</h2>
                   </div>
                 </div>
                 <div className="banner-cta-group">
@@ -1242,15 +1227,6 @@ function HeroSlider({ onSelectProduct, isExpired, showToast }) {
               </div>
             </div>
           </div>
-
-          <button onClick={() => setCurrentSlide(prev => (prev === 0 ? 1 : 0))} className="slider-arrow prev">&#10094;</button>
-          <button onClick={() => setCurrentSlide(prev => (prev === 1 ? 0 : 1))} className="slider-arrow next">&#10095;</button>
-
-          <div className="slider-dots">
-            <span className={`dot ${currentSlide === 0 ? 'active' : ''}`} onClick={() => setCurrentSlide(0)}></span>
-            <span className={`dot ${currentSlide === 1 ? 'active' : ''}`} onClick={() => setCurrentSlide(1)}></span>
-          </div>
-
         </div>
       </div>
     </section>
@@ -1388,14 +1364,13 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
 
   const prod = PRODUCTS.polo_navy || PRODUCTS.polo;
 
+  const isLargeSize = (sz) => ['4XL', '5XL', '6XL', '7XL', '8XL'].includes((sz || '').toUpperCase());
+
   // Calculate Total Price dynamically across all items
   const totalPrice = itemsConfig.reduce((sum, item) => {
     let itemPrice = prod.basePrice;
-    if (['3XL', '4XL'].includes(item.size)) {
+    if (isLargeSize(item.size)) {
       itemPrice += prod.largeFee;
-    }
-    if (item.customName && item.customName.trim() !== '') {
-      itemPrice += 20;
     }
     return sum + itemPrice;
   }, 0);
@@ -1419,11 +1394,8 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
 
     const newCartItems = itemsConfig.map((itemCfg, idx) => {
       let itemPrice = prod.basePrice;
-      if (['3XL', '4XL'].includes(itemCfg.size)) {
+      if (isLargeSize(itemCfg.size)) {
         itemPrice += prod.largeFee;
-      }
-      if (itemCfg.customName && itemCfg.customName.trim() !== '') {
-        itemPrice += 20;
       }
       return {
         id: Date.now() + idx,
@@ -1431,7 +1403,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
         title: prod.title,
         size: itemCfg.size,
         qty: 1,
-        customName: itemCfg.customName.trim(),
+        customName: '',
         studentId: studentIdInput.trim() || currentUser?.studentId || '6812345678',
         price: itemPrice,
         totalPrice: itemPrice
@@ -1464,7 +1436,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
             onClick={() => setSelectedProductKey('polo_navy')}
             style={{ background: 'linear-gradient(135deg, #1e3a8a, #0f172a)', border: '2px solid #38bdf8', boxShadow: '0 4px 20px rgba(56,189,248,0.4)', padding: '12px 24px', borderRadius: '12px', color: '#fff', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}
           >
-            <span>👕 เสื้อโปโลสาขา (สีกรมท่า Navy Blue) - ฿350 (เปิดรับสั่งเฉพาะสีกรมท่า)</span>
+            <span>👕 เสื้อโปโลสาขา (สีกรมท่า Navy Blue) - ฿300 (4XL ขึ้นไป ฿330)</span>
           </button>
         </div>
 
@@ -1511,23 +1483,6 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                       transition: 'all 0.4s ease'
                     }}
                   />
-                  {customName.trim() && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '15px',
-                      background: 'rgba(139,12,26,0.92)',
-                      border: '1px solid var(--accent-gold)',
-                      color: 'var(--accent-gold-bright)',
-                      padding: '6px 16px',
-                      borderRadius: '20px',
-                      fontSize: '0.88rem',
-                      fontWeight: 600,
-                      boxShadow: '0 4px 15px rgba(0,0,0,0.7)',
-                      zIndex: 10
-                    }}>
-                      ปักชื่อ: {customName.trim()}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -1573,8 +1528,8 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                       👕 {qty > 1 ? `เสื้อตัวที่ ${idx + 1}` : 'เลือกขนาดเสื้อ'} {item.size ? `(ไซส์ ${item.size})` : ''}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: (['3XL', '4XL'].includes(item.size) || (item.customName && item.customName.trim() !== '')) ? '#F5D061' : '#22c55e' }}>
-                        ฿{prod.basePrice + (['3XL', '4XL'].includes(item.size) ? prod.largeFee : 0) + (item.customName && item.customName.trim() !== '' ? 20 : 0)}
+                      <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: isLargeSize(item.size) ? '#F5D061' : '#22c55e' }}>
+                        ฿{prod.basePrice + (isLargeSize(item.size) ? prod.largeFee : 0)}
                       </span>
                       {itemsConfig.length > 1 && (
                         <button 
@@ -1588,7 +1543,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                   </div>
 
                   {/* Size Pills Grid */}
-                  <div style={{ marginBottom: '14px' }}>
+                  <div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginBottom: '8px' }}>
                       เลือกไซส์: <strong style={{ color: 'var(--accent-gold)' }}>{item.size}</strong>
                     </div>
@@ -1608,24 +1563,6 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                         </div>
                       ))}
                     </div>
-                  </div>
-
-                  {/* Custom Embroidery Input */}
-                  <div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>ปักชื่ออกเสื้อ {qty > 1 ? `(ตัวที่ ${idx + 1})` : ''}:</span>
-                      <span style={{ color: item.customName && item.customName.trim() !== '' ? '#F5D061' : 'var(--text-sub)', fontWeight: item.customName && item.customName.trim() !== '' ? 600 : 400 }}>
-                        {item.customName && item.customName.trim() !== '' ? '+฿20' : 'คิดเพิ่ม +฿20'}
-                      </span>
-                    </div>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ height: '38px', fontSize: '0.85rem' }}
-                      placeholder={`ตัวอย่าง: ต้อม CPE68 ${qty > 1 ? `(ตัวที่ ${idx + 1})` : '(ปล่อยว่างถ้าไม่ปัก)'}`}
-                      value={item.customName}
-                      onChange={e => updateItemConfig(idx, 'customName', e.target.value)}
-                    />
                   </div>
                 </div>
               ))}
@@ -1947,10 +1884,10 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
 
               {/* Financial & Deposit Summary Card */}
               {(() => {
-                const depositPaid = trackedOrder.deposit || 50;
-                const calcTotal = trackedOrder.total || 0;
-                const remainingAmt = trackedOrder.remaining != null ? trackedOrder.remaining : Math.max(0, calcTotal - depositPaid);
-                const isTeacherOrder = trackedOrder.isTeacher || trackedOrder.role === 'teacher' || (remainingAmt === 0 && depositPaid === calcTotal);
+                const calcTotal = getOrderTotal(trackedOrder);
+                const depositPaid = typeof trackedOrder.deposit === 'number' ? trackedOrder.deposit : 0;
+                const remainingAmt = trackedOrder.remainingPaidStatus === 'approved' ? 0 : Math.max(0, calcTotal - depositPaid);
+                const isTeacherOrder = trackedOrder.isTeacher || trackedOrder.role === 'teacher' || remainingAmt === 0 || depositPaid >= calcTotal;
 
                 return (
                   <>
@@ -3069,7 +3006,7 @@ function SizeGuideModal({ isOpen, onClose }) {
             ขนาดรอบอก (นิ้ว) และความยาวตัวเสื้อ (นิ้ว) สำหรับทรงเสื้อโปโล &amp; เสื้อคลุม CPE 69
           </p>
 
-          <h4 style={{ color: 'var(--accent-gold)', marginTop: '12px', fontSize: '0.95rem' }}>1. เสื้อโปโลสาขา CPE (Polo Shirt) - ฿350</h4>
+          <h4 style={{ color: 'var(--accent-gold)', marginTop: '12px', fontSize: '0.95rem' }}>1. เสื้อโปโลสาขา CPE (Polo Shirt) - ฿300</h4>
           <table className="size-table">
             <thead>
               <tr>
@@ -3080,8 +3017,8 @@ function SizeGuideModal({ isOpen, onClose }) {
               </tr>
             </thead>
             <tbody>
-              <tr><td><strong>SS - 2XL</strong></td><td>34" - 44"</td><td>25" - 30"</td><td>350 บาท</td></tr>
-              <tr><td><strong>3XL - 4XL</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+10฿)</span></td><td>46" - 48"</td><td>31" - 32"</td><td><strong style={{ color: '#F5D061' }}>360 บาท</strong></td></tr>
+              <tr><td><strong>SS - 3XL</strong></td><td>34" - 46"</td><td>25" - 31"</td><td>300 บาท</td></tr>
+              <tr><td><strong>4XL ขึ้นไป</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+30฿)</span></td><td>48" ขึ้นไป</td><td>32" ขึ้นไป</td><td><strong style={{ color: '#F5D061' }}>330 บาท</strong></td></tr>
             </tbody>
           </table>
 
@@ -3102,7 +3039,7 @@ function SizeGuideModal({ isOpen, onClose }) {
           </table>
 
           <div style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid var(--border-gold)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--accent-gold-bright)', marginTop: '15px' }}>
-            💡 คำแนะนำ: เสื้อโปโล 3XL - 4XL เพิ่ม 10฿ / เสื้อคลุม Jacket 3XL - 4XL เพิ่ม 100฿ | บริการปักชื่อฟรี
+            💡 คำแนะนำ: เสื้อโปโล SS - 3XL ราคา 300฿ / ไซส์ 4XL ขึ้นไป ราคา 330฿ (+30฿) | บริการปักชื่อฟรี
           </div>
         </div>
       </div>
@@ -3482,9 +3419,10 @@ function PayRemainingModal({ isOpen, onClose, initialOrder, showToast }) {
 
   const calcRemaining = (ord) => {
     if (!ord) return 0;
-    const deposit = ord.deposit || 50;
-    const total = ord.total || 0;
-    return ord.remaining != null ? ord.remaining : Math.max(0, total - deposit);
+    if (ord.remainingPaidStatus === 'approved') return 0;
+    const total = getOrderTotal(ord);
+    const deposit = typeof ord.deposit === 'number' ? ord.deposit : 0;
+    return Math.max(0, total - deposit);
   };
 
   const currentRemaining = calcRemaining(selectedOrder);
@@ -3620,7 +3558,7 @@ function PayRemainingModal({ isOpen, onClose, initialOrder, showToast }) {
                           <input type="radio" name="orderSelectRemaining" value={o.firestoreId} checked={selectedOrder?.firestoreId === o.firestoreId} onChange={() => setSelectedOrder(o)} />
                           <span style={{ color: '#fff', fontSize: '0.85rem' }}>
                             <strong style={{ color: 'var(--accent-gold-bright)' }}>{o.id || o.firestoreId}</strong>
-                            {' — '}{o.name} | ยอดรวม ฿{(o.total || 0).toLocaleString()} | มัดจำแล้ว ฿{(o.deposit || 50).toLocaleString()} | <span style={{ color: '#eab308', fontWeight: 'bold' }}>ยอดค้าง ฿{calcRemaining(o).toLocaleString()}</span>
+                            {' — '}{o.name} | ยอดรวม ฿{getOrderTotal(o).toLocaleString()} | มัดจำแล้ว ฿{(o.deposit || 0).toLocaleString()} | <span style={{ color: '#eab308', fontWeight: 'bold' }}>ยอดค้าง ฿{calcRemaining(o).toLocaleString()}</span>
                           </span>
                         </label>
                       ))}
@@ -4176,7 +4114,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
     csvContent += "=== ตารางสรุปจำนวนยอดสั่งซื้อแยกตามสินค้าและไซส์ (SIZE SUMMARY MATRIX) ===\n";
     
     const sizeSummary = {};
-    const sizeOrder = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+    const sizeOrder = ['SS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL'];
 
     orders.forEach(o => {
       if (o.items) {
@@ -4370,7 +4308,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
               const calcTotal = getOrderTotal(o);
 
               const itemDetails = o.items ? o.items.map(it => 
-                `${it.title || 'เสื้อ'} (ไซส์ ${it.size} x ${it.qty || 1})${it.customName ? ` [ปัก: ${it.customName}]` : ''}`
+                `${it.title || 'เสื้อ'} (ไซส์ ${it.size} x ${it.qty || 1})`
               ).join(', ') : 'เสื้อ CPE';
 
               return `
@@ -4435,7 +4373,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
 
     const sizeSummary = {};
     const itemizedByProduct = {};
-    const sizeOrder = ['SS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+    const sizeOrder = ['SS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL'];
 
     orders.forEach(o => {
       if (o.items) {
@@ -4490,21 +4428,20 @@ function AdminDashboardModal({ isOpen, onClose }) {
       return;
     }
 
-    // Build one embroidery section per product type (with page-break between sections)
+    // Build one product section per product type
     const embroiderySection = products.map((p, pIdx) => {
       const items = itemizedByProduct[p] || [];
       const totalQty = items.reduce((s, i) => s + (i.qty || 1), 0);
       return `
         <div class="product-section page-break">
-          <div class="section-title">ใบงานปักชื่อ: ${p} — รวม <span style="color:#c00;">${totalQty} ตัว</span></div>
+          <div class="section-title">ใบงานรายละเอียดการสั่งผลิต: ${p} — รวม <span style="color:#c00;">${totalQty} ตัว</span></div>
           <table>
             <thead>
               <tr>
                 <th style="width:35px;">ลำดับ</th>
-                <th style="width:55px;">ไซส์</th>
-                <th style="text-align:left;">ชื่อผู้สั่ง (รหัสนักศึกษา)</th>
-                <th style="text-align:left;">ข้อความปักชื่อบนเสื้อ</th>
-                <th style="width:55px;">จำนวน</th>
+                <th style="width:65px;">ไซส์</th>
+                <th style="text-align:left;">ชื่อผู้สั่ง (รหัสนักศึกษา/รหัสอาจารย์)</th>
+                <th style="width:65px;">จำนวน</th>
               </tr>
             </thead>
             <tbody>
@@ -4513,12 +4450,11 @@ function AdminDashboardModal({ isOpen, onClose }) {
                   <td>${idx + 1}</td>
                   <td><strong>${it.size}</strong></td>
                   <td class="left">${it.name} (${it.studentId})</td>
-                  <td class="left custom-name-cell">${it.customName ? `<strong>${it.customName}</strong>` : '<span style="color:#aaa;font-style:italic;">- ไม่ปักชื่อ -</span>'}</td>
                   <td>${it.qty || 1} ตัว</td>
                 </tr>
               `).join('')}
               <tr class="total-row">
-                <td colspan="4" style="text-align:right; font-weight:bold;">รวม ${p}</td>
+                <td colspan="3" style="text-align:right; font-weight:bold;">รวม ${p}</td>
                 <td style="font-weight:bold; color:#c00;">${totalQty} ตัว</td>
               </tr>
             </tbody>
@@ -4532,7 +4468,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
       <html lang="th">
       <head>
         <meta charset="UTF-8">
-        <title>ใบสรุปรายการสั่งผลิตเสื้อ & ข้อความปัก (ส่งร้าน)</title>
+        <title>ใบสรุปรายการสั่งผลิตเสื้อ (ส่งร้าน/โรงงาน)</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
           body { font-family: 'Sarabun', sans-serif; color: #000; background: #fff; padding: 24px; margin: 0; font-size: 13px; line-height: 1.5; }
@@ -4545,7 +4481,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
           th { background: #c8c8c8; font-weight: bold; }
           td.left { text-align: left; }
           .total-row { background: #e0e0e0; font-weight: bold; }
-          .custom-name-cell { color: #000; }
           .product-section { margin-bottom: 24px; }
           .page-break { page-break-before: always; padding-top: 16px; }
           .grand-total { background: #111; color: #fff; text-align: center; padding: 10px 16px; font-size: 15px; font-weight: bold; margin: 16px 0; border-radius: 4px; }
@@ -4560,7 +4495,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
         </div>
 
         <div class="header">
-          <h2>ใบสรุปยอดสั่งผลิตเสื้อ & รายการปักชื่อ (สำหรับส่งร้านปัก/โรงงาน)</h2>
+          <h2>ใบสรุปยอดสั่งผลิตเสื้อ (สำหรับส่งโรงงาน/ร้านค้า)</h2>
           <p>สาขาวิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม</p>
           <p>วันที่ออกเอกสาร: ${todayStr} &nbsp;|&nbsp; ยอดรวมทั้งหมด: <strong>${grandTotal} ตัว</strong> (${products.length} ประเภท)</p>
         </div>
@@ -4597,9 +4532,9 @@ function AdminDashboardModal({ isOpen, onClose }) {
           </tbody>
         </table>
 
-        <div class="grand-total">📦 ยอดสั่งผลิตรวม: ${grandTotal} ตัว แบ่งเป็น ${products.length} ประเภทเสื้อ (แต่ละประเภทแยกใบงานปักชื่อด้านล่าง)</div>
+        <div class="grand-total">📦 ยอดสั่งผลิตรวม: ${grandTotal} ตัว แบ่งเป็น ${products.length} ประเภทเสื้อ</div>
 
-        <!-- SECTIONS 2+: One embroidery job sheet per product type -->
+        <!-- SECTIONS 2+: One product job sheet per product type -->
         ${embroiderySection}
 
         <script>
@@ -4645,18 +4580,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
     return matchSearch && matchStatus && matchProduct;
   });
 
-  const totalRev = orders.reduce((sum, o) => {
-    if (o.items && o.items.length > 0) {
-      return sum + o.items.reduce((s, it) => {
-        let p = it.totalPrice || it.price || 350;
-        if (it.customName && it.customName.trim() !== '') {
-          if (!it.totalPrice || it.totalPrice === 350 || it.totalPrice === 270) p = (p || 350) + 20;
-        }
-        return s + p;
-      }, 0);
-    }
-    return sum + (o.total || 350);
-  }, 0);
+  const totalRev = orders.reduce((sum, o) => sum + getOrderTotal(o), 0);
 
   const totalItemsCount = orders.reduce((sum, o) => sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0);
 
@@ -4916,7 +4840,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
           {(() => {
             const sizeSummary = {};
             const itemizedList = [];
-            const sizeOrder = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+            const sizeOrder = ['SS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL'];
 
             orders.forEach(o => {
               if (o.items) {
@@ -5250,7 +5174,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
                                 ฿{(o.deposit || 50).toLocaleString()}
                               </td>
                               <td style={{ padding: '10px', color: 'var(--text-sub)' }}>
-                                ฿{(o.total || 0).toLocaleString()}
+                                ฿{getOrderTotal(o).toLocaleString()}
                               </td>
                               <td style={{ padding: '10px' }}>
                                 {o.slipUrl ? (
@@ -5331,10 +5255,10 @@ function AdminDashboardModal({ isOpen, onClose }) {
                               <div style={{ color: 'var(--text-sub)', fontSize: '0.75rem' }}>📞 {o.phone}</div>
                             </td>
                             <td style={{ padding: '10px', color: 'var(--text-sub)', fontWeight: 'bold' }}>
-                              ฿{(o.total || 0).toLocaleString()}
+                              ฿{getOrderTotal(o).toLocaleString()}
                             </td>
                             <td style={{ padding: '10px', color: '#22c55e', fontWeight: 'bold', fontSize: '1rem' }}>
-                              ฿{(o.remainingAmountPaid || o.remaining || 0).toLocaleString()}
+                              ฿{(o.remainingAmountPaid || o.remaining || Math.max(0, getOrderTotal(o) - (o.deposit || 0))).toLocaleString()}
                             </td>
                             <td style={{ padding: '10px' }}>
                               {o.remainingSlipUrl ? (
