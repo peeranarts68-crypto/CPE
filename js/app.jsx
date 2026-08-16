@@ -92,9 +92,9 @@ const withTimeout = (promise, ms = 4000) => {
   ]);
 };
 
-const isLargeSizeHelper = (sz) => ['4XL', '5XL', '6XL', '7XL', '8XL'].includes((sz || '').toString().toUpperCase().trim());
+const isLargeSizeHelper = (sz) => ['5XL', '6XL', '7XL', '8XL'].includes((sz || '').toString().toUpperCase().trim());
 
-// Helper to retrieve exact grand total of an order recalculated dynamically with the current price policy (350฿ / 4XL+ 370฿)
+// Helper to retrieve exact grand total of an order recalculated dynamically with the current price policy (350฿ / 5XL+ 600฿)
 const getOrderTotal = (o) => {
   if (!o) return 350;
 
@@ -102,7 +102,7 @@ const getOrderTotal = (o) => {
     return o.items.reduce((sum, it) => {
       const prodKey = it.productKey || 'polo_navy';
       let base = 350;
-      let largeFee = 20;
+      let largeFee = 250;
 
       if (prodKey === 'jacket') {
         base = 920;
@@ -180,9 +180,9 @@ const PRODUCTS = {
     title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (CPE Polo Shirt)',
     batch: 'LXVIII (รุ่น 68)',
     basePrice: 350,
-    largeFee: 20,
+    largeFee: 250,
     originalPrice: 350,
-    badgeText: 'ราคาตัวละ ฿350 (4XL+ ฿370)',
+    badgeText: 'ราคาตัวละ ฿350 (5XL+ ฿600)',
     images: {
       front: 'assets/shirt_front.jpg',
       back: 'assets/shirt_back.jpg',
@@ -199,9 +199,9 @@ const PRODUCTS = {
     title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (สีกรมท่า Navy Blue)',
     batch: 'คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม CPE',
     basePrice: 350,
-    largeFee: 20,
+    largeFee: 250,
     originalPrice: 350,
-    badgeText: 'ราคาตัวละ ฿350 (4XL+ ฿370)',
+    badgeText: 'ราคาตัวละ ฿350 (5XL+ ฿600)',
     images: {
       front: 'assets/polo_navy_front.jpg',
       back: 'assets/polo_navy_back.jpg',
@@ -247,7 +247,7 @@ const SIZES = [
   { id: 'XL', label: 'XL (42")', chest: '42"' },
   { id: '2XL', label: '2XL (44")', chest: '44"' },
   { id: '3XL', label: '3XL (46")', chest: '46"' },
-  { id: '4XL', label: '4XL (48")', chest: '48"', isLarge: true },
+  { id: '4XL', label: '4XL (48")', chest: '48"' },
   { id: '5XL', label: '5XL (50")', chest: '50"', isLarge: true },
   { id: '6XL', label: '6XL (52")', chest: '52"', isLarge: true },
   { id: '7XL', label: '7XL (54")', chest: '54"', isLarge: true }
@@ -1364,7 +1364,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
 
   const prod = PRODUCTS.polo_navy || PRODUCTS.polo;
 
-  const isLargeSize = (sz) => ['4XL', '5XL', '6XL', '7XL', '8XL'].includes((sz || '').toUpperCase());
+  const isLargeSize = (sz) => ['5XL', '6XL', '7XL', '8XL'].includes((sz || '').toUpperCase());
 
   // Calculate Total Price dynamically across all items
   const totalPrice = itemsConfig.reduce((sum, item) => {
@@ -1436,7 +1436,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
             onClick={() => setSelectedProductKey('polo_navy')}
             style={{ background: 'linear-gradient(135deg, #1e3a8a, #0f172a)', border: '2px solid #38bdf8', boxShadow: '0 4px 20px rgba(56,189,248,0.4)', padding: '12px 24px', borderRadius: '12px', color: '#fff', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}
           >
-            <span>👕 เสื้อโปโลสาขา (สีกรมท่า Navy Blue) - ฿350 (4XL ขึ้นไป ฿370)</span>
+            <span>👕 เสื้อโปโลสาขา (สีกรมท่า Navy Blue) - ฿350 (5XL ขึ้นไป ฿600)</span>
           </button>
         </div>
 
@@ -3017,8 +3017,8 @@ function SizeGuideModal({ isOpen, onClose }) {
               </tr>
             </thead>
             <tbody>
-              <tr><td><strong>SS - 3XL</strong></td><td>34" - 46"</td><td>25" - 31"</td><td>350 บาท</td></tr>
-              <tr><td><strong>4XL ขึ้นไป</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+20฿)</span></td><td>48" ขึ้นไป</td><td>32" ขึ้นไป</td><td><strong style={{ color: '#F5D061' }}>370 บาท</strong></td></tr>
+              <tr><td><strong>SS - 4XL</strong></td><td>34" - 48"</td><td>25" - 32"</td><td>350 บาท</td></tr>
+              <tr><td><strong>5XL ขึ้นไป</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+250฿)</span></td><td>50" ขึ้นไป</td><td>33" ขึ้นไป</td><td><strong style={{ color: '#F5D061' }}>600 บาท</strong></td></tr>
             </tbody>
           </table>
 
@@ -3039,7 +3039,7 @@ function SizeGuideModal({ isOpen, onClose }) {
           </table>
 
           <div style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid var(--border-gold)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--accent-gold-bright)', marginTop: '15px' }}>
-            💡 คำแนะนำ: เสื้อโปโล SS - 3XL ราคา 350฿ / ไซส์ 4XL ขึ้นไป ราคา 370฿ (+20฿)
+            💡 คำแนะนำ: เสื้อโปโล SS - 4XL ราคา 350฿ / ไซส์ 5XL ขึ้นไป ราคา 600฿ (+250฿)
           </div>
         </div>
       </div>
