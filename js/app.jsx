@@ -4365,6 +4365,195 @@ function AdminDashboardModal({ isOpen, onClose }) {
     showToast('📄 สร้างรายงาน PDF สรุปผู้ชำระเงินครบถ้วนเรียบร้อยแล้ว!', 'success');
   };
 
+  const exportPendingPaymentPDF = () => {
+    const pendingOrders = orders.filter(o => {
+      const isTeacher = o.isTeacher || o.role === 'teacher' || (o.studentId && o.studentId.toUpperCase().startsWith('T'));
+      if (isTeacher) return false;
+
+      const calcTotal = getOrderTotal(o);
+      const depositPaid = typeof o.deposit === 'number' ? o.deposit : 0;
+      const remainingAmt = o.remainingPaidStatus === 'approved' ? 0 : Math.max(0, calcTotal - depositPaid);
+      return remainingAmt > 0;
+    });
+
+    if (!pendingOrders || pendingOrders.length === 0) {
+      showToast('ไม่พบรายการผู้ค้างชำระเงินในระบบ (ทุกคนชำระเงินครบถ้วนแล้ว)', 'success');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showToast('กรุณาอนุญาต Pop-up ในเบราว์เซอร์เพื่อเปิดรายงาน PDF', 'error');
+      return;
+    }
+
+    const todayStr = new Date().toLocaleDateString('th-TH', { 
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+    });
+
+    const totalOutstanding = pendingOrders.reduce((sum, o) => {
+      const calcTotal = getOrderTotal(o);
+      const depositPaid = typeof o.deposit === 'number' ? o.deposit : 0;
+      return sum + Math.max(0, calcTotal - depositPaid);
+    }, 0);
+
+    const totalShirts = pendingOrders.reduce((sum, o) => 
+      sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0
+    );
+
+    const pendingProofCount = pendingOrders.filter(o => o.remainingPaidStatus === 'pending_verification').length;
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="th">
+      <head>
+        <meta charset="UTF-8">
+        <title>รายงานสรุปรายชื่อผู้ยังชำระเงินไม่ครบ (ยอดค้างชำระ)</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
+          body { font-family: 'Sarabun', sans-serif; color: #111; background: #fff; padding: 24px; margin: 0; font-size: 13px; line-height: 1.5; }
+          .header { text-align: center; border-bottom: 2px solid #eab308; padding-bottom: 12px; margin-bottom: 16px; }
+          .title { font-size: 18px; font-weight: 800; color: #ca8a04; margin: 0 0 4px; }
+          .subtitle { font-size: 13px; color: #475569; margin: 0; }
+          .meta-info { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 8px; }
+
+          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; text-align: center; }
+          .stat-card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; background: #fefce8; }
+          .stat-label { font-size: 11px; color: #713f12; font-weight: 600; }
+          .stat-val { font-size: 16px; font-weight: 800; color: #ca8a04; margin-top: 2px; }
+
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th { background: #eab308; color: #000; border: 1px solid #ca8a04; padding: 8px 6px; font-size: 12px; font-weight: 700; text-align: center; }
+          td { border: 1px solid #cbd5e1; padding: 7px 8px; font-size: 12px; text-align: center; vertical-align: middle; }
+          td.left { text-align: left; }
+          td.right { text-align: right; }
+          tr:nth-child(even) { background: #fefce8; }
+          
+          .badge-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde047; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+          .badge-wait { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+
+          .total-row { background: #fef9c3 !important; font-weight: 800; font-size: 13px; }
+          .total-row td { border-top: 2px solid #eab308; border-bottom: 2px solid #eab308; }
+
+          .signature-section { margin-top: 40px; display: flex; justify-content: space-between; page-break-inside: avoid; }
+          .sig-box { text-align: center; width: 42%; font-size: 12px; }
+
+          @media print {
+            body { padding: 10px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="no-print" style="margin-bottom:15px; text-align:right;">
+          <button onclick="window.print()" style="padding:8px 18px; font-size:13px; font-weight:bold; background:#ca8a04; color:#fff; border:none; border-radius:4px; cursor:pointer;">
+            🖨️ พิมพ์ / บันทึกเป็น PDF
+          </button>
+        </div>
+
+        <div class="header">
+          <div class="title">⚠️ รายงานสรุปรายชื่อผู้ยังชำระเงินไม่ครบ (ยอดค้างชำระ)</div>
+          <div class="subtitle">สาขาวิศวกรรมคอมพิวเตอร์ (Computer Engineering) • คณะวิศวกรรมศาสตร์</div>
+          <div class="meta-info">
+            <span>พิมพ์รายงานเมื่อ: ${todayStr}</span>
+            <span>สถานะระบบ: ข้อมูลจาก Cloud Database (Firestore)</span>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">จำนวนผู้ยังค้างชำระ</div>
+            <div class="stat-val">${pendingOrders.length} รายการ</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">จำนวนเสื้อรวม</div>
+            <div class="stat-val" style="color: #0284c7;">${totalShirts} ตัว</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">ส่งสลิปแล้ว (รอตรวจ)</div>
+            <div class="stat-val" style="color: #0284c7;">${pendingProofCount} รายการ</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">ยอดค้างชำระรวมทั้งหมด</div>
+            <div class="stat-val" style="color: #dc2626;">฿${totalOutstanding.toLocaleString()}</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px;">#</th>
+              <th style="width: 110px;">เลขที่ออเดอร์</th>
+              <th style="width: 100px;">รหัสนักศึกษา</th>
+              <th style="text-align: left;">ชื่อ-นามสกุล</th>
+              <th style="width: 95px;">เบอร์โทรศัพท์</th>
+              <th style="text-align: left;">รายการสั่งซื้อ & ไซส์</th>
+              <th style="width: 80px;">มัดจำแล้ว</th>
+              <th style="width: 90px; text-align: right;">ยอดค้างชำระ</th>
+              <th style="width: 80px;">สถานะสลิป</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pendingOrders.map((o, idx) => {
+              const calcTotal = getOrderTotal(o);
+              const depositPaid = typeof o.deposit === 'number' ? o.deposit : 0;
+              const remainingAmt = Math.max(0, calcTotal - depositPaid);
+              const itemDetails = o.items ? o.items.map(it => `${it.title || 'เสื้อ'} (ไซส์ ${it.size} x ${it.qty || 1})`).join(', ') : 'เสื้อ CPE';
+              const isChecking = o.remainingPaidStatus === 'pending_verification';
+
+              return `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td><strong>${o.id}</strong></td>
+                  <td>${o.studentId || '-'}</td>
+                  <td class="left"><strong>${o.name || '-'}</strong></td>
+                  <td>${o.phone || '-'}</td>
+                  <td class="left">${itemDetails}</td>
+                  <td>฿${depositPaid.toLocaleString()}</td>
+                  <td class="right" style="font-weight: bold; color: #dc2626;">฿${remainingAmt.toLocaleString()}</td>
+                  <td>
+                    <span class="${isChecking ? 'badge-wait' : 'badge-pending'}">
+                      ${isChecking ? '⏳ รอตรวจสลิป' : '⚠️ ยังไม่ส่งสลิป'}
+                    </span>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+            
+            <tr class="total-row">
+              <td colspan="7" style="text-align: right;">รวมยอดค้างชำระทั้งหมด (${pendingOrders.length} รายการ / ${totalShirts} ตัว)</td>
+              <td class="right" style="color: #dc2626; font-size: 14px;">฿${totalOutstanding.toLocaleString()}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="signature-section">
+          <div class="sig-box">
+            <p style="margin-bottom: 45px;">ลงชื่อ....................................................ผู้พิมพ์รายงาน</p>
+            <p>(....................................................)</p>
+            <p style="color: #64748b; font-size: 11px;">ตำแหน่ง กรรมการดำเนินงานเสื้อ CPE</p>
+          </div>
+          <div class="sig-box">
+            <p style="margin-bottom: 45px;">ลงชื่อ....................................................ผู้ตรวจสอบ / เหรัญญิก</p>
+            <p>(....................................................)</p>
+            <p style="color: #64748b; font-size: 11px;">วันที่ ........ / ........ / ................</p>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() { setTimeout(function() { window.print(); }, 600); };
+        <\/script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    showToast('📄 สร้างรายงาน PDF สรุปผู้ยังชำระเงินไม่ครบเรียบร้อยแล้ว!', 'warning');
+  };
+
   const exportSizeSummaryPDF = () => {
     if (!orders || orders.length === 0) {
       showToast('ไม่มีข้อมูลออเดอร์ในการส่งออก', 'error');
@@ -4933,6 +5122,28 @@ function AdminDashboardModal({ isOpen, onClose }) {
                     </button>
 
                     <button 
+                      onClick={exportPendingPaymentPDF}
+                      className="btn"
+                      style={{
+                        background: 'linear-gradient(135deg, #ca8a04, #a16207)',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.83rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 14px rgba(202,138,4,0.3)',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <span>⚠️ ปริ้นท์ PDF สรุปผู้ยังชำระเงินไม่ครบ</span>
+                    </button>
+
+                    <button 
                       onClick={exportSizeSummaryCSV}
                       className="btn"
                       style={{
@@ -5216,7 +5427,26 @@ function AdminDashboardModal({ isOpen, onClose }) {
                       boxShadow: '0 4px 12px rgba(22,163,74,0.3)'
                     }}
                   >
-                    📄 ปริ้นท์ PDF สรุปคนชำระครบถ้วน (100%)
+                    📄 ปริ้นท์ PDF คนชำระครบ (100%)
+                  </button>
+                  <button
+                    onClick={exportPendingPaymentPDF}
+                    style={{
+                      background: 'linear-gradient(135deg, #ca8a04, #a16207)',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(202,138,4,0.3)'
+                    }}
+                  >
+                    ⚠️ ปริ้นท์ PDF คนยังจ่ายไม่ครบ
                   </button>
                   <span style={{ color: '#fde047', fontSize: '0.82rem', background: 'rgba(234,179,8,0.15)', padding: '4px 10px', borderRadius: '6px', border: '1px solid #eab308' }}>
                     ⏳ รออนุมัติ: <strong>{orders.filter(o => o.remainingPaidStatus === 'pending_verification').length} รายการ</strong>
