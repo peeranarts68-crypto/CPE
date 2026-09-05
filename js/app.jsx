@@ -3500,6 +3500,8 @@ function AdminDashboardModal({ isOpen, onClose }) {
   const [customDeadline, setCustomDeadline] = useState('2026-08-08T14:40');
   const [savingSettings, setSavingSettings] = useState(false);
   const [extraDeposits, setExtraDeposits] = useState(adminCachedExtraDeposits);
+  const [pickupSearch, setPickupSearch] = useState('');
+  const [pickupFilterStatus, setPickupFilterStatus] = useState('all');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -3786,6 +3788,31 @@ function AdminDashboardModal({ isOpen, onClose }) {
       console.log('Delete error:', e);
       showToast('ลบออเดอร์ไม่สำเร็จ', 'error');
     }
+  };
+
+  const handleTogglePickup = async (orderId) => {
+    const target = orders.find(o => o.id === orderId);
+    if (!target) return;
+    const isCurrentlyPickedUp = target.status === 'completed' || target.pickupStatus === 'picked_up';
+    const newStatus = isCurrentlyPickedUp ? 'shipping' : 'completed';
+    const newPickupStatus = isCurrentlyPickedUp ? 'not_picked' : 'picked_up';
+    const nowTime = isCurrentlyPickedUp ? null : new Date().toLocaleString('th-TH');
+
+    const updated = orders.map(o => o.id === orderId ? { ...o, status: newStatus, pickupStatus: newPickupStatus, pickupAt: nowTime } : o);
+    setOrders(updated);
+
+    const fb = window.CPEFirebase || {};
+    if (target.firestoreId && fb.setDoc && fb.doc && fb.db) {
+      try {
+        await fb.setDoc(fb.doc(fb.db, 'orders', target.firestoreId), { 
+          status: newStatus, 
+          pickupStatus: newPickupStatus, 
+          pickupAt: nowTime 
+        }, { merge: true });
+      } catch (e) { console.log("Firestore pickup update:", e); }
+    }
+
+    showToast(isCurrentlyPickedUp ? `ยกเลิกสถานะรับเสื้อของ ${target.name} แล้ว` : `บันทึกการรับเสื้อของ ${target.name} สำเร็จ!`, 'success');
   };
 
 
@@ -4226,6 +4253,301 @@ function AdminDashboardModal({ isOpen, onClose }) {
     showToast('📄 สร้างรายงาน PDF สรุปผู้ยังชำระเงินไม่ครบเรียบร้อยแล้ว!', 'warning');
   };
 
+  const exportPickupChecklistPDF = () => {
+    if (!orders || orders.length === 0) {
+      showToast('ไม่พบรายการคำสั่งซื้อในระบบ', 'error');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showToast('กรุณาอนุญาต Pop-up ในเบราว์เซอร์เพื่อเปิดรายงาน PDF', 'error');
+      return;
+    }
+
+    const todayStr = new Date().toLocaleDateString('th-TH', { 
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+    });
+
+    const totalShirts = orders.reduce((sum, o) => 
+      sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0
+    );
+
+    const pickedUpCount = orders.filter(o => o.status === 'completed' || o.pickupStatus === 'picked_up').length;
+    const notPickedCount = orders.length - pickedUpCount;
+
+    const totalRemainingAmount = orders.reduce((sum, o) => {
+      const calcTotal = getOrderTotal(o);
+      const isTeacher = o.isTeacher || o.role === 'teacher' || (o.studentId && o.studentId.toUpperCase().startsWith('T'));
+      if (isTeacher || o.remainingPaidStatus === 'approved') return sum;
+      const depositPaid = typeof o.deposit === 'number' ? o.deposit : (o.depositAmount || 0);
+      const rem = Math.max(0, calcTotal - depositPaid);
+      return sum + rem;
+    }, 0);
+
+    const sortedOrders = [...orders].sort((a, b) => {
+      const idA = a.studentId || a.id || '';
+      const idB = b.studentId || b.id || '';
+      return idA.localeCompare(idB);
+    });
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="th">
+      <head>
+        <meta charset="UTF-8">
+        <title>ใบลงทะเบียนเช็คชื่อรับเสื้อ สาขาวิศวกรรมคอมพิวเตอร์ (CPE Shirt Pickup Checklist)</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap');
+          @page {
+            size: A4 landscape;
+            margin: 10mm 12mm 10mm 12mm;
+          }
+          body { 
+            font-family: 'Sarabun', sans-serif; 
+            color: #0f172a; 
+            background: #fff; 
+            margin: 0; 
+            padding: 12px; 
+            font-size: 11px; 
+            line-height: 1.35; 
+          }
+          .header { 
+            text-align: center; 
+            border-bottom: 2px solid #0284c7; 
+            padding-bottom: 10px; 
+            margin-bottom: 12px; 
+          }
+          .title { 
+            font-size: 18px; 
+            font-weight: 800; 
+            color: #0369a1; 
+            margin: 0 0 2px; 
+            letter-spacing: 0.5px;
+          }
+          .subtitle { 
+            font-size: 12px; 
+            color: #475569; 
+            margin: 0; 
+          }
+          .meta-info { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 10.5px; 
+            color: #64748b; 
+            margin-top: 6px; 
+          }
+
+          .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 8px; 
+            margin-bottom: 12px; 
+            text-align: center; 
+          }
+          .stat-card { 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            padding: 6px 10px; 
+            background: #f8fafc; 
+          }
+          .stat-label { 
+            font-size: 10px; 
+            color: #64748b; 
+            font-weight: 600; 
+          }
+          .stat-val { 
+            font-size: 14px; 
+            font-weight: 800; 
+            color: #0284c7; 
+            margin-top: 1px; 
+          }
+
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 6px; 
+          }
+          th { 
+            background: #0284c7; 
+            color: #fff; 
+            border: 1px solid #0369a1; 
+            padding: 6px 4px; 
+            font-size: 10.5px; 
+            font-weight: 700; 
+            text-align: center; 
+          }
+          td { 
+            border: 1px solid #cbd5e1; 
+            padding: 5px 6px; 
+            font-size: 10.5px; 
+            text-align: center; 
+            vertical-align: middle; 
+          }
+          tr:nth-child(even) { 
+            background: #f8fafc; 
+          }
+          tr { 
+            page-break-inside: avoid; 
+          }
+
+          .text-left { text-align: left; }
+          .text-right { text-align: right; }
+          .badge-year { 
+            display: inline-block; 
+            padding: 1px 5px; 
+            border-radius: 4px; 
+            font-size: 9.5px; 
+            font-weight: 700; 
+            background: #e2e8f0; 
+            color: #334155; 
+          }
+
+          .sig-line {
+            display: inline-block;
+            width: 110px;
+            border-bottom: 1px dotted #94a3b8;
+            height: 14px;
+          }
+
+          .signature-section { 
+            margin-top: 24px; 
+            display: flex; 
+            justify-content: space-around; 
+            page-break-inside: avoid; 
+          }
+          .sig-box { 
+            text-align: center; 
+            width: 35%; 
+            font-size: 11px; 
+          }
+
+          @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">📋 แบบฟอร์มลงทะเบียนเช็คชื่อรับเสื้อ สาขาวิศวกรรมคอมพิวเตอร์ (CPE)</div>
+          <div class="subtitle">คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม มหาวิทยาลัยราชภัฏพิบูลสงคราม (PSRU)</div>
+          <div class="meta-info">
+            <span>พิมพ์เมื่อ: ${todayStr}</span>
+            <span>คำชี้แจง: ผู้รับเสื้อกรุณาตรวจสอบความถูกต้องของสินค้าและลงลายมือชื่อในช่องผู้รับ</span>
+            <span>ข้อมูลจากระบบ CPE Portal</span>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">ยอดสั่งจองทั้งหมด</div>
+            <div class="stat-val">${orders.length} รายการ (${totalShirts} ตัว)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">รับเสื้อแล้วในระบบ</div>
+            <div class="stat-val" style="color: #16a34a;">${pickedUpCount} คน</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">ยังไม่ได้รับเสื้อ</div>
+            <div class="stat-val" style="color: #ea580c;">${notPickedCount} คน</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">ยอดที่ต้องชำระวันรับเสื้อรวม</div>
+            <div class="stat-val" style="color: #b91c1c;">฿${totalRemainingAmount.toLocaleString()}</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 28px;">#</th>
+              <th style="width: 85px;">รหัสนักศึกษา/อาจารย์</th>
+              <th style="width: 140px; text-align: left;">ชื่อ - นามสกุล</th>
+              <th style="width: 70px;">ชั้นปี</th>
+              <th style="text-align: left;">รายการเสื้อ & ไซส์</th>
+              <th style="width: 45px;">จำนวน</th>
+              <th style="width: 85px;">ยอดวันรับเสื้อ</th>
+              <th style="width: 65px;">สถานะระบบ</th>
+              <th style="width: 120px;">ลายมือชื่อผู้รับเสื้อ</th>
+              <th style="width: 85px;">วัน-เวลาที่รับ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sortedOrders.map((o, idx) => {
+              const isTeacher = o.isTeacher || o.role === 'teacher' || (o.studentId && o.studentId.toUpperCase().startsWith('T'));
+              const calcTotal = getOrderTotal(o);
+              const depositPaid = typeof o.deposit === 'number' ? o.deposit : (o.depositAmount || 0);
+              const rem = isTeacher || o.remainingPaidStatus === 'approved' ? 0 : Math.max(0, calcTotal - depositPaid);
+              const isPicked = o.status === 'completed' || o.pickupStatus === 'picked_up';
+
+              const itemDetails = o.items ? o.items.map(it => 
+                `${it.title || it.name || 'เสื้อ'} (ไซส์ ${it.size} x ${it.qty || 1})`
+              ).join(', ') : 'เสื้อ CPE';
+
+              const totalQty = o.items ? o.items.reduce((s, it) => s + (it.qty || 1), 0) : 1;
+
+              let yearText = 'นักศึกษา';
+              if (isTeacher) yearText = 'อาจารย์';
+              else if (o.year === '1' || (o.studentId && o.studentId.startsWith('69'))) yearText = 'ปี 1 (CPE69)';
+              else if (o.year === '2' || (o.studentId && o.studentId.startsWith('68'))) yearText = 'ปี 2 (CPE68)';
+              else if (o.year === '3' || (o.studentId && o.studentId.startsWith('67'))) yearText = 'ปี 3 (CPE67)';
+              else if (o.year === '4' || (o.studentId && o.studentId.startsWith('66'))) yearText = 'ปี 4 (CPE66)';
+
+              return `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td><strong style="letter-spacing: 0.5px;">${o.studentId || '-'}</strong></td>
+                  <td class="text-left"><strong>${o.name || '-'}</strong> ${o.nickname ? `<span style="color:#64748b;">(${o.nickname})</span>` : ''}</td>
+                  <td><span class="badge-year">${yearText}</span></td>
+                  <td class="text-left">${itemDetails}</td>
+                  <td><strong>${totalQty}</strong></td>
+                  <td>
+                    ${rem === 0 ? '<span style="color: #16a34a; font-weight: bold;">ครบถ้วน (฿0)</span>' : `<span style="color: #b91c1c; font-weight: bold;">฿${rem.toLocaleString()}</span>`}
+                  </td>
+                  <td>
+                    ${isPicked ? '<span style="color: #16a34a; font-weight: bold;">✓ รับแล้ว</span>' : '<span style="color: #ca8a04;">รอรับ</span>'}
+                  </td>
+                  <td>
+                    <span class="sig-line"></span>
+                  </td>
+                  <td>
+                    ${o.pickupAt ? `<span style="font-size: 9px; color: #16a34a;">${o.pickupAt}</span>` : '<span style="color: #94a3b8; font-size: 9px;">_____/_____/____</span>'}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div class="signature-section">
+          <div class="sig-box">
+            <div>ลงชื่อ ...........................................................</div>
+            <div style="margin-top: 4px;">( ........................................................... )</div>
+            <div style="margin-top: 2px; color: #475569;">ผู้ส่งมอบเสื้อและตรวจสอบยอดเงิน</div>
+            <div style="margin-top: 2px; color: #64748b; font-size: 10px;">วันที่ _____ / _____ / _________</div>
+          </div>
+          <div class="sig-box">
+            <div>ลงชื่อ ...........................................................</div>
+            <div style="margin-top: 4px;">( ........................................................... )</div>
+            <div style="margin-top: 2px; color: #475569;">ประธานสาขาวิศวกรรมคอมพิวเตอร์ / อาจารย์ที่ปรึกษา</div>
+            <div style="margin-top: 2px; color: #64748b; font-size: 10px;">วันที่ _____ / _____ / _________</div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() { setTimeout(function() { window.print(); }, 600); };
+        <\/script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    showToast('📋 สร้างแบบฟอร์ม PDF เช็คชื่อรับเสื้อเรียบร้อยแล้ว!', 'success');
+  };
+
   const exportSizeSummaryPDF = () => {
     if (!orders || orders.length === 0) {
       showToast('ไม่มีข้อมูลออเดอร์ในการส่งออก', 'error');
@@ -4628,6 +4950,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-gold)', paddingBottom: '12px' }}>
             {[
               { id: 'all', label: '📦 ทั้งหมดทุกสินค้า', badgeBg: '#3b82f6' },
+              { id: 'pickup_checklist', label: '📋 เช็คชื่อรับเสื้อ', badgeBg: '#0284c7' },
               { id: 'deposit_summary', label: '💰 สรุปคนจ่ายมัดจำทั้งหมด', badgeBg: '#10b981' },
               { id: 'polo_66', label: '🎓 ออเดอร์ CPE 66 (ปี 4)', badgeBg: '#f97316' },
               { id: 'polo_67', label: '🎓 ออเดอร์ CPE 67 (ปี 3)', badgeBg: '#a855f7' },
@@ -4636,7 +4959,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
               { id: 'jacket', label: '🧥 เสื้อคลุม CPE 69 (ปี 1)', badgeBg: '#10b981' },
               { id: 'extra_deposit', label: '💳 มัดจำเพิ่ม 100 บาท', badgeBg: '#f59e0b' }
             ].map(tab => {
-              const count = tab.id === 'deposit_summary' ? orders.length : tab.id === 'extra_deposit' ? extraDeposits.length : tab.id === 'all' ? orders.length : orders.filter(o => {
+              const count = tab.id === 'deposit_summary' ? orders.length : tab.id === 'pickup_checklist' ? orders.length : tab.id === 'extra_deposit' ? extraDeposits.length : tab.id === 'all' ? orders.length : orders.filter(o => {
                 if (tab.id === 'polo_66') return (o.studentId && o.studentId.startsWith('66')) || o.year === '4' || (o.items && o.items.some(it => it.studentId && it.studentId.startsWith('66')));
                 if (tab.id === 'polo_67') return (o.studentId && o.studentId.startsWith('67')) || o.year === '3' || (o.items && o.items.some(it => it.studentId && it.studentId.startsWith('67')));
                 if (tab.id === 'polo_68') return (o.studentId && o.studentId.startsWith('68')) || o.year === '2' || (o.items && o.items.some(it => it.productKey === 'polo' || (it.title && (it.title.includes('รุ่น 68') || it.title.includes('CPE Polo Shirt')))));
@@ -4799,6 +5122,28 @@ function AdminDashboardModal({ isOpen, onClose }) {
                     </button>
 
                     <button 
+                      onClick={exportPickupChecklistPDF}
+                      className="btn"
+                      style={{
+                        background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.83rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 14px rgba(2,132,199,0.3)',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <span>📋 ปริ้นท์ PDF แบบฟอร์มเช็คชื่อรับเสื้อ</span>
+                    </button>
+
+                    <button 
                       onClick={exportSizeSummaryCSV}
                       className="btn"
                       style={{
@@ -4940,8 +5285,256 @@ function AdminDashboardModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Orders / Extra Deposits / Deposit Summary Table */}
-          {productFilter === 'deposit_summary' ? (
+          {/* Orders / Extra Deposits / Deposit Summary / Pickup Checklist Table */}
+          {productFilter === 'pickup_checklist' ? (
+            <div style={{ background: '#0a0b10', border: '1px solid #0284c7', borderRadius: '12px', padding: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h4 style={{ color: '#38bdf8', margin: 0, fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    📋 ระบบเช็คชื่อรับเสื้อ (CPE Shirt Pickup Checklist)
+                  </h4>
+                  <div style={{ color: 'var(--text-sub)', fontSize: '0.82rem', marginTop: '4px' }}>
+                    ระบบตรวจเช็คและบันทึกสถานะการรับเสื้อ พร้อมพิมพ์แบบฟอร์มลงลายมือชื่อสำหรับวันแจกเสื้อจริง
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={exportPickupChecklistPDF}
+                    className="btn"
+                    style={{
+                      background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontSize: '0.88rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(2,132,199,0.4)'
+                    }}
+                  >
+                    <span>🖨️ ปริ้นท์ PDF แบบฟอร์มเช็คชื่อรับเสื้อ (A4 แนวนอน)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats Summary Bar */}
+              {(() => {
+                const totalOrdersCount = orders.length;
+                const totalShirtsCount = orders.reduce((sum, o) => sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0);
+                const pickedCount = orders.filter(o => o.status === 'completed' || o.pickupStatus === 'picked_up').length;
+                const notPickedCount = totalOrdersCount - pickedCount;
+                const totalRemToCollect = orders.reduce((sum, o) => {
+                  const isTeacher = o.isTeacher || o.role === 'teacher' || (o.studentId && o.studentId.toUpperCase().startsWith('T'));
+                  if (isTeacher || o.remainingPaidStatus === 'approved') return sum;
+                  const calcTotal = getOrderTotal(o);
+                  const depositPaid = typeof o.deposit === 'number' ? o.deposit : (o.depositAmount || 0);
+                  return sum + Math.max(0, calcTotal - depositPaid);
+                }, 0);
+
+                const checklistOrders = orders.filter(o => {
+                  const isPicked = o.status === 'completed' || o.pickupStatus === 'picked_up';
+                  if (pickupFilterStatus === 'not_picked' && isPicked) return false;
+                  if (pickupFilterStatus === 'picked_up' && !isPicked) return false;
+                  if (!pickupSearch.trim()) return true;
+                  const q = pickupSearch.toLowerCase().trim();
+                  const sId = (o.studentId || '').toLowerCase();
+                  const name = (o.name || '').toLowerCase();
+                  const oId = (o.id || '').toLowerCase();
+                  const phone = (o.phone || '').toLowerCase();
+                  return sId.includes(q) || name.includes(q) || oId.includes(q) || phone.includes(q);
+                });
+
+                return (
+                  <div>
+                    {/* Stats Tiles */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px', marginBottom: '18px' }}>
+                      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+                        <div style={{ color: 'var(--text-sub)', fontSize: '0.78rem' }}>ยอดสั่งทั้งหมด</div>
+                        <div style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 800, marginTop: '2px' }}>{totalOrdersCount} รายการ</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>({totalShirtsCount} ตัว)</div>
+                      </div>
+                      <div style={{ background: 'rgba(22, 163, 74, 0.08)', border: '1px solid rgba(22, 163, 74, 0.3)', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+                        <div style={{ color: '#4ade80', fontSize: '0.78rem' }}>รับเสื้อแล้ว</div>
+                        <div style={{ color: '#22c55e', fontSize: '1.25rem', fontWeight: 800, marginTop: '2px' }}>{pickedCount} คน</div>
+                        <div style={{ color: '#86efac', fontSize: '0.72rem' }}>({totalOrdersCount ? Math.round((pickedCount / totalOrdersCount) * 100) : 0}%)</div>
+                      </div>
+                      <div style={{ background: 'rgba(234, 88, 12, 0.08)', border: '1px solid rgba(234, 88, 12, 0.3)', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+                        <div style={{ color: '#fb923c', fontSize: '0.78rem' }}>ยังไม่ได้รับเสื้อ</div>
+                        <div style={{ color: '#ea580c', fontSize: '1.25rem', fontWeight: 800, marginTop: '2px' }}>{notPickedCount} คน</div>
+                        <div style={{ color: '#fdba74', fontSize: '0.72rem' }}>({totalOrdersCount ? Math.round((notPickedCount / totalOrdersCount) * 100) : 0}%)</div>
+                      </div>
+                      <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+                        <div style={{ color: '#f87171', fontSize: '0.78rem' }}>ยอดที่ต้องเก็บวันรับเสื้อรวม</div>
+                        <div style={{ color: '#ef4444', fontSize: '1.25rem', fontWeight: 800, marginTop: '2px' }}>฿{totalRemToCollect.toLocaleString()}</div>
+                        <div style={{ color: '#fca5a5', fontSize: '0.72rem' }}>เฉพาะผู้ค้างชำระ</div>
+                      </div>
+                    </div>
+
+                    {/* Filter & Search Bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div style={{ flex: '1 1 260px', maxWidth: '400px' }}>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="🔍 ค้นหารหัสนักศึกษา / ชื่อ / เลขออเดอร์..."
+                          value={pickupSearch}
+                          onChange={e => setPickupSearch(e.target.value)}
+                          style={{ padding: '7px 12px', fontSize: '0.85rem' }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {[
+                          { id: 'all', label: `ทั้งหมด (${orders.length})` },
+                          { id: 'not_picked', label: `⏳ ยังไม่ได้รับ (${notPickedCount})` },
+                          { id: 'picked_up', label: `✅ รับแล้ว (${pickedCount})` }
+                        ].map(st => (
+                          <button
+                            key={st.id}
+                            className={`btn ${pickupFilterStatus === st.id ? 'btn-gold' : 'btn-outline'}`}
+                            style={{
+                              padding: '5px 12px',
+                              fontSize: '0.8rem',
+                              borderColor: pickupFilterStatus === st.id ? 'var(--accent-gold)' : 'rgba(255,255,255,0.2)',
+                              color: pickupFilterStatus === st.id ? '#000' : '#fff',
+                              fontWeight: 'bold'
+                            }}
+                            onClick={() => setPickupFilterStatus(st.id)}
+                          >
+                            {st.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Table */}
+                    {checklistOrders.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                        ไม่พบรายการที่ตรงกับเงื่อนไขการค้นหา
+                      </div>
+                    ) : (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#fff', fontSize: '0.88rem' }}>
+                          <thead>
+                            <tr style={{ background: '#090a0f', borderBottom: '1px solid #0284c7' }}>
+                              <th style={{ padding: '10px 8px', width: '38px', textAlign: 'center' }}>#</th>
+                              <th style={{ padding: '10px' }}>รหัสนักศึกษา / ชั้นปี</th>
+                              <th style={{ padding: '10px' }}>ชื่อ - นามสกุล & เบอร์โทร</th>
+                              <th style={{ padding: '10px' }}>รายการเสื้อ & ไซส์</th>
+                              <th style={{ padding: '10px', textAlign: 'center' }}>ยอดวันรับเสื้อ</th>
+                              <th style={{ padding: '10px', textAlign: 'center' }}>สถานะรับเสื้อ</th>
+                              <th style={{ padding: '10px', textAlign: 'center' }}>การเช็คชื่อ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {checklistOrders.map((o, idx) => {
+                              const isPicked = o.status === 'completed' || o.pickupStatus === 'picked_up';
+                              const isTeacher = o.isTeacher || o.role === 'teacher' || (o.studentId && o.studentId.toUpperCase().startsWith('T'));
+                              const calcTotal = getOrderTotal(o);
+                              const depositPaid = typeof o.deposit === 'number' ? o.deposit : (o.depositAmount || 0);
+                              const rem = isTeacher || o.remainingPaidStatus === 'approved' ? 0 : Math.max(0, calcTotal - depositPaid);
+
+                              let yearBadge = null;
+                              if (isTeacher) {
+                                yearBadge = <span style={{ background: 'rgba(56, 189, 248, 0.18)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: 'bold' }}>อาจารย์</span>;
+                              } else if (o.studentId && o.studentId.startsWith('66')) {
+                                yearBadge = <span style={{ background: 'rgba(249, 115, 22, 0.18)', color: '#f97316', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: 'bold' }}>ปี 4 (CPE66)</span>;
+                              } else if (o.studentId && o.studentId.startsWith('67')) {
+                                yearBadge = <span style={{ background: 'rgba(168, 85, 247, 0.18)', color: '#c084fc', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: 'bold' }}>ปี 3 (CPE67)</span>;
+                              } else if (o.studentId && o.studentId.startsWith('68')) {
+                                yearBadge = <span style={{ background: 'rgba(234, 179, 8, 0.18)', color: '#facc15', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: 'bold' }}>ปี 2 (CPE68)</span>;
+                              } else if (o.studentId && o.studentId.startsWith('69')) {
+                                yearBadge = <span style={{ background: 'rgba(16, 185, 129, 0.18)', color: '#34d399', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: 'bold' }}>ปี 1 (CPE69)</span>;
+                              }
+
+                              return (
+                                <tr key={o.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: isPicked ? 'rgba(34, 197, 94, 0.03)' : 'transparent' }}>
+                                  <td style={{ padding: '10px 8px', textAlign: 'center', color: 'var(--text-muted)' }}>{idx + 1}</td>
+                                  <td style={{ padding: '10px' }}>
+                                    <div style={{ color: '#38bdf8', fontWeight: 'bold', fontSize: '0.92rem' }}>{o.studentId || '-'}</div>
+                                    <div style={{ marginTop: '3px' }}>{yearBadge}</div>
+                                  </td>
+                                  <td style={{ padding: '10px' }}>
+                                    <div style={{ fontWeight: 'bold', color: '#fff' }}>
+                                      {o.name || '-'} {o.nickname ? <span style={{ color: 'var(--accent-gold)', fontWeight: 'normal' }}>({o.nickname})</span> : ''}
+                                    </div>
+                                    {o.phone && <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: '2px' }}>📞 {o.phone}</div>}
+                                  </td>
+                                  <td style={{ padding: '10px' }}>
+                                    {o.items && o.items.length > 0 ? (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        {o.items.map((it, iIdx) => (
+                                          <div key={iIdx} style={{ fontSize: '0.82rem', background: 'rgba(255,255,255,0.04)', padding: '3px 7px', borderRadius: '4px' }}>
+                                            <span style={{ color: '#e2e8f0' }}>{it.title || it.name || 'เสื้อ'}</span>
+                                            <span style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginLeft: '6px' }}>ไซส์ {it.size || '-'}</span>
+                                            <span style={{ color: '#94a3b8', marginLeft: '6px' }}>x {it.qty || 1}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span style={{ color: 'var(--text-muted)' }}>-</span>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center' }}>
+                                    {rem > 0 ? (
+                                      <div>
+                                        <span style={{ color: '#ef4444', fontWeight: 800, fontSize: '0.95rem' }}>฿{rem}</span>
+                                        <div style={{ color: '#f87171', fontSize: '0.72rem', fontWeight: 600 }}>ต้องเก็บเงิน</div>
+                                      </div>
+                                    ) : (
+                                      <div>
+                                        <span style={{ color: '#22c55e', fontWeight: 'bold', fontSize: '0.85rem' }}>ครบ 100%</span>
+                                        <div style={{ color: '#86efac', fontSize: '0.7rem' }}>ไม่ต้องเก็บเพิ่ม</div>
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center' }}>
+                                    {isPicked ? (
+                                      <div>
+                                        <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.4)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 'bold', display: 'inline-block' }}>
+                                          ✅ รับเสื้อแล้ว
+                                        </span>
+                                        {o.pickupAt && <div style={{ color: '#94a3b8', fontSize: '0.7rem', marginTop: '3px' }}>{o.pickupAt}</div>}
+                                      </div>
+                                    ) : (
+                                      <span style={{ background: 'rgba(234, 88, 12, 0.15)', color: '#fb923c', border: '1px solid rgba(234, 88, 12, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 'bold', display: 'inline-block' }}>
+                                        ⏳ ยังไม่ได้รับ
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center' }}>
+                                    <button
+                                      onClick={() => handleTogglePickup(o.id)}
+                                      style={{
+                                        padding: '6px 12px',
+                                        background: isPicked ? 'rgba(239, 68, 68, 0.15)' : 'linear-gradient(135deg, #16a34a, #15803d)',
+                                        color: isPicked ? '#ef4444' : '#fff',
+                                        border: isPicked ? '1px solid #ef4444' : 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 'bold',
+                                        transition: 'all 0.2s ease'
+                                      }}
+                                    >
+                                      {isPicked ? '↩️ ยกเลิกรับ' : '✔️ เช็คชื่อรับเสื้อ'}
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          ) : productFilter === 'deposit_summary' ? (
             <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '12px', padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
                 <h4 style={{ color: '#22c55e', margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>
