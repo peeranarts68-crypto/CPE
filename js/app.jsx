@@ -92,17 +92,17 @@ const withTimeout = (promise, ms = 4000) => {
   ]);
 };
 
-const isLargeSizeHelper = (sz) => ['5XL', '6XL', '7XL', '8XL'].includes((sz || '').toString().toUpperCase().trim());
+const isLargeSizeHelper = (sz) => ['4XL', '5XL', '6XL', '7XL', '8XL'].includes((sz || '').toString().toUpperCase().trim());
 
-// Helper to retrieve exact grand total of an order recalculated dynamically with the current price policy (350฿ / 5XL+ 600฿)
+// Helper to retrieve exact grand total of an order recalculated dynamically with the current price policy (290฿ / 4XL+ 330฿)
 const getOrderTotal = (o) => {
-  if (!o) return 350;
+  if (!o) return 290;
 
   if (o.items && Array.isArray(o.items) && o.items.length > 0) {
     return o.items.reduce((sum, it) => {
       const prodKey = it.productKey || 'polo_navy';
-      let base = 350;
-      let largeFee = 250;
+      let base = 290;
+      let largeFee = 40;
 
       if (prodKey === 'jacket') {
         base = 920;
@@ -119,7 +119,7 @@ const getOrderTotal = (o) => {
     }, 0);
   }
 
-  return 350;
+  return 290;
 };
 
 // Create Auth Context
@@ -179,39 +179,39 @@ const PRODUCTS = {
     id: 'polo',
     title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (CPE Polo Shirt)',
     batch: 'LXVIII (รุ่น 68)',
-    basePrice: 350,
-    largeFee: 250,
-    originalPrice: 350,
-    badgeText: 'ราคาตัวละ ฿350 (5XL+ ฿600)',
+    basePrice: 290,
+    largeFee: 40,
+    originalPrice: 290,
+    badgeText: 'ราคาตัวละ ฿290 (4XL+ ฿330)',
     images: {
-      front: 'assets/shirt_front.jpg',
-      back: 'assets/shirt_back.jpg',
-      sleeve: 'assets/shirt_sleeve.jpg'
+      front: 'assets/polo_navy_front_20260905.jpg',
+      back: 'assets/polo_navy_back_20260905.jpg',
+      sleeve: 'assets/polo_navy_front_20260905.jpg'
     },
     specs: [
-      'อกซ้าย: <strong>ปักตรา CPE PSRU</strong>',
-      'ด้านหลัง: <strong>สกรีนวงจร Computer Eng</strong>',
-      'แขนเสื้อ: <strong>ปักเลขโรมัน LXVIII</strong>'
+      'อกขวา: <strong>ปักตราสัญลักษณ์ F</strong>',
+      'อกซ้าย: <strong>กระเป๋าเสื้อปักตรา CPE</strong>',
+      'ด้านหลัง: <strong>สกรีน Computer Engineering & วงจรเกียร์</strong>'
     ]
   },
   polo_navy: {
     id: 'polo_navy',
     title: 'เสื้อโปโลสาขาวิศวกรรมคอมพิวเตอร์ (สีกรมท่า Navy Blue)',
     batch: 'คณะวิศวกรรมศาสตร์และเทคโนโลยีอุตสาหกรรม CPE',
-    basePrice: 350,
-    largeFee: 250,
-    originalPrice: 350,
-    badgeText: 'ราคาตัวละ ฿350 (5XL+ ฿600)',
+    basePrice: 290,
+    largeFee: 40,
+    originalPrice: 290,
+    badgeText: 'ราคาตัวละ ฿290 (4XL+ ฿330)',
     images: {
-      front: 'assets/polo_navy_front.jpg',
-      back: 'assets/polo_navy_back.jpg',
-      sleeve: 'assets/polo_navy_front.jpg'
+      front: 'assets/polo_navy_front_20260905.jpg',
+      back: 'assets/polo_navy_back_20260905.jpg',
+      sleeve: 'assets/polo_navy_front_20260905.jpg'
     },
     specs: [
-      'สีเสื้อ: <strong>สีกรมท่า (Navy Blue) ปกขอบขาว</strong>',
-      'เนื้อผ้า: <strong>ผ้าไมโครไฟเบอร์ นุ่ม ใส่สบาย ไม่ร้อน</strong>',
-      'อกซ้าย: <strong>ปักโลโก้ตรา CPE Computer Engineering</strong>',
-      'ด้านหลัง: <strong>สกรีน Computer Engineering & Circuit สีขาว</strong>'
+      'สีเสื้อ: <strong>สีกรมท่า (Navy Blue) ปกและแขนขลิบเทา มีกระเป๋า</strong>',
+      'อกขวา: <strong>ปักตราสัญลักษณ์ F</strong>',
+      'อกซ้าย: <strong>กระเป๋าเสื้อปักโลโก้ CPE Computer Engineering</strong>',
+      'ด้านหลัง: <strong>สกรีน Computer Engineering & วงจรเกียร์สีขาว</strong>'
     ]
   },
   jacket: {
@@ -247,10 +247,9 @@ const SIZES = [
   { id: 'XL', label: 'XL (42")', chest: '42"' },
   { id: '2XL', label: '2XL (44")', chest: '44"' },
   { id: '3XL', label: '3XL (46")', chest: '46"' },
-  { id: '4XL', label: '4XL (48")', chest: '48"' },
+  { id: '4XL', label: '4XL (48")', chest: '48"', isLarge: true },
   { id: '5XL', label: '5XL (50")', chest: '50"', isLarge: true },
-  { id: '6XL', label: '6XL (52")', chest: '52"', isLarge: true },
-  { id: '7XL', label: '7XL (54")', chest: '54"', isLarge: true }
+  { id: '6XL', label: '6XL (52")', chest: '52"', isLarge: true }
 ];
 
 // Main React App Provider & Root
@@ -313,8 +312,6 @@ function App() {
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isExtraDepositModalOpen, setIsExtraDepositModalOpen] = useState(false);
-  const [isPayRemainingModalOpen, setIsPayRemainingModalOpen] = useState(false);
-  const [payRemainingOrder, setPayRemainingOrder] = useState(null);
 
   // Real-time Dynamic Sales Settings State
   const [salesSettings, setSalesSettings] = useState({
@@ -625,14 +622,6 @@ function App() {
               <a href="#hero" className="nav-link active">หน้าแรก</a>
               <a href="#ordering" className="nav-link">สั่งซื้อเสื้อสาขา</a>
               {currentUser && <a href="#tracking" className="nav-link">ติดตามสถานะ</a>}
-              {currentUser && (currentUser.role !== 'teacher' && currentUser.year !== 'teacher') && (
-                <button
-                  onClick={() => { setPayRemainingOrder(null); setIsPayRemainingModalOpen(true); }}
-                  style={{ background: 'none', border: 'none', color: '#22c55e', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600, padding: '4px 8px', textDecoration: 'underline dotted' }}
-                >
-                  💰 ชำระส่วนที่เหลือ
-                </button>
-              )}
             </nav>
 
             <div className="nav-actions">
@@ -832,10 +821,6 @@ function App() {
             trackedOrder={trackedOrder}
             setTrackedOrder={setTrackedOrder}
             myOrdersHistory={myOrdersHistory}
-            onPayRemaining={(ord) => {
-              setPayRemainingOrder(ord);
-              setIsPayRemainingModalOpen(true);
-            }}
           />
         )}
 
@@ -890,13 +875,6 @@ function App() {
         <ExtraDepositModal
           isOpen={isExtraDepositModalOpen}
           onClose={() => setIsExtraDepositModalOpen(false)}
-          showToast={showToast}
-        />
-
-        <PayRemainingModal
-          isOpen={isPayRemainingModalOpen}
-          onClose={() => setIsPayRemainingModalOpen(false)}
-          initialOrder={payRemainingOrder}
           showToast={showToast}
         />
 
@@ -1200,12 +1178,12 @@ function HeroSlider({ onSelectProduct, isExpired, showToast }) {
           <div className="banner-slider">
             {/* CPE Navy Polo Poster */}
             <div className="banner-slide active">
-              <img src="assets/polo_navy_banner.jpg" alt="CPE Polo Navy Banner" className="banner-img" />
+              <img src="assets/polo_navy_banner_new.jpg" alt="CPE Polo Navy Banner" className="banner-img" />
               <div className="banner-overlay-bar">
                 <div className="banner-tagline">
                   <span className="tech-pill">CPE POLO SHIRT (NAVY BLUE)</span>
                   <div className="banner-text-content">
-                    <h2>เสื้อโปโลสาขารุ่นใหม่ สีกรมท่า ดีไซน์เรียบหรู ใส่สบาย (ราคา ฿300)</h2>
+                    <h2>เสื้อโปโลสาขารุ่นใหม่ สีกรมท่า (ราคา ฿290 / 4XL-6XL ฿330)</h2>
                   </div>
                 </div>
                 <div className="banner-cta-group">
@@ -1265,7 +1243,7 @@ function Features() {
             </div>
             <div className="feature-info">
               <h3>ราคาสาขาพิเศษ สำหรับนักศึกษา</h3>
-              <p>เสื้อโปโล ฿350 / เสื้อคลุม CPE 69 ฿920 (ไซส์ SS - 8XL)</p>
+              <p>เสื้อโปโล ฿290 (4XL+ ฿330) / เสื้อคลุม CPE 69 ฿920 (ไซส์ SS - 6XL)</p>
             </div>
           </div>
 
@@ -1364,7 +1342,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
 
   const prod = PRODUCTS.polo_navy || PRODUCTS.polo;
 
-  const isLargeSize = (sz) => ['5XL', '6XL', '7XL', '8XL'].includes((sz || '').toUpperCase());
+  const isLargeSize = (sz) => ['4XL', '5XL', '6XL', '7XL', '8XL'].includes((sz || '').toUpperCase());
 
   // Calculate Total Price dynamically across all items
   const totalPrice = itemsConfig.reduce((sum, item) => {
@@ -1436,7 +1414,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
             onClick={() => setSelectedProductKey('polo_navy')}
             style={{ background: 'linear-gradient(135deg, #1e3a8a, #0f172a)', border: '2px solid #38bdf8', boxShadow: '0 4px 20px rgba(56,189,248,0.4)', padding: '12px 24px', borderRadius: '12px', color: '#fff', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}
           >
-            <span>👕 เสื้อโปโลสาขา (สีกรมท่า Navy Blue) - ฿350 (5XL ขึ้นไป ฿600)</span>
+            <span>👕 เสื้อโปโลสาขา (สีกรมท่า Navy Blue) - ฿290 (4XL ขึ้นไป ฿330)</span>
           </button>
         </div>
 
@@ -1502,6 +1480,14 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
                 {prod.badgeText && prod.id !== 'polo' && (
                   <span className="discount-badge">{prod.badgeText}</span>
                 )}
+              </div>
+
+              {/* หมายเหตุระเบียบการสวมใส่ */}
+              <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: '8px', fontSize: '0.84rem', color: '#fca5a5', lineHeight: 1.5, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <span style={{ fontSize: '1.05rem', lineHeight: 1.2 }}>⚠️</span>
+                <div>
+                  <strong style={{ color: '#f87171' }}>หมายเหตุ:</strong> ใส่ได้เฉพาะ<strong>วันศุกร์</strong> หรือ<strong>วันกิจกรรมของสาขา</strong> และ<strong>วันศึกษาดูงาน</strong> <span style={{ color: '#ef4444', fontWeight: 'bold' }}>โดยห้ามใส่ในวันจันทร์-พฤหัสบดี</span>
+                </div>
               </div>
             </div>
 
@@ -1644,7 +1630,7 @@ function ProductConfigurator({ selectedProductKey, setSelectedProductKey, cart, 
 }
 
 // 4. ORDER TRACKING COMPONENT (Firestore Integration & Multi-Order Support)
-function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOrder, myOrdersHistory = [], onPayRemaining }) {
+function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOrder, myOrdersHistory = [] }) {
   const { showToast } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [foundOrders, setFoundOrders] = useState([]);
@@ -1906,42 +1892,15 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
                       </div>
                     </div>
 
-                    {trackedOrder.remainingPaidStatus === 'pending_verification' ? (
-                      <div style={{ marginBottom: '16px', padding: '12px 16px', background: 'rgba(56,189,248,0.12)', border: '1px solid #38bdf8', borderRadius: '10px', color: '#38bdf8', fontSize: '0.88rem', textAlign: 'center', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                        <span>⏳</span>
-                        <span>สลิปโอนเงินส่วนที่เหลือ ฿{trackedOrder.remainingAmountPaid ? trackedOrder.remainingAmountPaid.toLocaleString() : remainingAmt.toLocaleString()} ส่งเข้าสู่ระบบแล้ว (กำลังรอแอดมินตรวจสอบ)</span>
-                      </div>
-                    ) : trackedOrder.remainingPaidStatus === 'approved' || remainingAmt === 0 || isTeacherOrder ? (
+                    {remainingAmt === 0 || isTeacherOrder ? (
                       <div style={{ marginBottom: '16px', padding: '12px 16px', background: 'rgba(34,197,94,0.12)', border: '1px solid #22c55e', borderRadius: '10px', color: '#22c55e', fontSize: '0.88rem', textAlign: 'center', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                         <span>✅</span>
                         <span>ชำระเงินครบถ้วนสมบูรณ์แล้ว (ไม่มี ยอดค้างชำระ)</span>
                       </div>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => onPayRemaining && onPayRemaining(trackedOrder)}
-                        style={{
-                          marginBottom: '16px',
-                          padding: '12px 18px',
-                          background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '10px',
-                          fontWeight: 'bold',
-                          fontSize: '0.9rem',
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 18px rgba(34,197,94,0.4)',
-                          width: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        <span>💳</span>
-                        <span>สแกนจ่ายชำระส่วนที่เหลือ ฿{remainingAmt.toLocaleString()} (PromptPay 0923637199)</span>
-                      </button>
+                      <div style={{ marginBottom: '16px', padding: '10px 14px', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '8px', color: '#fde047', fontSize: '0.85rem', textAlign: 'center' }}>
+                        ℹ️ ชำระเงินมัดจำเรียบร้อยแล้ว สำหรับยอดค้างชำระสามารถชำระได้ในวันรับเสื้อ
+                      </div>
                     )}
                   </>
                 );
@@ -2003,6 +1962,25 @@ function OrderTracking({ searchQuery, setSearchQuery, trackedOrder, setTrackedOr
                   📦 หมายเลขพัสดุ/อ้างอิงการรับสินค้า: <strong>{trackedOrder.trackingNumber}</strong>
                 </div>
               )}
+
+              {/* LINE OpenChat Announcement Card */}
+              <div style={{ marginTop: '20px', background: 'linear-gradient(135deg, rgba(6,199,85,0.12) 0%, rgba(15,23,42,0.85) 100%)', border: '1px solid rgba(6,199,85,0.4)', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ flex: '1 1 240px' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#06c755', color: '#fff', padding: '3px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '8px' }}>
+                    <span>💬 LINE OpenChat</span>
+                  </div>
+                  <h4 style={{ color: '#fff', fontSize: '1rem', margin: '0 0 4px', fontWeight: 'bold' }}>
+                    กลุ่ม LINE ติดตามประกาศรับเสื้อ CPE
+                  </h4>
+                  <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: 0, lineHeight: 1.4 }}>
+                    สแกน QR Code เพื่อเข้ากลุ่มไลน์สำหรับติดตามความคืบหน้าการผลิตและวันนัดรับเสื้อ
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center', background: '#fff', padding: '8px', borderRadius: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}>
+                  <img src="assets/line_group_qr.jpg" alt="QR Code LINE Group" style={{ width: '90px', height: '90px', display: 'block', borderRadius: '6px' }} />
+                  <div style={{ fontSize: '0.68rem', color: '#06c755', fontWeight: 'bold', marginTop: '4px' }}>สแกนเข้ากลุ่ม</div>
+                </div>
+              </div>
 
               {trackedOrder && trackedOrder.status !== 'shipping' && trackedOrder.status !== 'completed' && (
                 <button 
@@ -2508,7 +2486,17 @@ function AuthModal({ isOpen, onClose }) {
                     placeholder={regYear === 'teacher' ? "เช่น T12345" : "6812345678"}
                     maxLength={regYear === 'teacher' ? 20 : 10}
                     value={regStudentId}
-                    onChange={e => setRegStudentId(regYear === 'teacher' ? e.target.value : e.target.value.replace(/\D/g, ''))}
+                    onChange={e => {
+                      const val = regYear === 'teacher' ? e.target.value : e.target.value.replace(/\D/g, '');
+                      setRegStudentId(val);
+                      if (regYear !== 'teacher' && val.length >= 2) {
+                        const prefix = val.substring(0, 2);
+                        if (prefix === '69') setRegYear('1');
+                        else if (prefix === '68') setRegYear('2');
+                        else if (prefix === '67') setRegYear('3');
+                        else if (prefix === '66') setRegYear('4');
+                      }
+                    }}
                     required 
                   />
                 </div>
@@ -2523,6 +2511,7 @@ function AuthModal({ isOpen, onClose }) {
                     <option value="1">ปี 1 (CPE69)</option>
                     <option value="2">ปี 2 (CPE68)</option>
                     <option value="3">ปี 3 (CPE67)</option>
+                    <option value="4">ปี 4 (CPE66)</option>
                     <option value="teacher">อาจารย์ / บุคลากร 👨‍🏫</option>
                   </select>
                 </div>
@@ -2624,6 +2613,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasExistingOrder, setHasExistingOrder] = useState(false);
   const [checkingExisting, setCheckingExisting] = useState(false);
+  const [submittedOrder, setSubmittedOrder] = useState(null);
 
   const [userRoleType, setUserRoleType] = useState(() => (currentUser?.role === 'teacher' || currentUser?.year === 'teacher' || currentUser?.year === 'อาจารย์ / บุคลากร' || currentUser?.studentId?.toUpperCase()?.startsWith('T')) ? 'teacher' : 'student');
 
@@ -2657,6 +2647,98 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
     if (checkoutStudentId.length === 10) checkExistingOrder(checkoutStudentId);
     else setHasExistingOrder(false);
   }, [checkoutStudentId]);
+
+  if (submittedOrder) {
+    return (
+      <div 
+        className="modal-backdrop show" 
+        onClick={() => {
+          setSubmittedOrder(null);
+          onClose();
+          const trackingSec = document.getElementById('tracking');
+          if (trackingSec) trackingSec.scrollIntoView({ behavior: 'smooth' });
+        }}
+        style={{ 
+          position: 'fixed', 
+          top: 0, 
+          bottom: 0, 
+          left: 0, 
+          right: 0, 
+          background: 'rgba(0,0,0,0.88)', 
+          backdropFilter: 'blur(8px)', 
+          zIndex: 99999, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          padding: '16px' 
+        }}
+      >
+        <div 
+          className="modal-card" 
+          onClick={e => e.stopPropagation()} 
+          style={{ 
+            maxWidth: '500px', 
+            width: '100%', 
+            textAlign: 'center', 
+            padding: '30px 22px', 
+            background: '#0a0c14', 
+            border: '2px solid #22c55e', 
+            borderRadius: '20px', 
+            boxShadow: '0 25px 70px rgba(0,0,0,0.95)' 
+          }}
+        >
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(34,197,94,0.15)', border: '2px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', fontSize: '2rem' }}>
+            🎉
+          </div>
+          
+          <h3 style={{ color: '#22c55e', fontSize: '1.45rem', margin: '0 0 6px', fontWeight: 800 }}>
+            สั่งซื้อและชำระเงินสำเร็จ!
+          </h3>
+          <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', margin: '0 0 16px' }}>
+            หมายเลขคำสั่งซื้อ: <strong style={{ color: 'var(--accent-gold-bright)' }}>{submittedOrder.id}</strong>
+          </p>
+
+          {/* LINE OpenChat QR Section */}
+          <div style={{ background: 'linear-gradient(135deg, rgba(6,199,85,0.12) 0%, rgba(15,23,42,0.85) 100%)', border: '1px solid rgba(6,199,85,0.4)', borderRadius: '16px', padding: '20px 16px', margin: '18px 0', position: 'relative' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#06c755', color: '#fff', padding: '4px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 'bold', marginBottom: '12px' }}>
+              <span>💬 LINE OpenChat</span>
+            </div>
+            <h4 style={{ color: '#fff', fontSize: '1.15rem', margin: '0 0 6px', fontWeight: 'bold' }}>
+              สแกนเข้ากลุ่มไลน์เพื่อติดตามประกาศ
+            </h4>
+            <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: '0 0 14px', lineHeight: 1.4 }}>
+              กรุณาสแกน QR Code นี้เพื่อเข้ากลุ่ม LINE สำหรับติดตามข่าวสาร ความคืบหน้าการผลิต และวันนัดรับเสื้อ
+            </p>
+
+            <div style={{ display: 'inline-block', padding: '10px', background: '#fff', borderRadius: '14px', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' }}>
+              <img 
+                src="assets/line_group_qr.jpg" 
+                alt="QR Code เข้ากลุ่ม LINE ติดตามประกาศ" 
+                style={{ width: '210px', height: '210px', display: 'block', borderRadius: '8px' }} 
+              />
+            </div>
+
+            <div style={{ marginTop: '12px', fontSize: '0.82rem', color: '#86efac', fontWeight: 600 }}>
+              📲 บันทึกรูปภาพ QR Code หรือแคปหน้าจอเพื่อสแกนเข้ากลุ่ม
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              setSubmittedOrder(null);
+              onClose();
+              const trackingSec = document.getElementById('tracking');
+              if (trackingSec) trackingSec.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="btn btn-gold"
+            style={{ width: '100%', padding: '12px', fontSize: '1rem', fontWeight: 'bold', borderRadius: '10px', cursor: 'pointer', marginTop: '8px' }}
+          >
+            ตรวจสอบสถานะคำสั่งซื้อของคุณ →
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!isOpen) return null;
 
@@ -2765,9 +2847,7 @@ function CheckoutModal({ isOpen, onClose, cart, setCart, setTrackedOrder, setMyO
       // Reset slip data after successful submission
       setSlipFile(null);
       setSlipDataUrl(null);
-      onClose();
-      const trackingSec = document.getElementById('tracking');
-      if (trackingSec) trackingSec.scrollIntoView({ behavior: 'smooth' });
+      setSubmittedOrder(newOrder);
     }
   };
 
@@ -3006,7 +3086,7 @@ function SizeGuideModal({ isOpen, onClose }) {
             ขนาดรอบอก (นิ้ว) และความยาวตัวเสื้อ (นิ้ว) สำหรับทรงเสื้อโปโล &amp; เสื้อคลุม CPE 69
           </p>
 
-          <h4 style={{ color: 'var(--accent-gold)', marginTop: '12px', fontSize: '0.95rem' }}>1. เสื้อโปโลสาขา CPE (Polo Shirt) - ฿350</h4>
+          <h4 style={{ color: 'var(--accent-gold)', marginTop: '12px', fontSize: '0.95rem' }}>1. เสื้อโปโลสาขา CPE (Polo Shirt) - ฿290 (4XL+ ฿330)</h4>
           <table className="size-table">
             <thead>
               <tr>
@@ -3017,8 +3097,8 @@ function SizeGuideModal({ isOpen, onClose }) {
               </tr>
             </thead>
             <tbody>
-              <tr><td><strong>SS - 4XL</strong></td><td>34" - 48"</td><td>25" - 32"</td><td>350 บาท</td></tr>
-              <tr><td><strong>5XL ขึ้นไป</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+250฿)</span></td><td>50" ขึ้นไป</td><td>33" ขึ้นไป</td><td><strong style={{ color: '#F5D061' }}>600 บาท</strong></td></tr>
+              <tr><td><strong>SS - 3XL</strong></td><td>34" - 46"</td><td>25" - 31"</td><td>290 บาท</td></tr>
+              <tr><td><strong>4XL - 6XL</strong> <span style={{ fontSize: '0.75rem', color: '#F5D061' }}>(+40฿)</span></td><td>48" - 52"</td><td>32" - 34"</td><td><strong style={{ color: '#F5D061' }}>330 บาท</strong></td></tr>
             </tbody>
           </table>
 
@@ -3039,7 +3119,11 @@ function SizeGuideModal({ isOpen, onClose }) {
           </table>
 
           <div style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid var(--border-gold)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--accent-gold-bright)', marginTop: '15px' }}>
-            💡 คำแนะนำ: เสื้อโปโล SS - 4XL ราคา 350฿ / ไซส์ 5XL ขึ้นไป ราคา 600฿ (+250฿)
+            💡 คำแนะนำ: เสื้อโปโล SS - 3XL ราคา 290฿ / ไซส์ 4XL ถึง 6XL ราคา 330฿ (+40฿)
+          </div>
+
+          <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: '#fca5a5', marginTop: '10px', lineHeight: 1.4 }}>
+            ⚠️ <strong>หมายเหตุ:</strong> ใส่ได้เฉพาะ<strong>วันศุกร์</strong> หรือ<strong>วันกิจกรรมของสาขา</strong> และ<strong>วันศึกษาดูงาน</strong> โดยห้ามใส่ในวันจันทร์-พฤหัสบดี
           </div>
         </div>
       </div>
@@ -3347,359 +3431,6 @@ function ExtraDepositModal({ isOpen, onClose, showToast }) {
   );
 }
 
-/**
- * PayRemainingModal Component - Dynamic PromptPay QR Code Payment for Remaining Balance
- * Target PromptPay: 0923637199
- */
-function PayRemainingModal({ isOpen, onClose, initialOrder, showToast }) {
-  const [studentId, setStudentId] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [foundOrders, setFoundOrders] = useState([]);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [slipFile, setSlipFile] = useState(null);
-  const [slipPreview, setSlipPreview] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [copiedAccount, setCopiedAccount] = useState(false);
-  const [copiedAmount, setCopiedAmount] = useState(false);
-
-  useEffect(() => {
-    if (initialOrder) {
-      setSelectedOrder(initialOrder);
-      if (initialOrder.studentId) setStudentId(initialOrder.studentId);
-    } else {
-      setSelectedOrder(null);
-      setFoundOrders([]);
-      setSlipFile(null);
-      setSlipPreview(null);
-      setSubmitted(false);
-    }
-  }, [isOpen, initialOrder]);
-
-  if (!isOpen) return null;
-
-  const handleSearch = async () => {
-    const queryStr = studentId.trim();
-    if (!queryStr) {
-      showToast('กรุณากรอกรหัสนักศึกษา หรือเลขที่ออเดอร์', 'error');
-      return;
-    }
-    setSearching(true);
-    try {
-      const fb = window.CPEFirebase || {};
-      if (!fb.db || !fb.collection) return;
-      const ordersRef = fb.collection(fb.db, 'orders');
-      
-      let q = fb.query(ordersRef, fb.where('studentId', '==', queryStr));
-      let snap = await fb.getDocs(q);
-      
-      if (snap.empty) {
-        q = fb.query(ordersRef, fb.where('id', '==', queryStr));
-        snap = await fb.getDocs(q);
-      }
-
-      if (!snap.empty) {
-        const list = [];
-        snap.forEach(d => list.push({ firestoreId: d.id, ...d.data() }));
-        setFoundOrders(list);
-        setSelectedOrder(list[0]);
-        showToast(`พบข้อมูลออเดอร์ ${list.length} รายการ`, 'success');
-      } else {
-        setFoundOrders([]);
-        setSelectedOrder(null);
-        showToast('ไม่พบข้อมูลออเดอร์สำหรับรหัสที่ระบุ', 'error');
-      }
-    } catch (e) {
-      console.log('Search remaining error:', e);
-      showToast('ค้นหาล้มเหลว', 'error');
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const calcRemaining = (ord) => {
-    if (!ord) return 0;
-    if (ord.remainingPaidStatus === 'approved') return 0;
-    const total = getOrderTotal(ord);
-    const deposit = typeof ord.deposit === 'number' ? ord.deposit : 0;
-    return Math.max(0, total - deposit);
-  };
-
-  const currentRemaining = calcRemaining(selectedOrder);
-  const promptPayNumber = '0923637199';
-  const qrPayload = generatePromptPayPayload(promptPayNumber, currentRemaining);
-  const primaryQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrPayload)}`;
-  const fallbackQrUrl = `https://promptpay.io/${promptPayNumber}/${currentRemaining}.png`;
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSlipFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setSlipPreview(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleCopyAccount = () => {
-    navigator.clipboard.writeText(promptPayNumber);
-    setCopiedAccount(true);
-    showToast('คัดลอกเลขพร้อมเพย์เรียบร้อยแล้ว!', 'success');
-    setTimeout(() => setCopiedAccount(false), 2500);
-  };
-
-  const handleCopyAmount = () => {
-    navigator.clipboard.writeText(String(currentRemaining));
-    setCopiedAmount(true);
-    showToast(`คัดลอกยอดเงิน ฿${currentRemaining.toLocaleString()} เรียบร้อยแล้ว!`, 'success');
-    setTimeout(() => setCopiedAmount(false), 2500);
-  };
-
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
-    if (!selectedOrder || !selectedOrder.firestoreId) {
-      showToast('กรุณาเลือกออเดอร์ก่อนชำระเงิน', 'error');
-      return;
-    }
-    if (!slipPreview) {
-      showToast('กรุณาอัปโหลดสลิปหลักฐานการชำระเงินส่วนที่เหลือ', 'error');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const fb = window.CPEFirebase || {};
-      if (fb.db && fb.doc && fb.updateDoc) {
-        await fb.updateDoc(fb.doc(fb.db, 'orders', selectedOrder.firestoreId), {
-          remainingPaidStatus: 'pending_verification',
-          remainingSlipUrl: slipPreview,
-          remainingAmountPaid: currentRemaining,
-          remainingSubmittedAt: new Date().toISOString()
-        });
-      } else if (fb.db && fb.doc && fb.setDoc) {
-        await fb.setDoc(fb.doc(fb.db, 'orders', selectedOrder.firestoreId), {
-          remainingPaidStatus: 'pending_verification',
-          remainingSlipUrl: slipPreview,
-          remainingAmountPaid: currentRemaining,
-          remainingSubmittedAt: new Date().toISOString()
-        }, { merge: true });
-      }
-
-      // Log into remaining_payments collection
-      if (fb.db && fb.collection && fb.addDoc) {
-        await fb.addDoc(fb.collection(fb.db, 'remaining_payments'), {
-          orderId: selectedOrder.id || '',
-          orderFirestoreId: selectedOrder.firestoreId,
-          studentId: selectedOrder.studentId || '',
-          name: selectedOrder.name || '',
-          remainingAmount: currentRemaining,
-          promptPayNumber,
-          slipUrl: slipPreview,
-          status: 'pending',
-          createdAt: new Date().toISOString()
-        });
-      }
-
-      setSubmitted(true);
-      showToast('✅ แจ้งชำระเงินส่วนที่เหลือเรียบร้อยแล้ว! รอแอนมินตรวจสอบ', 'success');
-    } catch (err) {
-      console.log("Submit remaining error:", err);
-      showToast('ส่งหลักฐานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: '#10121a', border: '1px solid var(--border-gold)', borderRadius: '20px', width: '100%', maxWidth: '640px', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 30px 80px rgba(0,0,0,0.95)' }}>
-        
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #1b0a0e, #0a0b10)', borderBottom: '1px solid var(--border-gold)', padding: '18px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h3 style={{ color: 'var(--accent-gold-bright)', margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>💳 ชำระเงินส่วนที่เหลือ (PromptPay QR)</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: '3px 0 0' }}>สแกน PromptPay QR Code เลข 0923637199 พร้อมยอดเงินอัตโนมัติ</p>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.8rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
-        </div>
-
-        <div style={{ padding: '24px' }}>
-          {submitted ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-              <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🎉</div>
-              <h3 style={{ color: '#22c55e', marginBottom: '8px' }}>ส่งหลักฐานการชำระเงินส่วนที่เหลือเรียบร้อยแล้ว!</h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>ระบบบันทึกสลิปเรียบร้อยแล้ว เมื่อแอดมินอนุมัติ สถานะของออเดอร์จะเปลี่ยนเป็นชำระเต็มจำนวนโดยสมบูรณ์</p>
-              <button onClick={onClose} style={{ marginTop: '20px', padding: '10px 32px', background: 'linear-gradient(135deg, #f5d061, #d4af37)', color: '#000', border: 'none', borderRadius: '10px', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer' }}>ปิดหน้าต่าง</button>
-            </div>
-          ) : (
-            <div>
-              {/* Step 1: Order Selector */}
-              {!initialOrder && (
-                <div style={{ marginBottom: '20px' }}>
-                  <h4 style={{ color: 'var(--accent-gold-bright)', fontSize: '0.95rem', marginBottom: '10px' }}>1. ค้นหาและเลือกออเดอร์ของคุณ</h4>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input
-                      type="text"
-                      placeholder="กรอกรหัสนักศึกษา หรือเลขที่ออเดอร์..."
-                      value={studentId}
-                      onChange={e => setStudentId(e.target.value)}
-                      style={{ flex: 1, padding: '10px 14px', background: '#18181b', border: '1px solid var(--border-gold)', borderRadius: '8px', color: '#fff', fontSize: '0.9rem' }}
-                    />
-                    <button type="button" onClick={handleSearch} disabled={searching} style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #f5d061, #d4af37)', color: '#000', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                      {searching ? 'กำลังค้นหา...' : '🔍 ค้นหา'}
-                    </button>
-                  </div>
-
-                  {foundOrders.length > 0 && (
-                    <div style={{ marginTop: '12px', background: '#0a0b10', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '12px' }}>
-                      <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '8px' }}>เลือกรายการออเดอร์ที่ต้องการชำระเงินส่วนที่เหลือ:</p>
-                      {foundOrders.map(o => (
-                        <label key={o.firestoreId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderRadius: '6px', background: selectedOrder?.firestoreId === o.firestoreId ? 'rgba(245,208,97,0.15)' : 'transparent', cursor: 'pointer', marginBottom: '4px' }}>
-                          <input type="radio" name="orderSelectRemaining" value={o.firestoreId} checked={selectedOrder?.firestoreId === o.firestoreId} onChange={() => setSelectedOrder(o)} />
-                          <span style={{ color: '#fff', fontSize: '0.85rem' }}>
-                            <strong style={{ color: 'var(--accent-gold-bright)' }}>{o.id || o.firestoreId}</strong>
-                            {' — '}{o.name} | ยอดรวม ฿{getOrderTotal(o).toLocaleString()} | มัดจำแล้ว ฿{(o.deposit || 0).toLocaleString()} | <span style={{ color: '#eab308', fontWeight: 'bold' }}>ยอดค้าง ฿{calcRemaining(o).toLocaleString()}</span>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Order Info Summary */}
-              {selectedOrder && (
-                <div style={{ background: 'rgba(245,208,97,0.06)', border: '1px solid var(--border-gold)', borderRadius: '12px', padding: '14px', marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ color: 'var(--accent-gold-bright)', fontWeight: 800, fontSize: '1rem' }}>ออเดอร์ #{selectedOrder.id}</div>
-                      <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>ผู้สั่ง: {selectedOrder.name} ({selectedOrder.studentId})</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ color: '#94a3b8', fontSize: '0.78rem' }}>ยอดมัดจำแล้ว: ฿{(selectedOrder.deposit || 50).toLocaleString()}</div>
-                      <div style={{ color: '#22c55e', fontWeight: 800, fontSize: '1.2rem' }}>
-                        ยอดชำระส่วนที่เหลือ: ฿{currentRemaining.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Dynamic PromptPay QR Code Display */}
-              {selectedOrder && currentRemaining > 0 && (
-                <div style={{ marginBottom: '24px' }}>
-                  <h4 style={{ color: 'var(--accent-gold-bright)', fontSize: '0.95rem', marginBottom: '12px' }}>
-                    2. สแกน QR Code พร้อมเพย์ (ระบุยอดเงินอัตโนมัติ ฿{currentRemaining.toLocaleString()})
-                  </h4>
-                  
-                  <div style={{ background: '#fff', padding: '16px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.6)', maxWidth: '300px', margin: '0 auto' }}>
-                    {/* PromptPay Header Banner */}
-                    <div style={{ background: '#003b64', padding: '8px 12px', borderRadius: '8px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                      <span style={{ color: '#fff', fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.5px' }}>PROMPTPAY | พร้อมเพย์</span>
-                    </div>
-
-                    <img 
-                      src={primaryQrUrl} 
-                      onError={(e) => { e.target.src = fallbackQrUrl; }}
-                      alt={`PromptPay QR Code ฿${currentRemaining}`} 
-                      style={{ width: '100%', maxWidth: '240px', height: 'auto', borderRadius: '8px', display: 'block', margin: '0 auto' }} 
-                    />
-
-                    {/* Amount Tag */}
-                    <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '10px', marginTop: '12px' }}>
-                      <span style={{ color: '#64748b', fontSize: '0.78rem', display: 'block' }}>จำนวนเงินที่ต้องชำระส่วนที่เหลือ</span>
-                      <span style={{ color: '#16a34a', fontWeight: 800, fontSize: '1.6rem' }}>฿{currentRemaining.toLocaleString()}</span>
-                    </div>
-                  </div>
-
-                  {/* Copy helper buttons */}
-                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '14px', flexWrap: 'wrap' }}>
-                    <button 
-                      type="button" 
-                      onClick={handleCopyAccount}
-                      style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: '#fff', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      📱 {copiedAccount ? '✓ คัดลอกเบอร์แล้ว' : 'คัดลอกเลขพร้อมเพย์ (0923637199)'}
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={handleCopyAmount}
-                      style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: '#fff', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      💰 {copiedAmount ? '✓ คัดลอกยอดเงินแล้ว' : `คัดลอกยอดเงิน (฿${currentRemaining.toLocaleString()})`}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Slip Upload Dropzone */}
-              {selectedOrder && currentRemaining > 0 && (
-                <div style={{ marginBottom: '24px' }}>
-                  <h4 style={{ color: 'var(--accent-gold-bright)', fontSize: '0.95rem', marginBottom: '10px' }}>3. อัปโหลดสลิปหลักฐานการชำระเงินส่วนที่เหลือ</h4>
-                  <label 
-                    style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      padding: '24px', 
-                      background: slipPreview ? '#0f172a' : 'rgba(255,255,255,0.03)', 
-                      border: '2px dashed var(--border-gold)', 
-                      borderRadius: '12px', 
-                      cursor: 'pointer', 
-                      textAlign: 'center',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
-                    {slipPreview ? (
-                      <div>
-                        <img src={slipPreview} alt="Slip Preview" style={{ maxHeight: '180px', maxWidth: '100%', borderRadius: '8px', marginBottom: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} />
-                        <p style={{ color: '#22c55e', fontSize: '0.85rem', margin: 0, fontWeight: 600 }}>✓ อัปโหลดสลิปเรียบร้อยแล้ว (คลิกเพื่อเปลี่ยนรูป)</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <div style={{ fontSize: '2.2rem', marginBottom: '8px' }}>🧾</div>
-                        <p style={{ color: '#fff', fontSize: '0.9rem', margin: 0, fontWeight: 600 }}>คลิก หรือ ลากสลิปสแกนจ่ายโอนเงินมาวางที่นี่</p>
-                        <p style={{ color: '#94a3b8', fontSize: '0.78rem', marginTop: '4px', margin: 0 }}>รองรับไฟล์รูปภาพ JPG, PNG, WEBP</p>
-                      </div>
-                    )}
-                  </label>
-                </div>
-              )}
-
-              {/* Submit Button */}
-              {selectedOrder && currentRemaining > 0 && (
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !slipPreview}
-                  style={{
-                    width: '100%',
-                    padding: '14px',
-                    background: isSubmitting || !slipPreview ? '#334155' : 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '12px',
-                    fontSize: '1rem',
-                    fontWeight: 800,
-                    cursor: isSubmitting || !slipPreview ? 'not-allowed' : 'pointer',
-                    boxShadow: isSubmitting || !slipPreview ? 'none' : '0 8px 25px rgba(34,197,94,0.4)',
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  {isSubmitting ? '⏳ กำลังบันทึกหลักฐาน...' : `🚀 ยืนยันการส่งหลักฐานชำระเงิน ฿${currentRemaining.toLocaleString()}`}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
 let adminCachedOrders = (() => {
   try {
     const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('cpe_cached_admin_orders') : null;
@@ -3913,52 +3644,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
     }
   };
 
-  const handleVerifyRemainingDeposit = async (orderItem) => {
-    const fb = window.CPEFirebase || {};
-    if (!fb.db || !fb.setDoc || !fb.doc || !orderItem.firestoreId) return;
-    try {
-      const fullDeposit = getOrderTotal(orderItem);
 
-      await fb.setDoc(fb.doc(fb.db, 'orders', orderItem.firestoreId), {
-        remainingPaidStatus: 'approved',
-        deposit: fullDeposit,
-        remaining: 0,
-        status: 'completed'
-      }, { merge: true });
-
-      const updatedOrders = orders.map(o =>
-        o.firestoreId === orderItem.firestoreId ? { ...o, remainingPaidStatus: 'approved', deposit: fullDeposit, remaining: 0, status: 'completed' } : o
-      );
-      adminCachedOrders = updatedOrders;
-      setOrders(updatedOrders);
-      showToast(`✅ ยืนยันสลิปชำระส่วนที่เหลือของออเดอร์ ${orderItem.id} เรียบร้อยแล้ว (อัปเดตยอดชำระเป็น ฿${fullDeposit.toLocaleString()})!`, 'success');
-    } catch (e) {
-      console.log('Verify remaining deposit error:', e);
-      showToast('เกิดข้อผิดพลาดในการยืนยันสลิปส่วนที่เหลือ', 'error');
-    }
-  };
-
-  const handleRejectRemainingDeposit = async (orderItem) => {
-    if (!window.confirm(`คุณต้องการปฏิเสธสลิปชำระส่วนที่เหลือของออเดอร์ ${orderItem.id} ใช่หรือไม่?`)) return;
-    const fb = window.CPEFirebase || {};
-    if (!fb.db || !fb.setDoc || !fb.doc || !orderItem.firestoreId) return;
-    try {
-      await fb.setDoc(fb.doc(fb.db, 'orders', orderItem.firestoreId), {
-        remainingPaidStatus: 'rejected',
-        remainingSlipUrl: null
-      }, { merge: true });
-
-      const updatedOrders = orders.map(o =>
-        o.firestoreId === orderItem.firestoreId ? { ...o, remainingPaidStatus: 'rejected', remainingSlipUrl: null } : o
-      );
-      adminCachedOrders = updatedOrders;
-      setOrders(updatedOrders);
-      showToast(`❌ ปฏิเสธสลิปส่วนที่เหลือของออเดอร์ ${orderItem.id} เรียบร้อยแล้ว`, 'info');
-    } catch (e) {
-      console.log('Reject remaining deposit error:', e);
-      showToast('เกิดข้อผิดพลาดในการปฏิเสธสลิป', 'error');
-    }
-  };
 
   const fetchOrdersDirect = async (showNotification = false) => {
     setRefreshing(true);
@@ -4160,7 +3846,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
             `"${it.size || 'L'}"`,
             `"${it.qty || 1}"`,
             `"${(it.customName || 'ไม่ปักชื่อ').replace(/"/g, '""')}"`,
-            `"${it.totalPrice || it.price || 350}"`,
+            `"${it.totalPrice || it.price || 290}"`,
             `"${o.status || 'pending'}"`,
             `"${o.date || ''}"`
           ];
@@ -4401,14 +4087,12 @@ function AdminDashboardModal({ isOpen, onClose }) {
       sum + (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1), 0
     );
 
-    const pendingProofCount = pendingOrders.filter(o => o.remainingPaidStatus === 'pending_verification').length;
-
     const html = `
       <!DOCTYPE html>
       <html lang="th">
       <head>
         <meta charset="UTF-8">
-        <title>รายงานสรุปรายชื่อผู้ยังชำระเงินไม่ครบ (ยอดค้างชำระ)</title>
+        <title>รายงานสรุปรายชื่อผู้ยังชำระเงินไม่ครบ (ยอดค้างชำระวันรับเสื้อ)</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
           body { font-family: 'Sarabun', sans-serif; color: #111; background: #fff; padding: 24px; margin: 0; font-size: 13px; line-height: 1.5; }
@@ -4417,7 +4101,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
           .subtitle { font-size: 13px; color: #475569; margin: 0; }
           .meta-info { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 8px; }
 
-          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; text-align: center; }
+          .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; text-align: center; }
           .stat-card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; background: #fefce8; }
           .stat-label { font-size: 11px; color: #713f12; font-weight: 600; }
           .stat-val { font-size: 16px; font-weight: 800; color: #ca8a04; margin-top: 2px; }
@@ -4428,9 +4112,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
           td.left { text-align: left; }
           td.right { text-align: right; }
           tr:nth-child(even) { background: #fefce8; }
-          
-          .badge-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde047; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
-          .badge-wait { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
 
           .total-row { background: #fef9c3 !important; font-weight: 800; font-size: 13px; }
           .total-row td { border-top: 2px solid #eab308; border-bottom: 2px solid #eab308; }
@@ -4452,7 +4133,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
         </div>
 
         <div class="header">
-          <div class="title">⚠️ รายงานสรุปรายชื่อผู้ยังชำระเงินไม่ครบ (ยอดค้างชำระ)</div>
+          <div class="title">⚠️ รายงานสรุปรายชื่อผู้ยังชำระเงินไม่ครบ (ยอดค้างชำระวันรับเสื้อ)</div>
           <div class="subtitle">สาขาวิศวกรรมคอมพิวเตอร์ (Computer Engineering) • คณะวิศวกรรมศาสตร์</div>
           <div class="meta-info">
             <span>พิมพ์รายงานเมื่อ: ${todayStr}</span>
@@ -4470,11 +4151,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
             <div class="stat-val" style="color: #0284c7;">${totalShirts} ตัว</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">ส่งสลิปแล้ว (รอตรวจ)</div>
-            <div class="stat-val" style="color: #0284c7;">${pendingProofCount} รายการ</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">ยอดค้างชำระรวมทั้งหมด</div>
+            <div class="stat-label">ยอดค้างชำระรวมทั้งหมด (ชำระวันรับเสื้อ)</div>
             <div class="stat-val" style="color: #dc2626;">฿${totalOutstanding.toLocaleString()}</div>
           </div>
         </div>
@@ -4490,7 +4167,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
               <th style="text-align: left;">รายการสั่งซื้อ & ไซส์</th>
               <th style="width: 80px;">มัดจำแล้ว</th>
               <th style="width: 90px; text-align: right;">ยอดค้างชำระ</th>
-              <th style="width: 80px;">สถานะสลิป</th>
+              <th style="width: 110px;">หมายเหตุ</th>
             </tr>
           </thead>
           <tbody>
@@ -4499,7 +4176,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
               const depositPaid = typeof o.deposit === 'number' ? o.deposit : 0;
               const remainingAmt = Math.max(0, calcTotal - depositPaid);
               const itemDetails = o.items ? o.items.map(it => `${it.title || 'เสื้อ'} (ไซส์ ${it.size} x ${it.qty || 1})`).join(', ') : 'เสื้อ CPE';
-              const isChecking = o.remainingPaidStatus === 'pending_verification';
 
               return `
                 <tr>
@@ -4511,11 +4187,7 @@ function AdminDashboardModal({ isOpen, onClose }) {
                   <td class="left">${itemDetails}</td>
                   <td>฿${depositPaid.toLocaleString()}</td>
                   <td class="right" style="font-weight: bold; color: #dc2626;">฿${remainingAmt.toLocaleString()}</td>
-                  <td>
-                    <span class="${isChecking ? 'badge-wait' : 'badge-pending'}">
-                      ${isChecking ? '⏳ รอตรวจสลิป' : '⚠️ ยังไม่ส่งสลิป'}
-                    </span>
-                  </td>
+                  <td><span style="color: #ca8a04; font-weight: 600; font-size: 11px;">ชำระวันรับเสื้อ</span></td>
                 </tr>
               `;
             }).join('')}
@@ -4747,10 +4419,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
     let matchStatus = statusFilter === 'all' || o.status === statusFilter;
     if (statusFilter === 'teacher_orders') {
       matchStatus = o.isTeacher || o.role === 'teacher' || (o.studentId && o.studentId.toUpperCase().startsWith('T')) || (o.studentId && !/^\d{10}$/.test(o.studentId));
-    } else if (statusFilter === 'remaining_completed') {
-      matchStatus = o.remainingPaidStatus === 'approved' || (o.remaining === 0 && o.deposit === o.total);
-    } else if (statusFilter === 'remaining_pending') {
-      matchStatus = o.remainingPaidStatus === 'pending_verification';
     }
     
     let matchProduct = true;
@@ -4950,20 +4618,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
               </h3>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>จ่ายเต็มจำนวน 100%</span>
             </div>
-            <div style={{ background: '#0a0b10', border: '1px solid #22c55e', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
-              <span style={{ color: '#86efac', fontSize: '0.78rem', fontWeight: 600 }}>💳 จ่ายส่วนที่เหลือครบแล้ว</span>
-              <h3 style={{ color: '#22c55e', fontSize: '1.4rem', margin: '4px 0 0', fontWeight: 800 }}>
-                {orders.filter(o => o.remainingPaidStatus === 'approved' || (o.remaining === 0 && o.deposit === o.total)).length} รายการ
-              </h3>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>ไม่มี ยอดค้างชำระ</span>
-            </div>
-            <div style={{ background: '#0a0b10', border: '1px solid #eab308', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
-              <span style={{ color: '#fde047', fontSize: '0.78rem', fontWeight: 600 }}>⏳ รออนุมัติส่วนที่เหลือ</span>
-              <h3 style={{ color: '#eab308', fontSize: '1.4rem', margin: '4px 0 0', fontWeight: 800 }}>
-                {orders.filter(o => o.remainingPaidStatus === 'pending_verification').length} รายการ
-              </h3>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>สลิปส่งแล้ว รอตรวจสอบ</span>
-            </div>
             <div style={{ background: '#0a0b10', border: '1px solid var(--border-gold)', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
               <span style={{ color: 'var(--text-sub)', fontSize: '0.78rem' }}>จำนวนออเดอร์ / เสื้อทั้งหมด</span>
               <h3 style={{ color: '#fff', fontSize: '1.4rem', margin: '4px 0 0', fontWeight: 800 }}>{orders.length} ออเดอร์ ({totalItemsCount} ตัว)</h3>
@@ -4975,14 +4629,15 @@ function AdminDashboardModal({ isOpen, onClose }) {
             {[
               { id: 'all', label: '📦 ทั้งหมดทุกสินค้า', badgeBg: '#3b82f6' },
               { id: 'deposit_summary', label: '💰 สรุปคนจ่ายมัดจำทั้งหมด', badgeBg: '#10b981' },
+              { id: 'polo_66', label: '🎓 ออเดอร์ CPE 66 (ปี 4)', badgeBg: '#f97316' },
               { id: 'polo_67', label: '🎓 ออเดอร์ CPE 67 (ปี 3)', badgeBg: '#a855f7' },
               { id: 'polo_68', label: '👕 เสื้อโปโล CPE 68 (ปี 2)', badgeBg: '#eab308' },
               { id: 'polo_navy', label: '👕 เสื้อโปโล (สีกรมท่า Navy)', badgeBg: '#1e3a8a' },
               { id: 'jacket', label: '🧥 เสื้อคลุม CPE 69 (ปี 1)', badgeBg: '#10b981' },
-              { id: 'remaining_payments', label: '💳 อนุมัติชำระส่วนที่เหลือ', badgeBg: '#22c55e' },
               { id: 'extra_deposit', label: '💳 มัดจำเพิ่ม 100 บาท', badgeBg: '#f59e0b' }
             ].map(tab => {
-              const count = tab.id === 'deposit_summary' ? orders.length : tab.id === 'extra_deposit' ? extraDeposits.length : tab.id === 'remaining_payments' ? orders.filter(o => o.remainingPaidStatus === 'pending_verification' || o.remainingPaidStatus === 'approved' || o.remainingSlipUrl).length : tab.id === 'all' ? orders.length : orders.filter(o => {
+              const count = tab.id === 'deposit_summary' ? orders.length : tab.id === 'extra_deposit' ? extraDeposits.length : tab.id === 'all' ? orders.length : orders.filter(o => {
+                if (tab.id === 'polo_66') return (o.studentId && o.studentId.startsWith('66')) || o.year === '4' || (o.items && o.items.some(it => it.studentId && it.studentId.startsWith('66')));
                 if (tab.id === 'polo_67') return (o.studentId && o.studentId.startsWith('67')) || o.year === '3' || (o.items && o.items.some(it => it.studentId && it.studentId.startsWith('67')));
                 if (tab.id === 'polo_68') return (o.studentId && o.studentId.startsWith('68')) || o.year === '2' || (o.items && o.items.some(it => it.productKey === 'polo' || (it.title && (it.title.includes('รุ่น 68') || it.title.includes('CPE Polo Shirt')))));
                 if (tab.id === 'polo_navy') return o.items && o.items.some(it => it.productKey === 'polo_navy' || (it.title && (it.title.includes('Navy') || it.title.includes('สีกรมท่า'))));
@@ -5261,8 +4916,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
               {[
                 { id: 'all', label: 'ทั้งหมด' },
                 { id: 'teacher_orders', label: '👨‍🏫 ออเดอร์อาจารย์' },
-                { id: 'remaining_completed', label: '💳 ชำระส่วนที่เหลือแล้ว' },
-                { id: 'remaining_pending', label: '⏳ รออนุมัติส่วนที่เหลือ' },
                 { id: 'pending', label: 'รอสลิป' },
                 { id: 'paid', label: 'ชำระเงินแล้ว' },
                 { id: 'preparing', label: 'กำลังผลิต' },
@@ -5275,8 +4928,8 @@ function AdminDashboardModal({ isOpen, onClose }) {
                   style={{
                     padding: '6px 12px',
                     fontSize: '0.8rem',
-                    borderColor: statusFilter === st.id ? 'var(--accent-gold)' : (st.id === 'teacher_orders' ? '#38bdf8' : (st.id === 'remaining_completed' ? '#22c55e' : (st.id === 'remaining_pending' ? '#eab308' : 'rgba(255,255,255,0.2)'))),
-                    color: statusFilter === st.id ? '#000' : (st.id === 'teacher_orders' ? '#38bdf8' : (st.id === 'remaining_completed' ? '#86efac' : (st.id === 'remaining_pending' ? '#fde047' : '#fff'))),
+                    borderColor: statusFilter === st.id ? 'var(--accent-gold)' : (st.id === 'teacher_orders' ? '#38bdf8' : 'rgba(255,255,255,0.2)'),
+                    color: statusFilter === st.id ? '#000' : (st.id === 'teacher_orders' ? '#38bdf8' : '#fff'),
                     fontWeight: 'bold'
                   }}
                   onClick={() => setStatusFilter(st.id)}
@@ -5400,153 +5053,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
                       </table>
                     </div>
                   </>
-                );
-              })()}
-            </div>
-          ) : productFilter === 'remaining_payments' ? (
-            <div style={{ background: '#0a0b10', border: '1px solid #22c55e', borderRadius: '12px', padding: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-                <h4 style={{ color: '#22c55e', margin: 0, fontSize: '1.05rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  💳 รายการแจ้งอนุมัติชำระส่วนที่เหลือ ({orders.filter(o => o.remainingPaidStatus === 'pending_verification' || o.remainingPaidStatus === 'approved' || o.remainingSlipUrl).length} รายการ)
-                </h4>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={exportFullyPaidPDF}
-                    style={{
-                      background: 'linear-gradient(135deg, #16a34a, #15803d)',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      fontSize: '0.8rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 4px 12px rgba(22,163,74,0.3)'
-                    }}
-                  >
-                    📄 ปริ้นท์ PDF คนชำระครบ (100%)
-                  </button>
-                  <button
-                    onClick={exportPendingPaymentPDF}
-                    style={{
-                      background: 'linear-gradient(135deg, #ca8a04, #a16207)',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      fontSize: '0.8rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 4px 12px rgba(202,138,4,0.3)'
-                    }}
-                  >
-                    ⚠️ ปริ้นท์ PDF คนยังจ่ายไม่ครบ
-                  </button>
-                  <span style={{ color: '#fde047', fontSize: '0.82rem', background: 'rgba(234,179,8,0.15)', padding: '4px 10px', borderRadius: '6px', border: '1px solid #eab308' }}>
-                    ⏳ รออนุมัติ: <strong>{orders.filter(o => o.remainingPaidStatus === 'pending_verification').length} รายการ</strong>
-                  </span>
-                </div>
-              </div>
-
-              {(() => {
-                const remainingOrdersList = orders.filter(o => o.remainingPaidStatus === 'pending_verification' || o.remainingPaidStatus === 'approved' || o.remainingSlipUrl);
-                return remainingOrdersList.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>ยังไม่มีรายการแจ้งโอนชำระเงินส่วนที่เหลือ</div>
-                ) : (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#fff', fontSize: '0.88rem' }}>
-                      <thead>
-                        <tr style={{ background: '#090a0f', borderBottom: '1px solid #22c55e' }}>
-                          <th style={{ padding: '10px' }}>ออเดอร์</th>
-                          <th style={{ padding: '10px' }}>ผู้สั่งซื้อ</th>
-                          <th style={{ padding: '10px' }}>ยอดเต็มออเดอร์</th>
-                          <th style={{ padding: '10px' }}>ยอดเงินชำระส่วนที่เหลือ</th>
-                          <th style={{ padding: '10px' }}>สลิปหลักฐาน</th>
-                          <th style={{ padding: '10px' }}>สถานะ</th>
-                          <th style={{ padding: '10px', textAlign: 'center' }}>จัดการอนุมัติ</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {remainingOrdersList.map(o => (
-                          <tr key={o.firestoreId || o.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: o.remainingPaidStatus === 'pending_verification' ? 'rgba(234,179,8,0.06)' : 'rgba(255,255,255,0.02)' }}>
-                            <td style={{ padding: '10px' }}>
-                              <strong style={{ color: 'var(--accent-gold-bright)' }}>{o.id}</strong>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{o.date}</div>
-                            </td>
-                            <td style={{ padding: '10px' }}>
-                              <strong style={{ color: '#fff' }}>{o.name}</strong>
-                              <div style={{ color: '#38bdf8', fontSize: '0.78rem' }}>รหัส: {o.studentId}</div>
-                              <div style={{ color: 'var(--text-sub)', fontSize: '0.75rem' }}>📞 {o.phone}</div>
-                            </td>
-                            <td style={{ padding: '10px', color: 'var(--text-sub)', fontWeight: 'bold' }}>
-                              ฿{getOrderTotal(o).toLocaleString()}
-                            </td>
-                            <td style={{ padding: '10px', color: '#22c55e', fontWeight: 'bold', fontSize: '1rem' }}>
-                              ฿{(o.remainingAmountPaid || o.remaining || Math.max(0, getOrderTotal(o) - (o.deposit || 0))).toLocaleString()}
-                            </td>
-                            <td style={{ padding: '10px' }}>
-                              {o.remainingSlipUrl ? (
-                                <button 
-                                  onClick={() => setPreviewSlipOrder({ ...o, slipUrl: o.remainingSlipUrl, isRemainingSlip: true })}
-                                  style={{ padding: '4px 10px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}
-                                >
-                                  🖼️ ดูสลิปส่วนที่เหลือ
-                                </button>
-                              ) : <span style={{ color: '#666', fontSize: '0.78rem' }}>ไม่มีสลิป</span>}
-                            </td>
-                            <td style={{ padding: '10px' }}>
-                              {o.remainingPaidStatus === 'approved' ? (
-                                <span style={{ background: 'rgba(34,197,94,0.2)', border: '1px solid #22c55e', color: '#22c55e', padding: '3px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 'bold' }}>
-                                  ✅ อนุมัติแล้ว (ครบ 100%)
-                                </span>
-                              ) : o.remainingPaidStatus === 'pending_verification' ? (
-                                <span style={{ background: 'rgba(234,179,8,0.2)', border: '1px solid #eab308', color: '#fde047', padding: '3px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 'bold' }}>
-                                  ⏳ รออนุมัติ
-                                </span>
-                              ) : (
-                                <span style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', color: '#ef4444', padding: '3px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 'bold' }}>
-                                  ❌ ปฏิเสธสลิป
-                                </span>
-                              )}
-                            </td>
-                            <td style={{ padding: '10px', textAlign: 'center' }}>
-                              {o.remainingPaidStatus === 'pending_verification' ? (
-                                <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                                  <button 
-                                    onClick={() => handleVerifyRemainingDeposit(o)}
-                                    style={{ padding: '6px 12px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}
-                                  >
-                                    ⚡ อนุมัติสลิป
-                                  </button>
-                                  <button 
-                                    onClick={() => handleRejectRemainingDeposit(o)}
-                                    style={{ padding: '6px 12px', background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}
-                                  >
-                                    ❌ ปฏิเสธ
-                                  </button>
-                                </div>
-                              ) : o.remainingPaidStatus === 'approved' ? (
-                                <span style={{ color: '#22c55e', fontSize: '0.78rem', fontWeight: 'bold' }}>✓ อนุมัติแล้ว</span>
-                              ) : (
-                                <button 
-                                  onClick={() => handleVerifyRemainingDeposit(o)}
-                                  style={{ padding: '4px 8px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem' }}
-                                >
-                                  🔄 ลองอนุมัติใหม่
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
                 );
               })()}
             </div>
@@ -5708,48 +5214,6 @@ function AdminDashboardModal({ isOpen, onClose }) {
                         >
                           {o.slipUrl ? '🖼️ ดูรูปสลิปจากลูกค้า (DB)' : '📄 ดูข้อมูลสลิปโอนเงิน'}
                         </button>
-
-                        {o.remainingPaidStatus === 'approved' ? (
-                          <div style={{ marginTop: '6px', background: 'rgba(34,197,94,0.18)', border: '1px solid #22c55e', color: '#22c55e', padding: '3px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', textAlign: 'center' }}>
-                            ✅ ชำระส่วนที่เหลือครบ 100% (อนุมัติแล้ว)
-                          </div>
-                        ) : o.remainingSlipUrl || o.remainingPaidStatus === 'pending_verification' ? (
-                          <div style={{ marginTop: '6px', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)', padding: '6px', borderRadius: '6px' }}>
-                            <button 
-                              className="btn" 
-                              style={{ 
-                                padding: '4px 8px', 
-                                fontSize: '0.75rem', 
-                                border: '1px solid #38bdf8', 
-                                color: '#fff',
-                                background: 'linear-gradient(135deg, #0284c7, #0369a1)',
-                                borderRadius: '4px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                display: 'block',
-                                width: '100%',
-                                marginBottom: '4px'
-                              }}
-                              onClick={() => setPreviewSlipOrder({ ...o, slipUrl: o.remainingSlipUrl, isRemainingSlip: true })}
-                            >
-                              🔍 ดูสลิปส่วนที่เหลือ (฿{(o.remainingAmountPaid || 0).toLocaleString()})
-                            </button>
-                            <div style={{ display: 'flex', gap: '4px' }}>
-                              <button 
-                                onClick={() => handleVerifyRemainingDeposit(o)}
-                                style={{ flex: 1, padding: '4px 6px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 'bold' }}
-                              >
-                                ⚡ อนุมัติ
-                              </button>
-                              <button 
-                                onClick={() => handleRejectRemainingDeposit(o)}
-                                style={{ padding: '4px 6px', background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 'bold' }}
-                              >
-                                ❌ ปฏิเสธ
-                              </button>
-                            </div>
-                          </div>
-                        ) : null}
                       </td>
 
                       <td style={{ padding: '10px' }}>
